@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dashboard CRM · Comercial 2026</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+ 
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;height:100vh;overflow:hidden;}
+/* LOGIN */
+#login-screen{display:flex;align-items:center;justify-content:center;height:100vh;}
+.login-card{background:#fff;border-radius:16px;padding:40px 36px;width:360px;border:1px solid #e8eaed;}
+.login-logo{width:44px;height:44px;background:#534AB7;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;margin:0 auto 20px;}
+.login-card h2{font-size:18px;font-weight:700;color:#1a1f2e;text-align:center;margin-bottom:4px;}
+.login-card p{font-size:13px;color:#888;text-align:center;margin-bottom:24px;}
+.lf label{font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px;}
+.lf input{width:100%;padding:9px 12px;border:1px solid #dde1e7;border-radius:8px;font-size:13px;outline:none;margin-bottom:12px;font-family:inherit;}
+.lf input:focus{border-color:#534AB7;}
+.login-btn{width:100%;padding:10px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
+.login-btn:hover{background:#3C3489;}
+.login-error{font-size:12px;color:#E24B4A;text-align:center;margin-top:8px;min-height:16px;}
+.login-hint{margin-top:18px;background:#f7f8fa;border-radius:8px;padding:12px;font-size:11px;color:#888;line-height:1.8;}
+.login-hint strong{color:#444;}
+/* APP */
+#app{display:none;height:100vh;overflow:hidden;}
+.layout{display:flex;height:100vh;}
+/* sidebar */
+.sidebar{width:52px;background:#1a1f2e;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;flex-shrink:0;}
+.sb-logo{width:32px;height:32px;background:#534AB7;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;margin-bottom:10px;}
+.sb-icon{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#8892a4;font-size:18px;cursor:pointer;}
+.sb-icon:hover,.sb-icon.active{background:#2d3548;color:#fff;}
+.sb-spacer{flex:1;}
+.sb-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;cursor:pointer;margin-top:6px;}
+/* main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+/* topbar */
+.topbar{background:#fff;border-bottom:1px solid #e8eaed;padding:8px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;}
+.page-title{font-size:14px;font-weight:700;color:#1a1f2e;}
+.badge-role{font-size:11px;padding:2px 10px;border-radius:20px;font-weight:600;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.user-name{font-size:12px;color:#666;}
+.btn-sm{font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #dde1e7;background:#fff;color:#555;cursor:pointer;}
+.btn-sm:hover{background:#f5f5f5;}
+.import-lbl{font-size:11px;padding:4px 10px;border-radius:8px;border:1px dashed #bbb;background:#fff;color:#777;cursor:pointer;}
+/* tab nav */
+.tab-nav{background:#fff;border-bottom:1px solid #e8eaed;padding:0 18px;display:flex;gap:2px;flex-shrink:0;overflow-x:auto;}
+.tab-nav::-webkit-scrollbar{height:3px;}
+.tab-nav::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px;}
+.tab-item{display:flex;align-items:center;gap:6px;padding:10px 14px;font-size:12px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;flex-shrink:0;}
+.tab-item:hover{color:#534AB7;}
+.tab-item.active{color:#534AB7;border-bottom-color:#534AB7;}
+.tab-item .tab-dot{width:8px;height:8px;border-radius:50%;}
+/* content */
+.content{flex:1;overflow-y:auto;padding:18px;}
+/* KPI cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px;}
+.kpi{background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:12px 14px;}
+.kpi-label{font-size:11px;color:#888;margin-bottom:4px;}
+.kpi-val{font-size:22px;font-weight:700;color:#1a1f2e;line-height:1;}
+.kpi-sub{font-size:11px;margin-top:4px;}
+.kpi-sub.up{color:#1D9E75;} .kpi-sub.down{color:#E24B4A;} .kpi-sub.neutral{color:#888;}
+/* cards row */
+.cards-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+.card{background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px 16px;}
+.card-title{font-size:12px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.3px;margin-bottom:12px;}
+/* funnel bars */
+.funnel-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.funnel-row span.lbl{font-size:11px;color:#666;width:62px;flex-shrink:0;}
+.funnel-track{flex:1;background:#f0f2f5;border-radius:4px;height:14px;overflow:hidden;}
+.funnel-fill{height:100%;border-radius:4px;}
+.funnel-row span.pct{font-size:11px;font-weight:700;width:32px;text-align:right;}
+/* mini bar */
+.mini-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.mini-bar-row .lbl{font-size:11px;color:#666;width:70px;flex-shrink:0;}
+.mini-track{flex:1;background:#f0f2f5;border-radius:4px;height:11px;overflow:hidden;}
+.mini-fill{height:100%;border-radius:4px;}
+.mini-bar-row .pct{font-size:11px;font-weight:700;width:32px;text-align:right;}
+/* team hunter cards */
+.hunters-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:18px;}
+.hunter-card{background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;}
+.hunter-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.hunter-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.hunter-name{font-size:13px;font-weight:700;color:#1a1f2e;}
+.hunter-role{font-size:11px;color:#888;}
+.progress-bar{height:7px;background:#f0f2f5;border-radius:4px;overflow:hidden;margin:8px 0 4px;}
+.progress-fill{height:100%;border-radius:4px;}
+.progress-labels{display:flex;justify-content:space-between;font-size:10px;color:#888;}
+.hunter-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px;}
+.hstat{background:#f7f8fa;border-radius:6px;padding:5px 6px;text-align:center;}
+.hstat-val{font-size:14px;font-weight:700;color:#1a1f2e;}
+.hstat-lbl{font-size:9px;color:#aaa;margin-top:1px;}
+/* leads table */
+.tbl-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;}
+.filter-tabs{display:flex;gap:4px;flex-wrap:wrap;}
+.ftab{font-size:11px;padding:4px 12px;border-radius:20px;border:1px solid #dde1e7;background:#fff;color:#666;cursor:pointer;}
+.ftab:hover{background:#f0f0f0;}
+.ftab.active{background:#534AB7;color:#fff;border-color:#534AB7;}
+.search-box{font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid #dde1e7;background:#f7f8fa;color:#333;width:140px;outline:none;}
+.btn-new{font-size:12px;padding:5px 14px;border-radius:8px;border:none;background:#534AB7;color:#fff;cursor:pointer;font-weight:500;}
+.btn-new:hover{background:#3C3489;}
+.tbl-wrap{background:#fff;border:1px solid #e8eaed;border-radius:10px;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead tr{background:#f7f8fa;}
+th{padding:8px 10px;font-size:11px;font-weight:600;color:#888;border-bottom:1px solid #e8eaed;white-space:nowrap;text-align:left;}
+td{padding:7px 10px;border-bottom:1px solid #f0f2f5;vertical-align:middle;color:#333;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafbff;}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+.sbadge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap;}
+.ecell{border:none;background:transparent;font-size:12px;color:#333;width:100%;padding:1px 2px;font-family:inherit;}
+.ecell:focus{background:#f0f2f5;border-radius:3px;outline:none;}
+.ecell[readonly]{color:#999;cursor:default;}
+.alink{font-size:11px;color:#534AB7;cursor:pointer;font-weight:500;}
+.alink:hover{text-decoration:underline;}
+/* modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:#fff;border-radius:14px;width:420px;padding:24px;position:relative;}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:16px;}
+.mf label{font-size:11px;color:#888;display:block;margin-bottom:4px;font-weight:500;}
+.mf input,.mf select,.mf textarea{width:100%;font-size:13px;padding:7px 10px;border:1px solid #dde1e7;border-radius:8px;font-family:inherit;outline:none;margin-bottom:10px;}
+.mf input:focus,.mf select:focus{border-color:#534AB7;}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+.mactions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;}
+.btn-cancel{font-size:12px;padding:7px 16px;border-radius:8px;border:1px solid #dde1e7;background:#fff;cursor:pointer;}
+.btn-save{font-size:12px;padding:7px 16px;border-radius:8px;border:none;background:#534AB7;color:#fff;cursor:pointer;font-weight:600;}
+.close-modal{position:absolute;top:14px;right:14px;border:none;background:none;font-size:18px;cursor:pointer;color:#888;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:#ddd;border-radius:4px;}
+</style>
+</head>
+<body>
+ 
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">S</div>
+    <h2>Bienvenido</h2>
+    <p>Ingresa con tus credenciales</p>
+    <div class="lf">
+      <label>Usuario</label>
+      <input type="text" id="lu" placeholder="usuario" onkeydown="if(event.key==='Enter')doLogin()">
+      <label>Contraseña</label>
+      <input type="password" id="lp" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Ingresar</button>
+    <div class="login-error" id="lerr"></div>
+    <div class="login-hint">
+      <strong>Accesos:</strong><br>
+      vpena / Director2026A &nbsp;→ Director<br>
+      cportal / HeadA2026 &nbsp;&nbsp;&nbsp;→ Head Equipo A<br>
+      acarrera / HeadB2026 &nbsp;&nbsp;→ Head Equipo B<br>
+      mvasquez / HunterA1 &nbsp;&nbsp;→ Hunter Equipo A<br>
+      olopez / HunterB2 &nbsp;&nbsp;&nbsp;→ Hunter Equipo B<br>
+      <span style="color:#534AB7;font-size:10px">✓ Conectado a Supabase</span>
+    </div>
+  </div>
+</div>
+ 
+<!-- APP -->
+<div id="app">
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-logo">S</div>
+    <div class="sb-icon active" id="nav-crm" title="Pipeline CRM" onclick="switchView('crm')"><i class="ti ti-layout-dashboard"></i></div>
+    <div class="sb-icon" id="nav-kpi" title="Dashboard Mayo" onclick="switchView('kpi')"><i class="ti ti-layout-grid"></i></div>
+    <div class="sb-icon" id="nav-hunters" title="Dashboard Hunters — Abril" onclick="switchView('hunters')"><i class="ti ti-activity"></i></div>
+    <div class="sb-icon" title="Email"><i class="ti ti-mail"></i></div>
+    <div class="sb-icon" title="Contactos"><i class="ti ti-users"></i></div>
+    <div class="sb-icon" title="Calendario"><i class="ti ti-calendar"></i></div>
+    <div class="sb-icon" title="Reportes"><i class="ti ti-chart-bar"></i></div>
+    <div class="sb-icon" title="Tareas"><i class="ti ti-checkbox"></i></div>
+    <div class="sb-spacer"></div>
+    <div class="sb-icon"><i class="ti ti-settings"></i></div>
+    <div class="sb-avatar" id="sb-av" title="Mi perfil"></div>
+  </div>
+ 
+  <div class="main">
+    <!-- KPI DASHBOARD VIEW -->
+    <div id="view-kpi" style="display:none;flex:1;overflow-y:auto;background:#f5f6fa;">
+ 
+      <!-- Filtros top -->
+      <div style="background:#fff;border-bottom:1px solid #e8eaed;padding:10px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <div style="font-size:13px;font-weight:600;color:#1a1f2e;margin-right:8px;">Analytics · Mayo 2026</div>
+        <select id="kpi-range" onchange="renderKPI()" style="font-size:12px;padding:5px 10px;border:1px solid #dde1e7;border-radius:8px;background:#fff;color:#333;cursor:pointer;">
+          <option>Últimos 3 meses</option>
+          <option selected>Últimos 6 meses</option>
+          <option>Este año</option>
+        </select>
+        <select id="kpi-owner" onchange="renderKPI()" style="font-size:12px;padding:5px 10px;border:1px solid #dde1e7;border-radius:8px;background:#fff;color:#333;cursor:pointer;">
+          <option value="">Todos los hunters</option>
+          <option>Carlos Mendoza</option>
+          <option>Sofía Paredes</option>
+          <option>Diego Vega</option>
+          <option>Valeria Cruz</option>
+        </select>
+        <select id="kpi-team" onchange="renderKPI()" style="font-size:12px;padding:5px 10px;border:1px solid #dde1e7;border-radius:8px;background:#fff;color:#333;cursor:pointer;">
+          <option value="">Todos los equipos</option>
+          <option>Equipo A</option>
+          <option>Equipo B</option>
+        </select>
+      </div>
+ 
+      <div style="padding:16px 20px;">
+ 
+        <!-- Fila 1: KPI cards estilo imagen -->
+        <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1.3fr 1.3fr;gap:12px;margin-bottom:14px;">
+ 
+          <!-- Win/Loss % -->
+          <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px;">Deal win/loss %</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+              <span style="font-size:11px;color:#333;width:30px;">Lost</span>
+              <div style="flex:1;background:#f0f2f5;border-radius:3px;height:18px;overflow:hidden;"><div style="width:33%;height:100%;background:#E24B4A;border-radius:3px;display:flex;align-items:center;padding:0 6px;"><span style="font-size:10px;color:#fff;font-weight:600;">33.3%</span></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;color:#333;width:30px;">Won</span>
+              <div style="flex:1;background:#f0f2f5;border-radius:3px;height:18px;overflow:hidden;"><div style="width:67%;height:100%;background:#1D9E75;border-radius:3px;display:flex;align-items:center;padding:0 6px;"><span style="font-size:10px;color:#fff;font-weight:600;">66.7%</span></div></div>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:12px;">
+              <span style="font-size:10px;color:#888;">Deals won <strong style="color:#1D9E75;">12</strong></span>
+              <span style="font-size:10px;color:#888;">Deals lost <strong style="color:#E24B4A;">6</strong></span>
+            </div>
+          </div>
+ 
+          <!-- Revenue won -->
+          <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;">Revenue won</div>
+            <div style="font-size:26px;font-weight:700;color:#1a1f2e;">S/ 84.3K</div>
+            <div style="font-size:11px;color:#1D9E75;margin-top:4px;">▲ +12.4% vs abril</div>
+            <div style="margin-top:8px;height:4px;background:#f0f2f5;border-radius:2px;"><div style="width:75%;height:100%;background:#1D9E75;border-radius:2px;"></div></div>
+          </div>
+ 
+          <!-- Revenue lost -->
+          <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;">Revenue lost</div>
+            <div style="font-size:26px;font-weight:700;color:#1a1f2e;">S/ 32.1K</div>
+            <div style="font-size:11px;color:#E24B4A;margin-top:4px;">Oportunidades perdidas</div>
+            <div style="margin-top:8px;height:4px;background:#f0f2f5;border-radius:2px;"><div style="width:38%;height:100%;background:#E24B4A;border-radius:2px;"></div></div>
+          </div>
+ 
+          <!-- Razones de pérdida -->
+          <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;">Razones de pérdida</div>
+            <div style="position:relative;height:70px;"><canvas id="kpi-lost" role="img" aria-label="Razones pérdida"></canvas></div>
+            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+              <span style="font-size:9px;color:#888;background:#f0f2f5;padding:2px 6px;border-radius:4px;">Precio</span>
+              <span style="font-size:9px;color:#888;background:#f0f2f5;padding:2px 6px;border-radius:4px;">Competencia</span>
+              <span style="font-size:9px;color:#888;background:#f0f2f5;padding:2px 6px;border-radius:4px;">Sin respuesta</span>
+            </div>
+          </div>
+ 
+          <!-- Valor por forecast -->
+          <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;">Valor por categoría</div>
+            <div id="kpi-forecast-bars"></div>
+          </div>
+        </div>
+ 
+        <!-- Fila 2: Funnel + Tabla deals -->
+        <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;margin-bottom:14px;">
+ 
+          <!-- Funnel por etapa -->
+          <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:12px;">Valor de deals por etapa</div>
+            <div id="kpi-funnel-bars"></div>
+            <div style="margin-top:14px;position:relative;height:160px;"><canvas id="kpi-funnel-chart" role="img" aria-label="Funnel por etapa"></canvas></div>
+          </div>
+ 
+          <!-- Open deals table -->
+          <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;">Open Deals</div>
+              <input id="kpi-search" oninput="filterDeals()" placeholder="Buscar..." style="font-size:11px;padding:4px 10px;border:1px solid #dde1e7;border-radius:7px;background:#f7f8fa;outline:none;width:140px;">
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead>
+                <tr style="background:#f7f8fa;">
+                  <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:#888;border-bottom:1px solid #e8eaed;">Empresa</th>
+                  <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:#888;border-bottom:1px solid #e8eaed;">Responsable</th>
+                  <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:#888;border-bottom:1px solid #e8eaed;">Etapa</th>
+                  <th style="text-align:right;padding:8px 10px;font-size:11px;font-weight:600;color:#888;border-bottom:1px solid #e8eaed;">Valor</th>
+                  <th style="text-align:right;padding:8px 10px;font-size:11px;font-weight:600;color:#888;border-bottom:1px solid #e8eaed;">Prob.</th>
+                </tr>
+              </thead>
+              <tbody id="kpi-deals-body"></tbody>
+              <tfoot>
+                <tr style="background:#f7f8fa;">
+                  <td colspan="3" style="padding:8px 10px;font-size:11px;font-weight:600;color:#555;border-top:2px solid #e8eaed;">Grand Total</td>
+                  <td id="kpi-total" style="text-align:right;padding:8px 10px;font-size:12px;font-weight:700;color:#534AB7;border-top:2px solid #e8eaed;"></td>
+                  <td style="border-top:2px solid #e8eaed;"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+ 
+        <!-- Fila 3: Revenue trend + Top hunters -->
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
+          <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Ingresos mensuales — tendencia</div>
+            <div style="display:flex;gap:14px;font-size:11px;color:#888;margin-bottom:10px;">
+              <span><span style="display:inline-block;width:10px;height:2px;background:#534AB7;vertical-align:middle;margin-right:4px;"></span>Real</span>
+              <span><span style="display:inline-block;width:10px;height:2px;background:#E24B4A;vertical-align:middle;margin-right:4px;border-top:2px dashed #E24B4A;"></span>Meta</span>
+            </div>
+            <div style="position:relative;height:150px;"><canvas id="kpi-trend" role="img" aria-label="Tendencia ingresos"></canvas></div>
+          </div>
+          <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:12px;">Top hunters — conversión</div>
+            <div id="kpi-top-hunters"></div>
+          </div>
+        </div>
+ 
+      </div>
+    </div>
+    <!-- / KPI DASHBOARD VIEW -->
+    <!-- HUNTERS DASHBOARD VIEW -->
+    <div id="view-hunters" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+      <div style="background:#1a1f2e;padding:8px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.06);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;background:linear-gradient(135deg,#00E5A0,#3B82F6);border-radius:7px;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0B0F1A" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <span style="font-size:13px;font-weight:600;color:#F0F6FF;">Hunters Peru</span>
+          <span style="font-size:10px;color:#506080;">Dashboard comercial · Abril 2026</span>
+        </div>
+        <span style="font-size:10px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.25);color:#00E5A0;padding:4px 12px;border-radius:20px;">ABR-30 · Cerrado</span>
+      </div>
+      <iframe id="hunters-frame" style="flex:1;border:none;width:100%;height:100%;" title="Dashboard Hunters"></iframe>
+    </div>
+    <!-- / HUNTERS DASHBOARD VIEW -->
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="page-title">Pipeline · Mayo 2026</span>
+        <span class="badge-role" id="badge-role"></span>
+      </div>
+      <div class="topbar-right">
+        <span class="user-name" id="user-name-lbl"></span>
+        <label class="import-lbl">
+          <i class="ti ti-upload"></i> Importar Excel
+          <input type="file" accept=".xlsx,.csv" style="display:none;" onchange="handleImport(this)">
+        </label>
+        <button class="btn-sm" onclick="doLogout()"><i class="ti ti-logout"></i> Salir</button>
+      </div>
+    </div>
+ 
+    <div class="tab-nav" id="tab-nav"></div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+</div>
+ 
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <button class="close-modal" onclick="closeModal()">&#x2715;</button>
+    <h3 id="modal-title">Nuevo lead</h3>
+    <div class="mgrid">
+      <div class="mf" style="grid-column:1/-1;"><label>Empresa</label><input id="m-name" placeholder="Empresa S.A.C."></div>
+      <div class="mf"><label>Responsable</label><select id="m-owner"></select></div>
+      <div class="mf"><label>Estado</label>
+        <select id="m-status">
+          <option value="prospecto">Prospecto</option><option value="contactado">Contactado</option>
+          <option value="reunión">Reunión</option><option value="propuesta">Propuesta</option>
+          <option value="cerrado">Cerrado</option>
+        </select>
+      </div>
+      <div class="mf"><label>Cierre estimado</label><input id="m-close" type="date"></div>
+      <div class="mf"><label>Fuente</label>
+        <select id="m-source"><option>Google Ads</option><option>Referido</option><option>Directo</option><option>LinkedIn</option><option>Evento</option></select>
+      </div>
+      <div class="mf"><label>Valor (S/)</label><input id="m-value" type="number" placeholder="0"></div>
+      <div class="mf"><label>Probabilidad (%)</label><input id="m-prob" type="number" min="0" max="100" placeholder="10"></div>
+      <div class="mf" style="grid-column:1/-1;"><label>Comentario</label><textarea id="m-note" rows="2" style="resize:none;"></textarea></div>
+    </div>
+    <div class="mactions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveLead()">Guardar</button>
+    </div>
+  </div>
+</div>
+ 
+<script>
+/* ─── SUPABASE CONFIG ─── */
+const SB_URL = 'https://lvnjawvgbvlghaodyurv.supabase.co';
+const SB_KEY = 'sb_publishable_2zwQO3oeLN1Ed9sZBJ1IsQ_REV5Fa1f';
+ 
+async function sbGet(table, params=''){
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, {
+    headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'}
+  });
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbPost(table, body){
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method:'POST',
+    headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation'},
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+async function sbPatch(table, id, body){
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method:'PATCH',
+    headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation'},
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+ 
+/* usuarios y leads se cargan desde Supabase */
+let SB_USUARIOS = [];
+let LEADS = [];
+const USERS = {}; /* vacío, se usa Supabase */
+ 
+/* ── HUNTERS (14 reales) ── */
+const HUNTERS_DEF = [
+  {username:'mvasquez',   name:'Melissa Vasquez',   initials:'MV', color:'#FF6B6B', team:'A', meta:25000, real:0},
+  {username:'mllacchuas', name:'Melissa Llacchuas', initials:'ML', color:'#FF6B9D', team:'A', meta:25000, real:0},
+  {username:'rtorres',    name:'Rosa Torres',        initials:'RT', color:'#6BCF7F', team:'A', meta:25000, real:0},
+  {username:'asoto',      name:'Andrea Soto',        initials:'AS', color:'#FFD93D', team:'A', meta:25000, real:0},
+  {username:'ycheca',     name:'Yasmin Checa',       initials:'YC', color:'#888780', team:'A', meta:25000, real:0},
+  {username:'mflores',    name:'Maria Flores',       initials:'MF', color:'#E84393', team:'A', meta:25000, real:0},
+  {username:'kpaulino',   name:'Kevin Paulino',      initials:'KP', color:'#00C9FF', team:'A', meta:25000, real:0},
+  {username:'aquinones',  name:'Alicia Quiñones',    initials:'AQ', color:'#FF8C42', team:'B', meta:25000, real:0},
+  {username:'olopez',     name:'Oliver Lopez',       initials:'OL', color:'#4ECDC4', team:'B', meta:25000, real:0},
+  {username:'chuaman',    name:'Christian Huaman',   initials:'CH', color:'#00C9FF', team:'B', meta:25000, real:0},
+  {username:'pastorga',   name:'Patricia Astorga',   initials:'PA', color:'#00E5A0', team:'B', meta:25000, real:0},
+  {username:'acastillo',  name:'Analiz Castillo',    initials:'AC', color:'#F59E0B', team:'B', meta:25000, real:0},
+  {username:'rllanos',    name:'Rock Llanos',         initials:'RL', color:'#7F77DD', team:'B', meta:25000, real:0},
+  {username:'frouillon',  name:'Franco Rouillon',     initials:'FR', color:'#D4537E', team:'B', meta:25000, real:0},
+];
+const HUNTERS = Object.fromEntries(HUNTERS_DEF.map(h=>[h.username, h]));
+const HUNTERS_A = HUNTERS_DEF.filter(h=>h.team==='A');
+const HUNTERS_B = HUNTERS_DEF.filter(h=>h.team==='B');
+ 
+const TEAMS = {
+  A:{name:'Equipo A', head:'Carlos Portal', headColor:'#F59E0B', hunters:HUNTERS_A.map(h=>h.username)},
+  B:{name:'Equipo B', head:'Ana Carrera',   headColor:'#A855F7', hunters:HUNTERS_B.map(h=>h.username)},
+};
+ 
+const SC={
+  prospecto: {bg:'#E6F1FB',c:'#0C447C',l:'Prospecto'},
+  contactado:{bg:'#EEEDFE',c:'#3C3489',l:'Contactado'},
+  'reunión': {bg:'#FFF3CD',c:'#856404',l:'Reunión'},
+  propuesta: {bg:'#EAF3DE',c:'#27500A',l:'Propuesta'},
+  cerrado:   {bg:'#D4EDDA',c:'#155724',l:'Cerrado'},
+};
+ 
+const O2H={'Carlos Mendoza':'h1','Sofía Paredes':'h2','Diego Vega':'h3','Valeria Cruz':'h4'};
+ 
+/* leads cargados desde Supabase */
+ 
+/* ─── STATE ─── */
+let curUser=null, curTab='', curFilter='all', curSearch='', editingId=null;
+let chartObj=null;
+ 
+/* ─── HELPERS ─── */
+function mapEstado(e){
+  const m = {
+    'prospecto':'prospecto','contactado':'contactado','reunion':'reunión',
+    'reunión':'reunión','propuesta':'propuesta','cerrado':'cerrado'
+  };
+  return m[(e||'').toLowerCase()] || 'prospecto';
+}
+ 
+/* ─── AUTH ─── */
+async function doLogin(){
+  const username = document.getElementById('lu').value.trim().toLowerCase();
+  const password = document.getElementById('lp').value;
+  const btn = document.querySelector('.login-btn');
+  const errEl = document.getElementById('lerr');
+  errEl.textContent = '';
+  if(!username || !password){ errEl.textContent='Ingresa usuario y contraseña.'; return; }
+  btn.textContent = 'Verificando...'; btn.disabled = true;
+  try {
+    const rows = await sbGet('usuarios',
+      `username=eq.${encodeURIComponent(username)}&password=eq.${encodeURIComponent(password)}&activo=eq.true&select=*`
+    );
+    if(!rows || rows.length === 0){
+      errEl.textContent = 'Usuario o contraseña incorrectos.';
+      btn.textContent='Ingresar'; btn.disabled=false; return;
+    }
+    const u = rows[0];
+    curUser = {
+      username: u.username,
+      name:     u.nombre,
+      role:     u.rol,          /* director / head / hunter */
+      equipo:   u.equipo,
+      color:    u.color || '#534AB7',
+      id:       u.id,
+      hunter:   u.username
+    };
+    /* cargar todos los usuarios para el dashboard */
+    SB_USUARIOS = await sbGet('usuarios','select=*&activo=eq.true');
+    /* cargar leads */
+    const rawLeads = await sbGet('leads','select=*&order=created_at.desc');
+ 
+    /* ── Reconstruir HUNTERS_DEF y HUNTERS desde Supabase ── */
+    const hunterUsers = SB_USUARIOS.filter(u => u.rol === 'hunter');
+    HUNTERS_DEF.length = 0;
+    hunterUsers.forEach(u => {
+      const existing = HUNTERS_DEF.find(h => h.username === u.username);
+      if (!existing) {
+        const initials = u.nombre.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+        HUNTERS_DEF.push({
+          username: u.username,
+          name: u.nombre,
+          initials: initials,
+          color: u.color || '#7F77DD',
+          team: u.equipo || 'A',
+          meta: 25000,
+          real: 0
+        });
+      }
+    });
+    /* Rebuild HUNTERS map */
+    Object.keys(HUNTERS).forEach(k => delete HUNTERS[k]);
+    HUNTERS_DEF.forEach(h => { HUNTERS[h.username] = h; });
+    console.log('HUNTERS loaded:', Object.keys(HUNTERS).length, 'hunters');
+    console.log('LEADS loaded:', LEADS.length, 'leads');
+    HUNTERS_A.length = 0; HUNTERS_B.length = 0;
+    HUNTERS_DEF.filter(h=>h.team==='A').forEach(h=>HUNTERS_A.push(h));
+    HUNTERS_DEF.filter(h=>h.team==='B').forEach(h=>HUNTERS_B.push(h));
+    TEAMS.A.hunters = HUNTERS_A.map(h=>h.username);
+    TEAMS.B.hunters = HUNTERS_B.map(h=>h.username);
+ 
+    /* Heads */
+    const headA = SB_USUARIOS.find(u=>u.username==='cportal');
+    const headB = SB_USUARIOS.find(u=>u.username==='acarrera');
+    if(headA){ TEAMS.A.head = headA.nombre; TEAMS.A.headColor = headA.color||'#F59E0B'; }
+    if(headB){ TEAMS.B.head = headB.nombre; TEAMS.B.headColor = headB.color||'#A855F7'; }
+ 
+    /* ── Transformar leads de Supabase al formato interno ── */
+    const hunterMap = {};
+    SB_USUARIOS.forEach(u => { hunterMap[u.id] = u.username; });
+ 
+    LEADS = rawLeads.map((l,i) => ({
+      id:       l.id || i+1,
+      hunter:   hunterMap[l.hunter_id] || '',
+      name:     l.nombre || '(Sin nombre)',
+      created:  l.created_at ? new Date(l.created_at).toLocaleDateString('es-PE') : '',
+      close:    l.fecha_cierre || '',
+      owner:    l.nombre || '',
+      status:   mapEstado(l.estado || 'prospecto'),
+      conflict: l.conflicto || false,
+      source:   l.fuente || 'Directo',
+      prob:     l.probabilidad || 10,
+      value:    l.valor || 0,
+      note:     l.comentario || '',
+      ruc:      l.ruc || '',
+      razon:    l.razon_social || ''
+    }));
+ 
+    /* Actualizar real en HUNTERS */
+    HUNTERS_DEF.forEach(h => { h.real = 0; }); // reset
+    LEADS.forEach(l => {
+      if(HUNTERS[l.hunter]) HUNTERS[l.hunter].real += (l.value||0);
+    });
+ 
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    initApp();
+  } catch(e){
+    errEl.textContent = 'Error de conexión: ' + e.message;
+  }
+  btn.textContent='Ingresar'; btn.disabled=false;
+}
+const KPI_DEALS=[
+  {empresa:'Empresa Alpha S.A.',owner:'Carlos Mendoza',etapa:'Propuesta',valor:12500,prob:75,equipo:'A'},
+  {empresa:'Beta Distribuciones',owner:'Carlos Mendoza',etapa:'Reunión',valor:8000,prob:50,equipo:'A'},
+  {empresa:'Gamma Retail',owner:'Sofía Paredes',etapa:'Contactado',valor:5200,prob:30,equipo:'A'},
+  {empresa:'Delta Corp',owner:'Sofía Paredes',etapa:'Prospecto',valor:9800,prob:10,equipo:'A'},
+  {empresa:'Épsilon Tech',owner:'Sofía Paredes',etapa:'Cerrado',valor:14200,prob:100,equipo:'A'},
+  {empresa:'Zeta Logística',owner:'Diego Vega',etapa:'Propuesta',valor:11000,prob:65,equipo:'B'},
+  {empresa:'Eta Services',owner:'Diego Vega',etapa:'Reunión',valor:7500,prob:45,equipo:'B'},
+  {empresa:'Theta Industrial',owner:'Valeria Cruz',etapa:'Contactado',valor:6800,prob:25,equipo:'B'},
+  {empresa:'Iota Comercial',owner:'Valeria Cruz',etapa:'Prospecto',valor:4500,prob:15,equipo:'B'},
+];
+const STAGE_COLORS={Prospecto:'#378ADD',Contactado:'#534AB7',Reunión:'#EF9F27',Propuesta:'#1D9E75',Cerrado:'#639922'};
+let kpiCharts={};
+ 
+function destroyKpi(id){if(kpiCharts[id]){kpiCharts[id].destroy();delete kpiCharts[id];}}
+ 
+function renderKPI(){
+  const owner=document.getElementById('kpi-owner')?.value||'';
+  const team=document.getElementById('kpi-team')?.value||'';
+  let deals=KPI_DEALS.filter(d=>{
+    if(owner&&d.owner!==owner)return false;
+    if(team&&d.equipo!==(team==='Equipo A'?'A':'B'))return false;
+    return true;
+  });
+ 
+  // Forecast bars (static)
+  const forecasts=[['Comprometido','S/ 43K','#534AB7',72],['Mejor caso','S/ 28K','#378ADD',47],['Pipeline','S/ 13K','#1D9E75',22]];
+  const fbEl=document.getElementById('kpi-forecast-bars');
+  if(fbEl) fbEl.innerHTML=forecasts.map(function(x){
+    var l=x[0],v=x[1],c=x[2],w=x[3];
+    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;"><span style="font-size:10px;color:#666;width:80px;flex-shrink:0;">'+l+'<\/span><div style="flex:1;background:#f0f2f5;border-radius:3px;height:14px;overflow:hidden;"><div style="width:'+w+'%;height:100%;background:'+c+';border-radius:3px;"><\/div><\/div><span style="font-size:10px;font-weight:600;color:'+c+';width:36px;text-align:right;">'+v+'<\/span><\/div>';
+  }).join('');
+ 
+  // Funnel bars
+  const stages=['Prospecto','Contactado','Reunión','Propuesta','Cerrado'];
+  const stageVals=stages.map(s=>deals.filter(d=>d.etapa===s).reduce((sum,d)=>sum+d.valor,0));
+  const maxV=Math.max(...stageVals,1);
+  document.getElementById('kpi-funnel-bars').innerHTML=stages.map((s,i)=>{
+    const v=stageVals[i];const w=Math.round(v/maxV*100);
+    return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <span style="font-size:10px;color:#555;width:70px;flex-shrink:0;">${s}</span>
+      <div style="flex:1;background:#f0f2f5;border-radius:3px;height:16px;overflow:hidden;">
+        <div style="width:${w}%;height:100%;background:${STAGE_COLORS[s]};border-radius:3px;display:flex;align-items:center;padding:0 5px;">
+          ${w>15?`<span style="font-size:9px;color:#fff;font-weight:600;">S/${(v/1000).toFixed(1)}K</span>`:''}
+        </div>
+      </div>
+      <span style="font-size:10px;font-weight:600;color:${STAGE_COLORS[s]};width:40px;text-align:right;">${deals.filter(d=>d.etapa===s).length} deals</span>
+    </div>`;
+  }).join('');
+ 
+  // Funnel doughnut
+  destroyKpi('kpi-funnel-chart');
+  kpiCharts['kpi-funnel-chart']=new Chart(document.getElementById('kpi-funnel-chart'),{
+    type:'doughnut',
+    data:{labels:stages,datasets:[{data:stageVals,backgroundColor:stages.map(s=>STAGE_COLORS[s]+'CC'),borderWidth:0,hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right',labels:{font:{size:10},color:'#666',boxWidth:10,padding:6}}}}
+  });
+ 
+  // Tabla deals
+  const search=(document.getElementById('kpi-search')?.value||'').toLowerCase();
+  const filtered=deals.filter(d=>!search||d.empresa.toLowerCase().includes(search)||d.owner.toLowerCase().includes(search));
+  const sc=STAGE_COLORS;
+  document.getElementById('kpi-deals-body').innerHTML=filtered.map(d=>`
+    <tr style="border-bottom:1px solid #f0f2f5;">
+      <td style="padding:7px 10px;font-size:12px;font-weight:500;color:#1a1f2e;">${d.empresa}</td>
+      <td style="padding:7px 10px;font-size:11px;color:#666;">${d.owner}</td>
+      <td style="padding:7px 10px;"><span style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;background:${sc[d.etapa]}22;color:${sc[d.etapa]};">${d.etapa}</span></td>
+      <td style="padding:7px 10px;text-align:right;font-size:12px;font-weight:600;color:#1a1f2e;">S/${d.valor.toLocaleString()}</td>
+      <td style="padding:7px 10px;text-align:right;font-size:11px;color:${d.prob>=70?'#1D9E75':d.prob>=40?'#EF9F27':'#E24B4A'};font-weight:600;">${d.prob}%</td>
+    </tr>`).join('');
+  const total=filtered.reduce((s,d)=>s+d.valor,0);
+  document.getElementById('kpi-total').textContent=`S/ ${total.toLocaleString()}`;
+ 
+  // Lost reasons chart
+  destroyKpi('kpi-lost');
+  const lostCtx=document.getElementById('kpi-lost');
+  if(lostCtx){
+    kpiCharts['kpi-lost']=new Chart(lostCtx,{
+      type:'bar',
+      data:{labels:['Precio','Comp.','Sin resp.'],datasets:[{data:[4,2,1],backgroundColor:['#E24B4A','#EF9F27','#888'],borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9},color:'#888'}},y:{display:false}}}
+    });
+  }
+ 
+  // Trend chart
+  destroyKpi('kpi-trend');
+  const tCtx=document.getElementById('kpi-trend');
+  if(tCtx){
+    kpiCharts['kpi-trend']=new Chart(tCtx,{
+      type:'line',
+      data:{
+        labels:['Ene','Feb','Mar','Abr','May'],
+        datasets:[
+          {label:'Real',data:[42490,57024,268249,282395,84320],borderColor:'#534AB7',backgroundColor:'rgba(83,74,183,.08)',borderWidth:2,pointRadius:4,tension:.3,fill:true},
+          {label:'Meta',data:[50000,60000,270000,270000,80000],borderColor:'#E24B4A',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.3}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#888'}},y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:9},color:'#888',callback:v=>'S/'+(v>=1000?(v/1000).toFixed(0)+'K':v)}}}}
+    });
+  }
+ 
+  // Top hunters
+  const hunters=[
+    {n:'Carlos M.',conv:66,deals:5,col:'#378ADD'},
+    {n:'Sofía P.',conv:58,deals:4,col:'#D4537E'},
+    {n:'Diego V.',conv:72,deals:3,col:'#EF9F27'},
+    {n:'Valeria C.',conv:45,deals:3,col:'#7F77DD'},
+  ];
+  const thEl=document.getElementById('kpi-top-hunters');
+  if(thEl) thEl.innerHTML=hunters.map(h=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div style="width:28px;height:28px;border-radius:50%;background:${h.col}22;color:${h.col};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">${h.n.split(' ').map(x=>x[0]).join('')}</div>
+      <div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span style="font-size:11px;color:#333;">${h.n}</span><span style="font-size:10px;font-weight:700;color:${h.conv>=70?'#1D9E75':h.conv>=50?'#EF9F27':'#E24B4A'};">${h.conv}%</span></div>
+        <div style="height:6px;background:#f0f2f5;border-radius:3px;overflow:hidden;"><div style="width:${h.conv}%;height:100%;background:${h.col};border-radius:3px;"></div></div>
+        <div style="font-size:9px;color:#aaa;margin-top:1px;">${h.deals} deals activos</div>
+      </div>
+    </div>`).join('');
+}
+ 
+function filterDeals(){renderKPI();}
+ 
+let kpiChartsBuilt=false, huntersLoaded=false;
+function switchView(v){
+  ['crm','kpi','hunters'].forEach(n=>document.getElementById('nav-'+n).classList.toggle('active',n===v));
+  const kpiEl=document.getElementById('view-kpi');
+  const huntersEl=document.getElementById('view-hunters');
+  const crmEls=['.topbar','.tab-nav','#content'].map(s=>document.querySelector('.main '+s));
+  if(v==='kpi'){
+    kpiEl.style.display='block'; huntersEl.style.display='none';
+    crmEls.forEach(el=>{if(el)el.style.display='none';});
+    if(!kpiChartsBuilt){renderKPI();kpiChartsBuilt=true;}else{renderKPI();}
+  } else if(v==='hunters'){
+    kpiEl.style.display='none'; huntersEl.style.display='flex';
+    crmEls.forEach(el=>{if(el)el.style.display='none';});
+    if(!huntersLoaded){
+      const blob=new Blob([HUNTERS_HTML],{type:'text/html'});
+      document.getElementById('hunters-frame').src=URL.createObjectURL(blob);
+      huntersLoaded=true;
+    }
+  } else {
+    kpiEl.style.display='none'; huntersEl.style.display='none';
+    crmEls.forEach(el=>{if(el)el.style.display='';});
+  }
+}
+function buildKpiCharts(){
+  const days=Array.from({length:31},(_,i)=>String(i+1));
+  const ing=[2100,1800,2400,2900,1700,2200,3100,2800,1900,2600,3200,2700,2100,1800,2500,2900,3400,2000,2300,3000,2700,1900,2400,3300,2800,2100,1700,2600,3100,2400,1800];
+  new Chart(document.getElementById('kpi-line'),{
+    type:'line',
+    data:{labels:days,datasets:[
+      {label:'Ingresos',data:ing,borderColor:'#3266ad',backgroundColor:'rgba(50,102,173,0.07)',borderWidth:2,pointRadius:0,tension:0.3,fill:true},
+      {label:'Meta',data:Array(31).fill(2700),borderColor:'#e09434',borderWidth:1.5,borderDash:[5,4],pointRadius:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{maxTicksLimit:8,font:{size:10}},grid:{display:false}},
+              y:{ticks:{font:{size:10},callback:v=>'S/'+v.toLocaleString()},grid:{color:'rgba(0,0,0,0.05)'}}}}
+  });
+  new Chart(document.getElementById('kpi-bar'),{
+    type:'bar',
+    data:{labels:['Sem 1\n1-7','Sem 2\n8-14','Sem 3\n15-21','Sem 4\n22-31'],
+      datasets:[{data:[284,312,367,285],backgroundColor:'#1D9E75',borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}}}}
+  });
+}
+function doLogout(){
+  curUser=null;
+  document.getElementById('lp').value='';
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+ 
+/* ─── INIT ─── */
+function initApp(){
+  const av=document.getElementById('sb-av');
+  av.textContent=curUser.name.split(' ').map(x=>x[0]).join('').substring(0,2);
+  av.style.background=curUser.color;
+  document.getElementById('user-name-lbl').textContent=curUser.name;
+ 
+  const tabs=getTabs();
+  buildTabNav(tabs);
+  curTab=tabs[0].id;
+  renderTab(curTab);
+}
+ 
+/* ─── TABS POR ROL ─── */
+function getTabs(){
+  const r = curUser.role;
+ 
+  const hunterTab = h => {
+    const parts = h.name.split(' ');
+    const label = parts[0] + (parts[1] ? ' '+parts[1][0]+'.' : '');
+    return {id: h.username, label, icon:'ti-user', dot: h.color};
+  };
+ 
+  if(r==='director' || r==='analista') {
+    const tabs = [
+      {id:'general', label:'Vista general', icon:'ti-home',  dot:'#534AB7'},
+      {id:'teamA',   label:'Equipo A',      icon:'ti-users', dot:'#1D9E75'},
+    ];
+    HUNTERS_A.forEach(h => tabs.push(hunterTab(h)));
+    tabs.push({id:'teamB', label:'Equipo B', icon:'ti-users', dot:'#D85A30'});
+    HUNTERS_B.forEach(h => tabs.push(hunterTab(h)));
+    return tabs;
+  }
+ 
+  if(r==='head') {
+    const myTeam = curUser.equipo;
+    const hunters = myTeam==='A' ? HUNTERS_A : HUNTERS_B;
+    const tabs = [
+      {id:'team'+myTeam, label:'Mi Equipo '+myTeam, icon:'ti-users', dot: myTeam==='A'?'#1D9E75':'#D85A30'}
+    ];
+    hunters.forEach(h => tabs.push(hunterTab(h)));
+    return tabs;
+  }
+ 
+  /* hunter — solo ve sus propios leads */
+  const h = HUNTERS[curUser.username];
+  if(!h) return [{id: curUser.username, label: curUser.name, icon:'ti-user', dot: curUser.color}];
+  return [hunterTab(h)];
+}
+ 
+function getAccess(){
+  const r = curUser.role;
+  if(r==='director')  return {label:'Director',             badgeBg:'#EDE9FE', badgeColor:'#5B21B6'};
+  if(r==='analista')  return {label:'Analista Comercial',   badgeBg:'#FEF3C7', badgeColor:'#92400E'};
+  if(r==='head')      return {label:'Head · Equipo '+curUser.equipo, badgeBg:'#D1FAE5', badgeColor:'#065F46'};
+  return {label:'Hunter', badgeBg:'#DBEAFE', badgeColor:'#1E40AF'};
+}
+ 
+function buildTabNav(tabs){
+  const nav=document.getElementById('tab-nav');
+  nav.innerHTML=tabs.map(t=>`
+    <div class="tab-item${t.id===curTab?' active':''}" onclick="switchTab('${t.id}')" id="tab-${t.id}">
+      <span class="tab-dot" style="background:${t.dot};"></span>
+      <i class="ti ${t.icon}" style="font-size:13px;"></i> ${t.label}
+    </div>`).join('');
+  const access=getAccess();
+  const b=document.getElementById('badge-role');
+  b.textContent=access.label;
+  b.style.background=access.badgeBg;
+  b.style.color=access.badgeColor;
+}
+ 
+function switchTab(id){
+  curTab=id; curFilter='all'; curSearch='';
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  const el=document.getElementById('tab-'+id);
+  if(el) el.classList.add('active');
+  renderTab(id);
+}
+ 
+/* ─── RENDER TABS ─── */
+function renderTab(id){
+  if(id==='general') renderGeneral();
+  else if(id==='teamA'||id==='teamB') renderTeam(id==='teamA'?'A':'B');
+  else renderHunter(id);
+}
+ 
+/* GENERAL */
+function renderGeneral(){
+  const allLeads = LEADS || [];
+  const hunters = Object.values(HUNTERS);
+  const totalReal = allLeads.reduce((s,l)=>s+(l.value||0),0);
+  const totalMeta = hunters.reduce((s,h)=>s+(h.meta||0),0) || 1;
+  const pct = Math.round(totalReal/totalMeta*100);
+  const cerrados = allLeads.filter(l=>l.status==='cerrado').length;
+  const conv = allLeads.length>0 ? Math.round(cerrados/allLeads.length*100) : 0;
+ 
+  if(hunters.length===0){
+    document.getElementById('content').innerHTML=`<div style="padding:40px;text-align:center;color:#888;">
+      <div style="font-size:32px;margin-bottom:12px;">📋</div>
+      <div style="font-size:15px;font-weight:600;color:#333;margin-bottom:6px;">Sin datos aún</div>
+      <div style="font-size:12px;">Los hunters y leads se cargarán desde Supabase al ingresar.</div>
+    </div>`;
+    return;
+  }
+ 
+  let html=`
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Pipeline total</div><div class="kpi-val">S/ ${totalReal.toLocaleString()}</div><div class="kpi-sub ${pct>=90?'up':pct>=70?'neutral':'down'}">${pct}% de meta</div></div>
+    <div class="kpi"><div class="kpi-label">Meta total</div><div class="kpi-val">S/ ${totalMeta.toLocaleString()}</div><div class="kpi-sub neutral">Mayo 2026</div></div>
+    <div class="kpi"><div class="kpi-label">Leads activos</div><div class="kpi-val">${allLeads.length}</div><div class="kpi-sub neutral">registrados</div></div>
+    <div class="kpi"><div class="kpi-label">Cerrados</div><div class="kpi-val">${cerrados}</div><div class="kpi-sub up">este mes</div></div>
+    <div class="kpi"><div class="kpi-label">Conversión</div><div class="kpi-val">${conv}%</div><div class="kpi-sub neutral">del total</div></div>
+  </div>
+ 
+  <div class="cards-row">
+    <div class="card">
+      <div class="card-title">Funnel general</div>
+      ${funnelHTML(allLeads)}
+    </div>
+    <div class="card">
+      <div class="card-title">Rendimiento por equipo</div>
+      ${teamsCompareHTML()}
+    </div>
+  </div>
+ 
+  <div class="card-title" style="margin-bottom:10px;">Rendimiento hunters</div>
+  <div class="hunters-grid">
+    ${hunters.map(h=>hunterCardHTML(h,true)).join('')}
+  </div>`;
+  document.getElementById('content').innerHTML=html;
+}
+ 
+/* TEAM */
+function renderTeam(team){
+  const t=TEAMS[team];
+  const teamLeads=leadsForTeam(team);
+  const teamReal=t.hunters.reduce((s,hid)=>s+(HUNTERS[hid]?.real||0),0);
+  const teamMeta=t.hunters.reduce((s,hid)=>s+(HUNTERS[hid]?.meta||0),0)||1;
+  const pct=Math.round(teamReal/teamMeta*100);
+  const cerrados=teamLeads.filter(l=>l.status==='cerrado').length;
+ 
+  let html=`
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Pipeline equipo</div><div class="kpi-val">S/${teamReal.toLocaleString()}</div><div class="kpi-sub ${pct>=90?'up':pct>=70?'neutral':'down'}">${pct}% de meta</div></div>
+    <div class="kpi"><div class="kpi-label">Meta equipo</div><div class="kpi-val">S/${teamMeta.toLocaleString()}</div><div class="kpi-sub neutral">Mayo 2026</div></div>
+    <div class="kpi"><div class="kpi-label">Leads activos</div><div class="kpi-val">${teamLeads.length}</div><div class="kpi-sub neutral">este mes</div></div>
+    <div class="kpi"><div class="kpi-label">Cerrados</div><div class="kpi-val">${cerrados}</div><div class="kpi-sub up">este mes</div></div>
+  </div>
+ 
+  <div class="cards-row">
+    <div class="card">
+      <div class="card-title">Funnel del equipo</div>
+      ${funnelHTML(teamLeads)}
+    </div>
+    <div class="card">
+      <div class="card-title">Fuente de leads</div>
+      ${sourceHTML(teamLeads)}
+    </div>
+  </div>
+ 
+  <div class="card-title" style="margin-bottom:10px;">Mis hunters</div>
+  <div class="hunters-grid" style="margin-bottom:18px;">
+    ${t.hunters.map(hid=>hunterCardHTML(HUNTERS[hid],true)).join('')}
+  </div>
+ 
+  <div class="tbl-header">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:13px;font-weight:700;">Todos los leads del equipo</span>
+    </div>
+    ${filterBarHTML(teamLeads,'team-'+team)}
+  </div>
+  <div class="tbl-wrap">${leadsTableHTML(teamLeads,true,'team-'+team)}</div>`;
+  document.getElementById('content').innerHTML=html;
+}
+ 
+/* HUNTER */
+function renderHunter(hid){
+  const h=HUNTERS[hid];
+  if(!h){ document.getElementById('content').innerHTML=`<div style="padding:40px;text-align:center;color:#888;">Hunter no encontrado: ${hid}</div>`; return; }
+  const leads=leadsForHunter(hid);
+  const pct=h.meta?Math.round((h.real||0)/h.meta*100):0;
+  const canEdit=curUser.role!=='director'||true; // director y heads siempre pueden editar; hunter solo el suyo
+  const isOwn=curUser.hunter===hid;
+  const roleCanEdit=(curUser.role==='director')||(curUser.role==='analista')||(curUser.role==='head'&&(HUNTERS[hid]?.team===curUser.equipo))||(curUser.role==='hunter'&&isOwn);
+ 
+  let html=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+    <div style="width:48px;height:48px;border-radius:50%;background:${h.color}20;border:2px solid ${h.color};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:${h.color};">${h.initials}</div>
+    <div>
+      <div style="font-size:16px;font-weight:700;color:#1a1f2e;">${h.name}</div>
+      <div style="font-size:12px;color:#888;">Hunter · Equipo ${h.team}</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;">
+      <div style="font-size:11px;color:#888;margin-bottom:2px;">Avance meta</div>
+      <div style="font-size:22px;font-weight:700;color:${pct>=90?'#1D9E75':pct>=70?'#BA7517':'#E24B4A'};">${pct}%</div>
+    </div>
+  </div>
+ 
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Pipeline real</div><div class="kpi-val">S/${h.real.toLocaleString()}</div><div class="kpi-sub ${pct>=90?'up':pct>=70?'neutral':'down'}">${pct}% de meta</div></div>
+    <div class="kpi"><div class="kpi-label">Meta</div><div class="kpi-val">S/${h.meta.toLocaleString()}</div><div class="kpi-sub neutral">Mayo 2026</div></div>
+    <div class="kpi"><div class="kpi-label">Leads</div><div class="kpi-val">${leads.length}</div><div class="kpi-sub neutral">activos</div></div>
+    <div class="kpi"><div class="kpi-label">Cerrados</div><div class="kpi-val">${leads.filter(l=>l.status==='cerrado').length}</div><div class="kpi-sub up">este mes</div></div>
+    <div class="kpi"><div class="kpi-label">En propuesta</div><div class="kpi-val">${leads.filter(l=>l.status==='propuesta').length}</div><div class="kpi-sub neutral">leads</div></div>
+  </div>
+ 
+  <div class="cards-row" style="margin-bottom:18px;">
+    <div class="card"><div class="card-title">Mi funnel</div>${funnelHTML(leads)}</div>
+    <div class="card"><div class="card-title">Fuente</div>${sourceHTML(leads)}</div>
+  </div>
+ 
+  <div class="tbl-header">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:13px;font-weight:700;">Mis leads</span>
+    </div>
+    ${filterBarHTML(leads,'hunter-'+hid,roleCanEdit)}
+  </div>
+  <div class="tbl-wrap">${leadsTableHTML(leads,roleCanEdit,'hunter-'+hid)}</div>`;
+  document.getElementById('content').innerHTML=html;
+}
+ 
+/* ─── HELPERS ─── */
+function funnelHTML(leads){
+  const stages=[
+    {k:'prospecto', l:'Prospecto',c:'#534AB7'},
+    {k:'contactado',l:'Contactado',c:'#7F77DD'},
+    {k:'reunión',   l:'Reunión',   c:'#378ADD'},
+    {k:'propuesta', l:'Propuesta', c:'#1D9E75'},
+    {k:'cerrado',   l:'Cerrado',   c:'#639922'},
+  ];
+  const max=leads.length||1;
+  return stages.map(s=>{
+    const n=leads.filter(l=>l.status===s.k).length;
+    const w=Math.max(Math.round(n/max*100),n>0?8:0);
+    return `<div class="funnel-row">
+      <span class="lbl">${s.l}</span>
+      <div class="funnel-track"><div class="funnel-fill" style="width:${w}%;background:${s.c};"></div></div>
+      <span class="pct" style="color:${s.c};">${n}</span>
+    </div>`;
+  }).join('');
+}
+ 
+function sourceHTML(leads){
+  const sources={};
+  leads.forEach(l=>{sources[l.source]=(sources[l.source]||0)+1;});
+  const total=leads.length||1;
+  const colors={'Google Ads':'#378ADD','Referido':'#EF9F27','Directo':'#E24B4A','LinkedIn':'#534AB7','Evento':'#1D9E75'};
+  return Object.entries(sources).sort((a,b)=>b[1]-a[1]).map(([s,n])=>`
+    <div class="mini-bar-row">
+      <span class="lbl">${s}</span>
+      <div class="mini-track"><div class="mini-fill" style="width:${Math.round(n/total*100)}%;background:${colors[s]||'#888'};"></div></div>
+      <span class="pct" style="color:${colors[s]||'#888'};">${Math.round(n/total*100)}%</span>
+    </div>`).join('')||'<p style="font-size:12px;color:#aaa;">Sin datos</p>';
+}
+ 
+function leadsForHunter(username){
+  return (LEADS||[]).filter(l => l.hunter === username);
+}
+ 
+function leadsForTeam(team){
+  const hunters = team==='A' ? HUNTERS_A.map(h=>h.username) : HUNTERS_B.map(h=>h.username);
+  return (LEADS||[]).filter(l => hunters.includes(l.hunter));
+}
+ 
+function teamsCompareHTML(){
+  return ['A','B'].map(k=>{
+    const t=TEAMS[k];
+    const hunters=k==='A'?HUNTERS_A:HUNTERS_B;
+    const real=leadsForTeam(k).reduce((s,l)=>s+l.value,0);
+    const meta=hunters.reduce((s,h)=>s+h.meta,0)||1;
+    const pct=Math.round(real/meta*100);
+    return `<div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <span style="font-size:12px;font-weight:600;color:#333;">${t.name} — Head: ${t.head}</span>
+        <span style="font-size:11px;font-weight:700;color:${pct>=90?'#1D9E75':pct>=70?'#BA7517':'#E24B4A'};">${pct}%</span>
+      </div>
+      <div style="height:10px;background:#f0f2f5;border-radius:5px;overflow:hidden;">
+        <div style="width:${Math.min(pct,100)}%;height:100%;background:${t.headColor};border-radius:5px;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#aaa;margin-top:3px;">
+        <span>S/${real.toLocaleString()} en leads</span><span>Meta: S/${meta.toLocaleString()}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+ 
+function hunterCardHTML(h,showBtn=false){
+  const leads=leadsForHunter(h.username);
+  const pct=h.meta?Math.round(h.real/h.meta*100):0;
+  const stagesCount={prospecto:0,contactado:0,'reunión':0,propuesta:0,cerrado:0};
+  leads.forEach(l=>{if(stagesCount[l.status]!==undefined)stagesCount[l.status]++;});
+  const tabId=h.username;
+  return `<div class="hunter-card">
+    <div class="hunter-header">
+      <div class="hunter-avatar" style="background:${h.color}18;color:${h.color};">${h.initials}</div>
+      <div>
+        <div class="hunter-name">${h.name}</div>
+        <div class="hunter-role">Equipo ${h.team}</div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
+      <span style="color:#888;">Avance</span>
+      <span style="font-weight:700;color:${pct>=90?'#1D9E75':pct>=70?'#BA7517':'#E24B4A'};">${pct}%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%;background:${h.color};"></div></div>
+    <div class="progress-labels"><span>S/${h.real.toLocaleString()}</span><span>S/${h.meta.toLocaleString()}</span></div>
+    <div class="hunter-stats">
+      <div class="hstat"><div class="hstat-val">${leads.length}</div><div class="hstat-lbl">Leads</div></div>
+      <div class="hstat"><div class="hstat-val">${stagesCount.propuesta}</div><div class="hstat-lbl">Propuesta</div></div>
+      <div class="hstat"><div class="hstat-val">${stagesCount.cerrado}</div><div class="hstat-lbl">Cerrados</div></div>
+    </div>
+    ${showBtn&&curUser.role!=='hunter'?`<button style="width:100%;margin-top:10px;font-size:11px;padding:5px;border-radius:7px;border:1px solid #dde1e7;background:#fff;cursor:pointer;color:#534AB7;font-weight:600;" onclick="switchTab('${tabId}')">Ver detalle <i class="ti ti-arrow-right" style="font-size:11px;"></i></button>`:''}
+  </div>`;
+}
+ 
+function filterBarHTML(leads, key, showNew=true){
+  return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <div class="filter-tabs">
+      <button class="ftab active" onclick="setFilter('all','${key}')">Todos <span style="background:rgba(255,255,255,.3);padding:0 5px;border-radius:8px;font-size:10px;">${leads.length}</span></button>
+      ${['prospecto','contactado','reunión','propuesta','cerrado'].map(s=>`<button class="ftab" onclick="setFilter('${s}','${key}')">${SC[s].l}</button>`).join('')}
+    </div>
+    <input class="search-box" placeholder="Buscar..." oninput="setSearch(this.value,'${key}')">
+    ${showNew!==false?`<button class="btn-new" onclick="openModal(null,'${key}')"><i class="ti ti-plus"></i> Nuevo lead</button>`:''}
+  </div>`;
+}
+ 
+function leadsTableHTML(leads, canEdit, key){
+  const filtered=leads.filter(l=>{
+    const fs=window['filter_'+key]||'all';
+    const ss=window['search_'+key]||'';
+    if(fs!=='all'&&l.status!==fs) return false;
+    if(ss&&!l.name.toLowerCase().includes(ss.toLowerCase())) return false;
+    return true;
+  });
+  const ro=canEdit?'':'readonly';
+  if(!filtered.length) return `<table><tbody><tr><td colspan="12" style="text-align:center;padding:24px;color:#aaa;font-size:13px;">Sin leads para mostrar</td></tr></tbody></table>`;
+  return `<table>
+    <colgroup>
+      <col style="width:22px"><col style="width:145px"><col style="width:86px"><col style="width:86px">
+      <col style="width:105px"><col style="width:100px"><col style="width:60px"><col style="width:88px">
+      <col style="width:52px"><col style="width:78px"><col style="width:150px"><col style="width:60px">
+    </colgroup>
+    <thead><tr>
+      <th></th><th>Nombre</th><th>F. creación</th><th>Cierre est.</th>
+      <th>Responsable</th><th>Estado</th><th>Conflict.</th><th>Fuente</th>
+      <th>Prob.</th><th>Valor</th><th>Comentario</th><th></th>
+    </tr></thead>
+    <tbody>${filtered.map(l=>{
+      const dc=l.prob>=75?'#1D9E75':l.prob>=40?'#BA7517':'#E24B4A';
+      const sc2=SC[l.status]||{bg:'#eee',c:'#333',l:l.status};
+      const statusCell=canEdit
+        ?`<select style="font-size:11px;border:1px solid #dde1e7;padding:2px 6px;border-radius:6px;background:${sc2.bg};color:${sc2.c};font-weight:600;cursor:pointer;" onchange="updateLead(${l.id},'status',this.value,'${key}')">${Object.keys(SC).map(s=>`<option value="${s}"${s===l.status?' selected':''}>${SC[s].l}</option>`).join('')}</select>`
+        :`<span class="sbadge" style="background:${sc2.bg};color:${sc2.c};">${sc2.l}</span>`;
+      return `<tr>
+        <td><span class="dot" style="background:${dc};"></span></td>
+        <td style="font-weight:600;"><input class="ecell" value="${l.name}" ${ro} onchange="updateLead(${l.id},'name',this.value,'${key}')"></td>
+        <td style="color:#aaa;font-size:11px;">${l.created}</td>
+        <td><input class="ecell" value="${l.close}" ${ro} onchange="updateLead(${l.id},'close',this.value,'${key}')"></td>
+        <td style="font-size:11px;color:#666;">${l.owner}</td>
+        <td>${statusCell}</td>
+        <td style="text-align:center;">${l.conflict?'<i class="ti ti-alert-triangle" style="color:#BA7517;font-size:14px;"></i>':'<i class="ti ti-circle-check" style="color:#1D9E75;font-size:14px;"></i>'}</td>
+        <td style="font-size:11px;color:#666;">${l.source}</td>
+        <td style="font-weight:700;">${l.prob}%</td>
+        <td style="font-weight:700;">S/${l.value.toLocaleString()}</td>
+        <td><input class="ecell" value="${l.note}" ${ro} placeholder="—" onchange="updateLead(${l.id},'note',this.value,'${key}')" style="color:#888;font-size:11px;"></td>
+        <td>${canEdit?`<span class="alink" onclick="openModal(${l.id},'${key}')">Editar</span>`:'<span style="font-size:11px;color:#ccc;">Ver</span>'}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+ 
+/* ─── ACTIONS ─── */
+function setFilter(f,key){
+  window['filter_'+key]=f;
+  document.querySelectorAll('.ftab').forEach(b=>{
+    const match=(f==='all'&&b.textContent.trim().startsWith('Todos'))||(b.textContent.trim()===SC[f]?.l);
+    b.classList.toggle('active',match);
+  });
+  renderTab(curTab);
+}
+function setSearch(v,key){window['search_'+key]=v; renderTab(curTab);}
+ 
+async function updateLead(id,field,val,key){
+  const fieldMap={name:'nombre',status:'estado',conflict:'conflicto',source:'fuente',prob:'probabilidad',value:'valor',note:'comentario',close:'fecha_cierre'};
+  const dbField=fieldMap[field]||field;
+  await sbPatch('leads',`id=eq.${id}`,{[dbField]:val,updated_at:new Date().toISOString()});
+  const l=LEADS.find(x=>x.id===id);
+  if(l){l[field]=val;}
+  if(field==='status') renderTab(curTab);
+}
+ 
+let modalKey='';
+async function openModal(id,key){
+  modalKey=key||'';editingId=id;
+  document.getElementById('modal-title').textContent=id?'Editar lead':'Nuevo lead';
+  const sel=document.getElementById('m-owner');
+  sel.innerHTML='';sel.disabled=false;
+  if(curUser.rol==='hunter'){
+    const o=document.createElement('option');o.value=curUser.nombre;o.textContent=curUser.nombre;sel.appendChild(o);sel.disabled=true;
+  } else {
+    let params='rol=eq.hunter&activo=eq.true&select=nombre,equipo&order=nombre';
+    if(curUser.rol==='head') params+=`&equipo=eq.${curUser.equipo}`;
+    const data=await sbGet('usuarios',params);
+    (data||[]).forEach(u=>{const o=document.createElement('option');o.value=u.nombre;o.textContent=u.nombre;sel.appendChild(o);});
+  }
+  if(id){
+    const l=LEADS.find(x=>x.id===id);
+    if(l){
+      document.getElementById('m-name').value=l.name;
+      sel.value=l.owner;
+      document.getElementById('m-status').value=l.status;
+      document.getElementById('m-source').value=l.source;
+      document.getElementById('m-value').value=l.value;
+      document.getElementById('m-prob').value=l.prob;
+      document.getElementById('m-note').value=l.note;
+      document.getElementById('m-close').value=l.close&&l.close!=='—'?l.close:'';
+    }
+  } else {
+    ['m-name','m-value','m-note'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('m-prob').value='10';
+    document.getElementById('m-close').value='';
+    document.getElementById('m-status').value='prospecto';
+  }
+  document.getElementById('modal-bg').classList.add('open');
+}
+function closeModal(){document.getElementById('modal-bg').classList.remove('open');}
+ 
+async function saveLead(){
+  let hunter_id=curUser.id, equipo=curUser.equipo;
+  if(curUser.rol!=='hunter'){
+    const ownerName=document.getElementById('m-owner').value;
+    const data=await sbGet('usuarios',`nombre=eq.${encodeURIComponent(ownerName)}&select=id,equipo&limit=1`);
+    if(data&&data[0]){hunter_id=data[0].id;equipo=data[0].equipo;}
+  }
+  const cv=document.getElementById('m-close').value;
+  const payload={
+    nombre:document.getElementById('m-name').value||'Nuevo lead',
+    hunter_id,equipo,
+    estado:document.getElementById('m-status').value,
+    fuente:document.getElementById('m-source').value,
+    valor:Number(document.getElementById('m-value').value)||0,
+    probabilidad:Number(document.getElementById('m-prob').value)||10,
+    comentario:document.getElementById('m-note').value,
+    fecha_cierre:cv||null,
+    updated_at:new Date().toISOString(),
+  };
+  if(editingId){await sbPatch('leads',`id=eq.${editingId}`,payload);}
+  else{await sbPost('leads',payload);}
+  closeModal();
+  LEADS=await fetchLeads();
+  renderTab(curTab);
+}
+function handleImport(i){if(i.files[0])alert('Archivo listo para procesar: '+i.files[0].name);i.value='';}
+ 
+const HUNTERS_HTML=`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Hunters</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"><\/script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg0:#0B0F1A;--bg1:#111827;--bg2:#1A2235;--bg3:#1E2D42;--accent:#00E5A0;--a2:#3B82F6;--a3:#F59E0B;--a4:#EF4444;--a5:#A855F7;--t1:#F0F6FF;--t2:#8BA0BC;--t3:#506080;--br:16px;--f:'Outfit',sans-serif;--m:'Space Mono',monospace}
+body{font-family:var(--f);background:var(--bg0);color:var(--t1);min-height:100vh;overflow-x:hidden}
+.shell{display:grid;grid-template-columns:210px 1fr;min-height:100vh}
+.sb{background:var(--bg1);border-right:1px solid rgba(255,255,255,.05);display:flex;flex-direction:column}
+.sb-brand{padding:22px 18px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.sb-icon{width:34px;height:34px;background:linear-gradient(135deg,#00E5A0,#3B82F6);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-icon svg{width:17px;height:17px;fill:none;stroke:#0B0F1A;stroke-width:2.5}
+.sb-t{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--t2)}
+.sb-s{font-size:10px;color:var(--t3)}
+.sb-nav{padding:14px 10px;flex:1}
+.sb-sec{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);padding:0 8px;margin:14px 0 7px}
+.sb-it{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:9px;cursor:pointer;font-size:12px;color:var(--t2);transition:all .15s;position:relative;user-select:none;border:none;background:transparent;width:100%;text-align:left}
+.sb-it:hover{background:rgba(255,255,255,.05);color:var(--t1)}
+.sb-it.on{background:rgba(0,229,160,.1);color:var(--accent)}
+.sb-it.on::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:18px;background:var(--accent);border-radius:0 2px 2px 0}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.6;flex-shrink:0}
+.sb-badge{margin-left:auto;background:rgba(0,229,160,.15);color:var(--accent);font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px}
+.sb-bot{padding:12px;border-top:1px solid rgba(255,255,255,.05)}
+.sb-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:8px;padding:0 4px}
+.sb-hrow{display:flex;align-items:center;gap:8px;padding:6px 6px;border-radius:8px;cursor:default}
+.sb-av{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.sb-hn{font-size:11px;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-hp{font-size:10px;font-weight:700;font-family:var(--m);flex-shrink:0}
+.main{display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.topbar{padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;gap:12px}
+.tb-left h1{font-size:19px;font-weight:700;letter-spacing:-.02em}
+.tb-sub{font-size:11px;color:var(--t3);margin-top:2px}
+.tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.tab-row{display:flex;gap:2px;background:var(--bg2);border-radius:9px;padding:3px;flex-wrap:wrap}
+.tab-btn{padding:6px 11px;font-size:11px;font-weight:500;border-radius:7px;cursor:pointer;color:var(--t3);background:transparent;border:none;font-family:var(--f);transition:all .15s;white-space:nowrap}
+.tab-btn.on{background:var(--bg3);color:var(--t1)}
+.chip-live{background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.25);color:var(--accent);font-size:10px;font-weight:600;padding:5px 12px;border-radius:20px;display:flex;align-items:center;gap:4px}
+.dot-live{width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.content{padding:18px 24px;flex:1}
+.pg{display:none}.pg.on{display:block}
+.krow{display:grid;gap:12px;margin-bottom:14px}
+.k4{grid-template-columns:repeat(4,1fr)}.k5{grid-template-columns:repeat(5,1fr)}.k3{grid-template-columns:repeat(3,1fr)}
+.kpi{background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:var(--br);padding:16px 18px;position:relative;overflow:hidden}
+.kbar{position:absolute;top:0;left:0;width:100%;height:3px}
+.klbl{font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:8px}
+.kval{font-size:22px;font-weight:700;font-family:var(--m);line-height:1}
+.ksub{font-size:10px;color:var(--t3);margin-top:5px;display:flex;align-items:center;gap:4px}
+.bge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px}
+.bu{background:rgba(0,229,160,.15);color:var(--accent)}.bn{background:rgba(59,130,246,.15);color:var(--a2)}.bd{background:rgba(239,68,68,.15);color:var(--a4)}.bw{background:rgba(245,158,11,.15);color:var(--a3)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.panel{background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:var(--br);padding:18px}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:8px}
+.pt{font-size:13px;font-weight:600;color:var(--t1)}
+.ps{font-size:10px;color:var(--t3);margin-top:2px}
+.rl{display:flex;flex-direction:column;gap:10px}
+.rc{background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:16px;position:relative;overflow:hidden}
+.rc.t1{border-color:rgba(0,229,160,.3)}.rc.t2{border-color:rgba(59,130,246,.2)}.rc.t3{border-color:rgba(245,158,11,.2)}.rc.nv{border-color:rgba(239,68,68,.15)}
+.rnum{font-size:14px;font-weight:700;color:var(--t3);font-family:var(--m);min-width:30px}
+.rav{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.rinfo{min-width:155px}
+.rname{font-size:13px;font-weight:600;color:var(--t1)}
+.rten{font-size:10px;color:var(--t3);margin-top:2px}
+.rsco{font-size:22px;font-weight:700;font-family:var(--m);margin-top:4px}
+.rslbl{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
+.rmet{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;flex:1}
+.rm{display:flex;flex-direction:column;gap:3px}
+.rmlbl{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
+.rmpct{font-size:16px;font-weight:700;font-family:var(--m)}
+.rmval{font-size:9px;color:var(--t3)}
+.rmbar{height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;margin-top:3px}
+.rmfill{height:100%;border-radius:2px}
+.top-badge{position:absolute;top:12px;right:12px;background:var(--a3);color:#0B0F1A;font-size:9px;font-weight:700;padding:3px 8px;border-radius:4px}
+.nv-badge{background:rgba(0,229,160,.2);color:var(--accent);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;display:inline-block;margin-top:3px}
+.abar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.abar-name{font-size:11px;color:var(--t1);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.abar-bg{flex:1;height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.abar-fill{height:100%;border-radius:3px}
+.abar-val{font-size:10px;width:80px;text-align:right;flex-shrink:0}
+.fsel{background:var(--bg2);color:var(--t1);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:7px 10px;font-size:11px;font-family:var(--f);cursor:pointer}
+.finput{background:var(--bg2);color:var(--t1);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:7px 10px;font-size:11px;font-family:var(--f);min-width:190px}
+.frow{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+@media(max-width:900px){.shell{grid-template-columns:1fr}.sb{display:none}.rmet{grid-template-columns:1fr 1fr}.k4,.k5,.k3{grid-template-columns:1fr 1fr}.g2,.g3{grid-template-columns:1fr}}
+<\/style>
+<\/head>
+<body>
+<div class="shell">
+<div class="sb">
+  <div class="sb-brand">
+    <div class="sb-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/><\/svg><\/div>
+    <div><div class="sb-t">Hunters Peru<\/div><div class="sb-s">Dashboard comercial<\/div><\/div>
+  <\/div>
+  <div class="sb-nav">
+    <div class="sb-sec">Principal<\/div>
+    <button class="sb-it on" onclick="go('p1',this)"><div class="sb-dot"><\/div>Resumen general<span class="sb-badge">Vivo<\/span><\/button>
+    <button class="sb-it" onclick="go('p2',this)"><div class="sb-dot"><\/div>Ranking hunters<\/button>
+    <button class="sb-it" onclick="go('p3',this)"><div class="sb-dot"><\/div>Graficos por mes<\/button>
+    <button class="sb-it" onclick="go('p4',this)"><div class="sb-dot"><\/div>Curva Mzo+Abr<\/button>
+    <div class="sb-sec">Abril 2026<\/div>
+    <button class="sb-it" onclick="go('p5',this)"><div class="sb-dot"><\/div>Arisale abril<\/button>
+    <button class="sb-it" onclick="go('p6',this)"><div class="sb-dot"><\/div>QR Parlante abril<\/button>
+    <div class="sb-sec">Detalle<\/div>
+    <button class="sb-it" onclick="go('p7',this)"><div class="sb-dot"><\/div>Estado cuentas<\/button>
+    <button class="sb-it" onclick="go('p8',this)"><div class="sb-dot"><\/div>RUC Abril<\/button>
+  <\/div>
+  <div class="sb-bot">
+    <div class="sb-lbl">Top hunters — Abril<\/div>
+    <div id="sbH"><\/div>
+  <\/div>
+<\/div>
+<div class="main">
+  <div class="topbar">
+    <div class="tb-left"><h1 id="pgT">Resumen general<\/h1><div class="tb-sub" id="pgS">Corte al 30 de Abril 2026 · Enero — Abril<\/div><\/div>
+    <div class="tb-right">
+      <div class="tab-row">
+        <button class="tab-btn on" onclick="go('p1',this)">Resumen<\/button>
+        <button class="tab-btn" onclick="go('p2',this)">Ranking<\/button>
+        <button class="tab-btn" onclick="go('p3',this)">Lineas<\/button>
+        <button class="tab-btn" onclick="go('p4',this)">Curva<\/button>
+        <button class="tab-btn" onclick="go('p5',this)">Arisale Abr<\/button>
+        <button class="tab-btn" onclick="go('p6',this)">QR Abr<\/button>
+        <button class="tab-btn" onclick="go('p7',this)">Cuentas<\/button>
+        <button class="tab-btn" onclick="go('p8',this)">RUC Abr<\/button>
+      <\/div>
+      <div class="chip-live"><div class="dot-live"><\/div>ABR-30<\/div>
+    <\/div>
+  <\/div>
+  <div class="content">
+    <div id="p1" class="pg on">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);background:rgba(255,255,255,.04);padding:4px 10px;border-radius:6px;margin-bottom:10px;display:inline-block">Marzo 2026 — Cierre dia 31<\/div>
+      <div class="krow k5">
+        <div class="kpi"><div class="kbar" style="background:linear-gradient(90deg,#00E5A0,#3B82F6)"><\/div><div class="klbl">Real marzo<\/div><div class="kval" style="color:#00E5A0">S/.2.68M<\/div><div class="ksub"><span class="bge bu">Cerrado<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#3B82F6"><\/div><div class="klbl">RUC marzo<\/div><div class="kval" style="color:#3B82F6">42<\/div><div class="ksub" style="color:#506080">Unicos al dia 31<\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#A855F7"><\/div><div class="klbl">QR activos marzo<\/div><div class="kval" style="color:#A855F7">41<\/div><div class="ksub"><span class="bge bu">&gt;S/.500<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#00E5A0"><\/div><div class="klbl">Arisale marzo<\/div><div class="kval" style="color:#00E5A0">23 lic<\/div><div class="ksub"><span class="bge bu">S/.1,687<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:linear-gradient(90deg,#3B82F6,#A855F7)"><\/div><div class="klbl">Arisale total marzo<\/div><div class="kval" style="color:#00E5A0">S/.1,687<\/div><div class="ksub"><span class="bge bu">23 lic · Cerrado<\/span><\/div><\/div>
+      <\/div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);background:rgba(255,255,255,.04);padding:4px 10px;border-radius:6px;margin-bottom:10px;display:inline-block">Abril 2026 — Corte dia 30<\/div>
+      <div class="krow k5" style="margin-bottom:16px">
+        <div class="kpi"><div class="kbar" style="background:linear-gradient(90deg,#F59E0B,#EF4444)"><\/div><div class="klbl">Real abr-30<\/div><div class="kval" style="color:#00E5A0">S/.2,823,950<\/div><div class="ksub" style="flex-direction:column;align-items:flex-start;gap:3px"><span class="bge bw">Cuota: S/.2.7M<\/span><div style="width:100%;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:100%;height:100%;background:#00E5A0;border-radius:2px"><\/div><\/div><span style="font-size:10px;color:#00E5A0;font-weight:600">104.6% ✅ Meta superada<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#3B82F6"><\/div><div class="klbl">RUC nuevos abril<\/div><div class="kval" style="color:#3B82F6">42<\/div><div class="ksub" style="flex-direction:column;align-items:flex-start;gap:3px"><span class="bge bw">Cuota: 36 RUC<\/span><div style="width:100%;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:100%;height:100%;background:#3B82F6;border-radius:2px"><\/div><\/div><span style="font-size:10px;color:#3B82F6;font-weight:600">116.7% · +6 sobre cuota ✅<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#F59E0B"><\/div><div class="klbl">QR activos abr<\/div><div class="kval" style="color:#00E5A0">37<\/div><div class="ksub" style="flex-direction:column;align-items:flex-start;gap:3px"><span class="bge bw">Cuota: 36 QR<\/span><div style="width:100%;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:100%;height:100%;background:#00E5A0;border-radius:2px"><\/div><\/div><span style="font-size:10px;color:#00E5A0;font-weight:600">102.8% ✅ · Meta superada<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#A855F7"><\/div><div class="klbl">Arisale solo abril<\/div><div class="kval" style="color:#A855F7">28 lic<\/div><div class="ksub"><span class="bge bu">Solo cerradas<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:linear-gradient(90deg,#A855F7,#3B82F6)"><\/div><div class="klbl">Arisale total abril<\/div><div class="kval" style="color:#A855F7">S/.1,955<\/div><div class="ksub" style="flex-direction:column;align-items:flex-start;gap:3px"><span class="bge bw">Cuota: S/.2,646<\/span><div style="width:100%;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:51%;height:100%;background:#A855F7;border-radius:2px"><\/div><\/div><span style="font-size:10px;color:#A855F7;font-weight:600">51.0% · Faltan S/.1,297<\/span><\/div><\/div>
+      <\/div>
+      <div class="g2">
+        <div class="panel"><div class="ph"><div><div class="pt">Curva general — Enero a Abril 2026<\/div><div class="ps">11 cortes · real vs proyectado · al dia 30<\/div><\/div><\/div><div style="position:relative;height:215px"><canvas id="cAll"><\/canvas><\/div><\/div>
+        <div class="panel"><div class="ph"><div><div class="pt">Top 5 hunters — Abril (al dia 30)<\/div><div class="ps">Por proyeccion y score de abril<\/div><\/div><\/div><div id="top5"><\/div><\/div>
+      <\/div>
+      <div class="g3">
+        <div class="panel"><div class="ph"><div class="pt">QR — Estado Abril<\/div><div style="font-size:11px;font-weight:700;font-family:'Space Mono',monospace;color:#00E5A0">37 Activos = 54 Total · <span style="color:#F59E0B">17 Pendientes<\/span><\/div><\/div><div style="position:relative;height:160px"><canvas id="cQRd"><\/canvas><\/div><\/div>
+        <div class="panel"><div class="ph"><div class="pt">Arisale — Solo Abril<\/div><\/div><div style="position:relative;height:160px"><canvas id="cAB"><\/canvas><\/div><\/div>
+        <div class="panel"><div class="ph"><div class="pt">Score % meta — Abril<\/div><\/div><div style="position:relative;height:160px"><canvas id="cSco"><\/canvas><\/div><\/div>
+      <\/div>
+    <\/div>
+    <div id="p2" class="pg">
+      <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:14px">Ranking completo — 12 hunters<\/div>
+      <div class="rl" id="rkList"><\/div>
+    <\/div>
+    <div id="p3" class="pg">
+      <div class="g2" style="margin-bottom:14px">
+        <div class="panel"><div class="ph"><div class="pt">Enero 2026 <span style="font-size:10px;color:var(--t3)">Cerrado<\/span><\/div><\/div><div style="position:relative;height:200px"><canvas id="cEne"><\/canvas><\/div><div style="margin-top:10px;font-size:11px;color:var(--t3)">Total real: <span style="color:#00E5A0;font-family:var(--m);font-weight:700">S/.424,922<\/span> &nbsp; RUC: <span style="color:var(--t2);font-family:var(--m);font-weight:700">80<\/span><\/div><\/div>
+        <div class="panel"><div class="ph"><div class="pt">Febrero 2026 <span style="font-size:10px;color:var(--t3)">Cerrado<\/span><\/div><\/div><div style="position:relative;height:200px"><canvas id="cFeb"><\/canvas><\/div><div style="margin-top:10px;font-size:11px;color:var(--t3)">Total real: <span style="color:#3B82F6;font-family:var(--m);font-weight:700">S/.570,244<\/span> &nbsp; RUC: <span style="color:var(--t2);font-family:var(--m);font-weight:700">95<\/span><\/div><\/div>
+      <\/div>
+      <div class="g2">
+        <div class="panel"><div class="ph"><div class="pt">Marzo 2026 — 6 cortes<\/div><\/div><div style="position:relative;height:200px"><canvas id="cMar"><\/canvas><\/div><div style="margin-top:10px;font-size:11px;color:var(--t3)">Real dia 31: <span style="color:#00E5A0;font-family:var(--m);font-weight:700">S/.2,682,499<\/span> &nbsp; RUC: 95<\/div><\/div>
+        <div class="panel"><div class="ph"><div class="pt">Abril 2026 — 7 cortes<\/div><\/div><div style="position:relative;height:200px"><canvas id="cAbr"><\/canvas><\/div><div style="margin-top:10px;font-size:11px;color:var(--t3)">Real dia 30: <span style="color:#00E5A0;font-family:var(--m);font-weight:700">S/.2,823,950<\/span><\/div><\/div>
+      <\/div>
+    <\/div>
+    <div id="p4" class="pg">
+      <div class="panel" style="margin-bottom:14px">
+        <div class="ph"><div><div class="pt">Curva Abril — 7 cortes<\/div><div class="ps">Abr-07 · Abr-13 · Abr-16 · Abr-20 · Abr-21 · Abr-28 · Abr-30<\/div><\/div><\/div>
+        <div style="position:relative;height:280px"><canvas id="cCurva"><\/canvas><\/div>
+      <\/div>
+      <div class="panel">
+        <div class="ph"><div class="pt">Evolución por hunter — Abril 2026<\/div>
+          <select id="hSel" onchange="updH()" class="fsel"><option value="ALL">Todos (global)<\/option><\/select>
+        <\/div>
+        <div style="position:relative;height:230px"><canvas id="cHL"><\/canvas><\/div>
+      <\/div>
+    <\/div>
+    <div id="p5" class="pg">
+      <div class="krow k3" style="margin-bottom:14px">
+        <div class="kpi"><div class="kbar" style="background:#A855F7"><\/div><div class="klbl">Licencias — Solo Abril<\/div><div class="kval" style="color:#A855F7">28<\/div><div class="ksub"><span class="bge bu">8 hunters · todo cerrado<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#A855F7"><\/div><div class="klbl">Valor Arisale — Solo Abril<\/div><div class="kval" style="color:#A855F7">S/.1,955<\/div><div class="ksub"><span class="bge bu">Solo cerradas<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:linear-gradient(90deg,#A855F7,#3B82F6)"><\/div><div class="klbl">Arisale acumulado — Abril<\/div><div class="kval" style="color:#A855F7">S/.1,955<\/div><div class="ksub"><span class="bge bu">28 lic · todo cerrado ✅<\/span><\/div><\/div>
+      <\/div>
+      <div class="g2">
+        <div class="panel"><div class="ph"><div><div class="pt">Tabla Arisale — Solo Abril 2026<\/div><\/div><\/div><div id="arisTabla"><\/div><div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)"><div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);margin-bottom:10px">Progreso por hunter<\/div><div id="arisProg"><\/div><\/div><\/div>
+        <div class="panel"><div class="ph"><div><div class="pt">Distribucion Arisale — Solo Abril<\/div><div class="ps">S/.1,955 · 28 licencias · 8 hunters<\/div><\/div><\/div><div style="position:relative;height:200px"><canvas id="cADon"><\/canvas><\/div><\/div>
+      <\/div>
+    <\/div>
+    <div id="p6" class="pg">
+      <div class="krow k4" style="margin-bottom:14px">
+        <div class="kpi"><div class="kbar" style="background:#00E5A0"><\/div><div class="klbl">QR Activos — Abril<\/div><div class="kval" style="color:#00E5A0">37<\/div><div class="ksub"><span class="bge bu">&gt;S/.500<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#F59E0B"><\/div><div class="klbl">QR Pendientes — Abril<\/div><div class="kval" style="color:#F59E0B">17<\/div><div class="ksub"><span class="bge bw">Por activar<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#EF4444"><\/div><div class="klbl">No llegan a cuota<\/div><div class="kval" style="color:#EF4444">17<\/div><div class="ksub"><span class="bge" style="background:rgba(239,68,68,.12);color:#EF4444">Cuota &gt; S/.500<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#3B82F6"><\/div><div class="klbl">Monto QR — Abril<\/div><div class="kval" style="color:#3B82F6">S/.180,715<\/div><div class="ksub"><span class="bge bu">&gt;S/.500<\/span><\/div><\/div>
+      <\/div>
+      <div class="g2">
+        <div class="panel"><div class="ph"><div><div class="pt">Tabla QR Abr — Solo Abril 2026<\/div><\/div><\/div><div id="qrPend"><\/div><\/div>
+        <div class="panel"><div class="ph"><div><div class="pt">Distribucion QR — Solo Abril<\/div><\/div><\/div><div style="position:relative;height:200px;margin-bottom:14px"><canvas id="cQAH"><\/canvas><\/div><div style="padding-top:14px;border-top:1px solid rgba(255,255,255,.06)"><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--t3);margin-bottom:10px">Avance vs meta por hunter<\/div><div id="qrMeta"><\/div><\/div><\/div>
+      <\/div>
+    <\/div>
+    <div id="p7" class="pg">
+      <div class="panel" style="margin-bottom:12px">
+        <div class="ph"><div><div class="pt">Evolucion de cuentas por hunter — Ene al Abr 30<\/div><\/div>
+          <select id="hSelC" class="fsel" onchange="updCC()"><option value="ALL">Todos los hunters<\/option><\/select>
+        <\/div>
+        <div style="position:relative;height:250px"><canvas id="cCuentas"><\/canvas><\/div>
+      <\/div>
+      <div class="frow">
+        <select id="f7h" class="fsel" onchange="rC()"><option value="">Todos los hunters<\/option><\/select>
+        <select id="f7m" class="fsel" onchange="rC()"><option value="">Todos los meses<\/option><option>ENERO<\/option><option>FEBRERO<\/option><option>MARZO<\/option><option>ABRIL<\/option><\/select>
+        <select id="f7t" class="fsel" onchange="rC()"><option value="">ADDS y NEWS<\/option><option>ADDS<\/option><option>NEWS<\/option><\/select>
+        <input id="f7q" class="finput" type="text" placeholder="Buscar empresa o RUC..." oninput="rC()">
+      <\/div>
+      <div class="panel"><div style="overflow-x:auto;max-height:500px;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:10px;min-width:1300px"><thead><tr id="cTH"><\/tr><\/thead><tbody id="cTB"><\/tbody><\/table><\/div><div id="cRes" style="font-size:10px;color:var(--t3);margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)"><\/div><\/div>
+    <\/div>
+    <div id="p8" class="pg">
+      <div class="krow k4" style="margin-bottom:14px">
+        <div class="kpi"><div class="kbar" style="background:#00E5A0"><\/div><div class="klbl">RUC Nuevos — Abril<\/div><div class="kval" style="color:#00E5A0">42<\/div><div class="ksub"><span class="bge bw">Cuota: 36 RUC<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#3B82F6"><\/div><div class="klbl">Llegan a S/.25K<\/div><div class="kval" style="color:#3B82F6">40<\/div><div class="ksub"><span class="bge" style="background:rgba(59,130,246,.15);color:#3B82F6">95% del total<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#EF4444"><\/div><div class="klbl">No llegan a S/.25K<\/div><div class="kval" style="color:#EF4444">2<\/div><div class="ksub"><span class="bge" style="background:rgba(239,68,68,.12);color:#EF4444">Meta &gt; S/.25,000<\/span><\/div><\/div>
+        <div class="kpi"><div class="kbar" style="background:#A855F7"><\/div><div class="klbl">Proyeccion total<\/div><div class="kval" style="color:#A855F7">S/.673K<\/div><div class="ksub"><span class="bge bu">Real: S/.673K<\/span><\/div><\/div>
+      <\/div>
+      <div class="g2">
+        <div class="panel"><div class="ph"><div><div class="pt">Tabla RUC Abr — Solo Abril 2026<\/div><\/div><\/div><div id="rucTabla" style="overflow-x:auto;max-height:520px;overflow-y:auto"><\/div><\/div>
+        <div class="panel"><div class="ph"><div><div class="pt">Distribucion RUC — Solo Abril<\/div><\/div><\/div><div style="position:relative;height:200px;margin-bottom:14px"><canvas id="cRUCd"><\/canvas><\/div><div style="padding-top:14px;border-top:1px solid rgba(255,255,255,.06)"><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--t3);margin-bottom:10px">Avance vs meta — 3 RUC ≥ S/.25K por hunter<\/div><div id="rucMeta"><\/div><\/div><\/div>
+      <\/div>
+    <\/div>
+  <\/div>
+<\/div>
+<\/div>
+<script>
+const RANK_ABR=[
+  {pos:1,n:'CRISTIAN HUAMAN',ini:'CH',col:'#00C9FF',tenure:'4 MESES',score:214.1,incr_pct:253.5,incr_val:633779,ruc_pct:133.3,ruc_n:4,qr_pct:166.7,qr_n:5,aris_pct:66.7,aris_val:120,badge:''},
+  {pos:2,n:'ROSA TORRES',ini:'RO',col:'#6BCF7F',tenure:'1 ANO 4 MESES',score:160.9,incr_pct:191.8,incr_val:537115,ruc_pct:133.3,ruc_n:4,qr_pct:133.3,qr_n:4,aris_pct:0,aris_val:0,badge:''},
+  {pos:3,n:'ANA CARRERA',ini:'AN',col:'#A855F7',tenure:'1 ANO 9 MESES',score:159.1,incr_pct:149.9,incr_val:419663,ruc_pct:266.7,ruc_n:8,qr_pct:0,qr_n:0,aris_pct:275,aris_val:660,badge:''},
+  {pos:4,n:'MELISSA VASQUEZ',ini:'ME',col:'#FF6B6B',tenure:'1 ANO 2 MESES',score:153.3,incr_pct:173.7,incr_val:486495,ruc_pct:133.3,ruc_n:4,qr_pct:133.3,qr_n:4,aris_pct:50,aris_val:120,badge:''},
+  {pos:5,n:'ANDREA SOTO',ini:'AN',col:'#FFD93D',tenure:'5 MESES',score:130.4,incr_pct:143.5,incr_val:401716,ruc_pct:66.7,ruc_n:2,qr_pct:233.3,qr_n:7,aris_pct:0,aris_val:0,badge:''},
+  {pos:6,n:'OLIVER LOPEZ',ini:'OL',col:'#4ECDC4',tenure:'2 ANOS 7 MESES',score:118.3,incr_pct:111.5,incr_val:312186,ruc_pct:166.7,ruc_n:5,qr_pct:66.7,qr_n:2,aris_pct:169.2,aris_val:406,badge:''},
+  {pos:7,n:'MELISA LLACCHUAS',ini:'ME',col:'#FF6B9D',tenure:'1 ANO',score:54.9,incr_pct:33.2,incr_val:92908,ruc_pct:200,ruc_n:6,qr_pct:66.7,qr_n:2,aris_pct:50,aris_val:120,badge:''},
+  {pos:8,n:'PATRICIA ASTORGA',ini:'PA',col:'#00E5A0',tenure:'1 ANO 3 MESES',score:43.7,incr_pct:0,incr_val:0,ruc_pct:66.7,ruc_n:2,qr_pct:200,qr_n:6,aris_pct:170.4,aris_val:409,badge:''},
+  {pos:9,n:'ANALIZ CASTILLO',ini:'AN',col:'#F59E0B',tenure:'1 ANO 2 MESES',score:41.1,incr_pct:31.4,incr_val:87889,ruc_pct:133.3,ruc_n:4,qr_pct:33.3,qr_n:1,aris_pct:25,aris_val:60,badge:''},
+  {pos:10,n:'ALICIA QUINONES',ini:'AL',col:'#FF8C42',tenure:'1 ANO 4 MESES',score:39.2,incr_pct:0,incr_val:0,ruc_pct:300,ruc_n:9,qr_pct:66.7,qr_n:2,aris_pct:25,aris_val:60,badge:''},
+  {pos:11,n:'YASMIN CHECA',ini:'YA',col:'#888780',tenure:'HUNTER NUEVO',score:13.3,incr_pct:0,incr_val:0,ruc_pct:0,ruc_n:0,qr_pct:133.3,qr_n:4,aris_pct:0,aris_val:0,badge:'HUNTER NUEVO'},
+  {pos:12,n:'JOEL BLAS',ini:'JO',col:'#3B82F6',tenure:'1 ANO 6 MESES',score:1.9,incr_pct:2.7,incr_val:7573,ruc_pct:0,ruc_n:0,qr_pct:0,qr_n:0,aris_pct:0,aris_val:0,badge:''}
+];
+const TRAJ_ABR=[
+  {fullname:'CRISTIAN HUAMAN',label:'CH',borderColor:'#00C9FF',data:[23585,43800,53908,219836,254374,543387,633779]},
+  {fullname:'ANA CARRERA',label:'AC',borderColor:'#A855F7',data:[14950,27764,34170,173500,190837,366754,419663]},
+  {fullname:'MELISSA VASQUEZ',label:'MV',borderColor:'#FF6B6B',data:[-28958,-53779,-66190,92307,131618,439957,486496]},
+  {fullname:'OLIVER LOPEZ',label:'OL',borderColor:'#4ECDC4',data:[-63045,-117083,-144103,54668,76918,243887,312186]},
+  {fullname:'ANDREA SOTO',label:'AS',borderColor:'#FFD93D',data:[-23024,-42758,-52625,70362,93319,352625,401717]},
+  {fullname:'ROSA TORRES',label:'RT',borderColor:'#6BCF7F',data:[20349,37791,46512,131004,152584,379336,537116]},
+  {fullname:'MELISA LLACCHUAS',label:'ML',borderColor:'#FF6B9D',data:[-2626,-4877,-6002,19638,28640,81236,92908]},
+  {fullname:'ANALIZ CASTILLO',label:'AZ',borderColor:'#F59E0B',data:[-14682,-27267,-33559,-5085,10405,61302,87889]},
+  {fullname:'ALICIA QUINONES',label:'AQ',borderColor:'#FF8C42',data:[-31562,-58616,-72142,-59450,-58161,-58159,-46299]},
+  {fullname:'PATRICIA ASTORGA',label:'PA',borderColor:'#00E5A0',data:[-131164,-243590,-299802,-249730,-237758,-133728,-109080]},
+  {fullname:'JOEL BLAS',label:'JB',borderColor:'#3B82F6',data:[57,106,131,704,5191,7495,7574]},
+  {fullname:'YASMIN CHECA',label:'YC',borderColor:'#888780',data:[0,0,0,0,0,0,0]},
+];
+const TRAJ2=[
+  {fullname:'ANALIZ CASTILLO',label:'AZ',borderColor:'#F59E0B',data:[280678,-101044,-30964,-101694,-74525,-33559,-5086,10405,61302,87889]},
+  {fullname:'MELISSA VASQUEZ',label:'MV',borderColor:'#FF6B6B',data:[0,48273,569436,-323446,-181878,-66190,92307,131618,439957,486496]},
+  {fullname:'ANDREA SOTO',label:'AS',borderColor:'#FFD93D',data:[0,50063,391042,-302433,-173009,-52625,70362,93319,352625,401717]},
+  {fullname:'ANA CARRERA',label:'AC',borderColor:'#A855F7',data:[9768,3277,391758,-128593,-25713,30857,173500,190837,366754,419663]},
+  {fullname:'PATRICIA ASTORGA',label:'PA',borderColor:'#00E5A0',data:[12956,193564,344072,-396816,-299800,-299802,-249730,-237758,-133728,-109080]},
+  {fullname:'OLIVER LOPEZ',label:'OL',borderColor:'#4ECDC4',data:[47640,135041,449808,-408369,-230348,-144103,54668,76918,243887,312186]},
+  {fullname:'ALICIA QUINONES',label:'AQ',borderColor:'#FF8C42',data:[66883,126414,-68254,-76856,-66831,-72142,-59450,-58161,-58159,-46299]},
+  {fullname:'ROSA TORRES',label:'RT',borderColor:'#6BCF7F',data:[6997,51496,37560,-76320,-22690,46512,131004,152584,379336,537116]},
+  {fullname:'JOEL BLAS',label:'JB',borderColor:'#3B82F6',data:[0,51508,-50936,358,-79,131,704,5191,7495,7574]},
+  {fullname:'MELISA LLACCHUAS',label:'ML',borderColor:'#FF6B9D',data:[0,10832,100817,-59070,-20793,-6002,19638,28640,81236,92908]},
+  {fullname:'CRISTIAN HUAMAN',label:'CH',borderColor:'#00C9FF',data:[0,822,548160,-294956,-77127,57222,219836,254374,543387,633779]},
+];
+const MR=[409350,870186,1344711,1670412,2484934,2682499],MP=[2685628,3038101,2319638,2496363,2580873,2682499];
+const DM=['Mar-19','Mar-22','Mar-24','Mar-25','Mar-30','Mar-31'],DA=['Abr-01','Abr-07','Abr-13','Abr-16','Abr-20','Abr-21','Abr-28','Abr-30'];
+const ARIS_ABR=[
+  {n:'Ana Carrera',ini:'AC',col:'#A855F7',val:660,lic:11,meta:240},
+  {n:'Patricia Astorga',ini:'PA',col:'#00E5A0',val:409,lic:5,meta:240},
+  {n:'Oliver Lopez',ini:'OL',col:'#4ECDC4',val:406,lic:4,meta:240},
+  {n:'Cristian Huaman',ini:'CH',col:'#00C9FF',val:120,lic:2,meta:180},
+  {n:'Melisa Llacchuas',ini:'ML',col:'#FF6B9D',val:120,lic:2,meta:240},
+  {n:'Melissa Vasquez',ini:'MV',col:'#FF6B6B',val:120,lic:2,meta:240},
+  {n:'Analiz Castillo',ini:'AZ',col:'#F59E0B',val:60,lic:1,meta:240},
+  {n:'Alicia Quinones',ini:'AQ',col:'#FF8C42',val:60,lic:1,meta:240},
+];
+const CTS2=[{"h":"ANALIZ CASTILLO","mes":"ENERO","t":"ADDS","r":"FEDERACION DEPORTIVA PERUANA DE NATACION","ruc":"20176800217","pot":196000,"e":572812,"f":-239104,"m":-279371,"a07":-26625,"a13":-34232,"a16":-34232,"a20":-34232,"a21":-34232,"a28":-54336,"a30":-54336,"p":-54336},{"h":"MELISSA VASQUEZ","mes":"ENERO","t":"NEWS","r":"CORPORACION YESSICA MOLLEDA SRL","ruc":"20509717169","pot":100000,"e":0,"f":22623,"m":3937,"a07":-26960,"a13":-20898,"a16":-18514,"a20":-13994,"a21":-13064,"a28":-8905,"a30":-6467,"p":-6467},{"h":"ANDREA SOTO","mes":"ENERO","t":"NEWS","r":"TURISMO ESPINOZA EIRL","ruc":"20428474881","pot":250000,"e":0,"f":45512,"m":156015,"a07":-86452,"a13":-66625,"a16":-51655,"a20":-39903,"a21":-37321,"a28":-15983,"a30":4551,"p":4551},{"h":"ANA CARRERA","mes":"ENERO","t":"ADDS","r":"MAKE MUSIC S.A.C.","ruc":"20603764979","pot":50000,"e":0,"f":18365,"m":40752,"a07":-41382,"a13":-38191,"a16":-27658,"a20":-26166,"a21":-17990,"a28":-25486,"a30":-17790,"p":-17790},{"h":"PATRICIA ASTORGA","mes":"ENERO","t":"ADDS","r":"111 DESIGN SAC","ruc":"20538515842","pot":50000,"e":18508,"f":9761,"m":6177,"a07":-21900,"a13":-16070,"a16":-10995,"a20":-8627,"a21":-7218,"a28":-1341,"a30":1680,"p":1680},{"h":"CRISTIAN HUAMAN","mes":"FEBRERO","t":"NEWS","r":"Panalia S.A.C.","ruc":"20614986728","pot":300000,"e":0,"f":271,"m":277467,"a07":-151339,"a13":-44829,"a16":22625,"a20":101986,"a21":117212,"a28":245727,"a30":290534,"p":290534},{"h":"CRISTIAN HUAMAN","mes":"FEBRERO","t":"NEWS","r":"Pastired Eirl","ruc":"20614196026","pot":300000,"e":0,"f":438,"m":266773,"a07":-141673,"a13":-36247,"a16":29738,"a20":108452,"a21":123303,"a28":256564,"a30":298000,"p":298000},{"h":"MELISSA VASQUEZ","mes":"MARZO","t":"NEWS","r":"ANDA INTERNACIONAL","ruc":"20609451522","pot":1000000,"e":0,"f":0,"m":427616,"a07":-156286,"a13":-46598,"a16":36959,"a20":153051,"a21":168997,"a28":355682,"a30":403801,"p":403801},{"h":"ANA CARRERA","mes":"MARZO","t":"NEWS","r":"GALWAY INVERSIONES SAC","ruc":"20612227382","pot":200000,"e":0,"f":0,"m":34321,"a07":36757,"a13":42336,"a16":55284,"a20":64902,"a21":65440,"a28":80295,"a30":83686,"p":83686},{"h":"ROSA TORRES","mes":"ABRIL","t":"NEWS","r":"AUTOPARTES IMPORTACION S.A.C.","ruc":"20600804791","pot":200000,"e":0,"f":0,"m":0,"a07":0,"a13":33670,"a16":94610,"a20":159954,"a21":180954,"a28":286355,"a30":316912,"p":316912},{"h":"MELISSA VASQUEZ","mes":"ABRIL","t":"NEWS","r":"GRUPO VOGUE LISS S.A.C.","ruc":"20602359566","pot":200000,"e":0,"f":0,"m":0,"a07":4,"a13":3460,"a16":7837,"a20":12433,"a21":13101,"a28":28397,"a30":36792,"p":36792}];
+const fm=v=>{const a=Math.abs(v);const s=a>=1e6?(a/1e6).toFixed(2)+'M':a>=1000?(a/1000).toFixed(1)+'K':Math.round(a).toLocaleString();return(v<0?'-':'')+'S/.'+s};
+const clrS=s=>s>=80?'#00E5A0':s>=50?'#3B82F6':s>=25?'#F59E0B':'#EF4444';
+const CHS={};const dc=id=>{if(CHS[id]){CHS[id].destroy();delete CHS[id];}};
+const dkO=(leg=false)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:leg,position:'top',labels:{font:{size:10,family:'Outfit'},color:'#8BA0BC',boxWidth:10,padding:8}},tooltip:{callbacks:{label:c=>\`\${c.dataset.label||''}: \${fm(c.raw||0)}\`},backgroundColor:'#1A2235',titleColor:'#F0F6FF',bodyColor:'#8BA0BC',borderColor:'rgba(255,255,255,.1)',borderWidth:1}},scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#506080',font:{size:9,family:'Outfit'}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#506080',font:{size:9,family:'Space Mono'},callback:v=>{const a=Math.abs(v);return(v<0?'-':'')+'S/.'+(a>=1e6?(a/1e6).toFixed(1)+'M':a>=1000?(a/1000).toFixed(0)+'K':a)}}}}});
+ 
+// Sidebar top 5
+document.getElementById('sbH').innerHTML=[...RANK_ABR].sort((a,b)=>b.score-a.score).slice(0,5).map(h=>\`<div class="sb-hrow"><div class="sb-av" style="background:\${h.col}22;color:\${h.col}">\${h.ini}<\/div><div class="sb-hn">\${h.n}<\/div><div class="sb-hp" style="color:\${clrS(h.score)}">\${h.score}%<\/div><\/div>\`).join('');
+ 
+// table header
+document.getElementById('cTH').innerHTML=['Hunter','Mes','Tipo','Razon Social','Potencial','Ene','Feb','Mzo','Abr-07','Abr-13','Abr-16','Abr-20','Abr-21','Abr-28','Abr-30','Proy'].map(t=>\`<th style="font-size:9px;font-weight:600;text-transform:uppercase;color:#506080;padding:0 8px 10px;text-align:\${['Potencial','Ene','Feb','Mzo','Abr-07','Abr-13','Abr-16','Abr-20','Abr-21','Abr-28','Abr-30','Proy'].includes(t)?'right':'left'};border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap">\${t}<\/th>\`).join('');
+ 
+['hSel','f7h','hSelC'].forEach(id=>{const s=document.getElementById(id);if(!s||s.options.length>1)return;RANK_ABR.filter((r,i,a)=>a.findIndex(x=>x.n===r.n)===i).forEach(h=>{const o=document.createElement('option');o.value=h.n;o.textContent=h.n;s.appendChild(o);});});
+ 
+function bP1(){
+  dc('cAll');CHS['cAll']=new Chart(document.getElementById('cAll'),{type:'line',data:{labels:['Abr-07','Abr-13','Abr-16','Abr-20','Abr-21','Abr-28','Abr-30'],datasets:[{label:'Real Abril',data:[4,40619,107948,447753,647967,2284088,2823950],borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,.08)',pointRadius:[6,6,7,8,9,10,11],borderWidth:2.5,tension:.3,fill:true},{label:'Proyectado Abril',data:[1870151,1662040,2247591,2472525,2501809,2716801,2823950],borderColor:'rgba(255,255,255,.4)',pointRadius:[5,5,7,7,8,9,10],borderWidth:1.5,borderDash:[6,4],tension:.3}]},options:{...dkO(true),scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#506080',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#506080',font:{size:9,family:'Space Mono'},callback:v=>{const a=Math.abs(v);return 'S/.'+(a>=1e6?(a/1e6).toFixed(1)+'M':a>=1000?(a/1000).toFixed(0)+'K':a);}}}}}}); 
+  document.getElementById('top5').innerHTML=[...RANK_ABR].sort((a,b)=>b.score-a.score).slice(0,5).map((h,i)=>\`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div style="font-size:11px;font-weight:700;color:var(--t3);font-family:var(--m);min-width:22px">#\${i+1}<\/div><div style="width:30px;height:30px;border-radius:8px;background:\${h.col}22;color:\${h.col};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">\${h.ini}<\/div><div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--t1)">\${h.n}<\/div><div style="font-size:9px;color:var(--t3)">Proy: \${fm(h.incr_val)}<\/div><\/div><div style="font-size:14px;font-weight:700;font-family:var(--m);color:\${clrS(h.score)}">\${h.score}%<\/div><\/div>\`).join('');
+  dc('cQRd');CHS['cQRd']=new Chart(document.getElementById('cQRd'),{type:'doughnut',data:{labels:['Activos (37) S/.180,715','Pendientes (17) S/.2,078'],datasets:[{data:[37,17],backgroundColor:['#00E5A0BB','#F59E0BBB'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{font:{size:10},color:'#8BA0BC',boxWidth:10}}}}});
+  dc('cAB');CHS['cAB']=new Chart(document.getElementById('cAB'),{type:'bar',data:{labels:['AC','PA','OL','CH','ML','MV','AZ','AQ'],datasets:[{data:[660,409,406,120,120,120,60,60],backgroundColor:['#A855F7CC','#00E5A0CC','#4ECDC4CC','#00C9FFCC','#FF6B9DCC','#FF6B6BCC','#F59E0BCC','#FF8C42CC'],borderRadius:6}]},options:{...dkO()}});
+  dc('cSco');CHS['cSco']=new Chart(document.getElementById('cSco'),{type:'bar',data:{labels:RANK_ABR.map(h=>h.ini),datasets:[{data:RANK_ABR.map(h=>h.score),backgroundColor:RANK_ABR.map(h=>clrS(h.score)+'BB'),borderRadius:5}]},options:{...dkO(),scales:{x:{grid:{display:false},ticks:{color:'#506080',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#506080',callback:v=>v+'%'}}}}});
+}
+function bP2(){
+  document.getElementById('rkList').innerHTML=RANK_ABR.map(h=>{
+    const c=clrS(h.score);
+    const cls=h.pos===1?'rc t1':h.pos===2?'rc t2':h.pos===3?'rc t3':h.badge==='HUNTER NUEVO'?'rc nv':'rc';
+    return\`<div class="\${cls}">\${h.badge==='TOP PERFORMER'?'<div class="top-badge">TOP PERFORMER<\/div>':''}
+      <div class="rnum">\${['🥇','🥈','🥉'][h.pos-1]||'#'+h.pos}<\/div>
+      <div class="rav" style="background:\${h.col}22;color:\${h.col}">\${h.ini}<\/div>
+      <div class="rinfo"><div class="rname">\${h.n}<\/div><div class="rten">\${h.tenure==='HUNTER NUEVO'?'<span class=\\"nv-badge\\">HUNTER NUEVO<\/span>':h.tenure}<\/div><div class="rslbl" style="margin-top:6px">Score Abril<\/div><div class="rsco" style="color:\${c}">\${h.score}%<\/div><\/div>
+      <div class="rmet">
+        <div class="rm"><div class="rmlbl">Captura<\/div><div class="rmpct" style="color:#3B82F6">\${h.incr_pct}%<\/div><div class="rmval">\${fm(h.incr_val)}<\/div><div class="rmbar"><div class="rmfill" style="width:\${Math.min(100,h.incr_pct/2.5)}%;background:#3B82F6"><\/div><\/div><\/div>
+        <div class="rm"><div class="rmlbl">RUC<\/div><div class="rmpct" style="color:#00E5A0">\${h.ruc_pct}%<\/div><div class="rmval">\${h.ruc_n} nuevos<\/div><div class="rmbar"><div class="rmfill" style="width:\${Math.min(100,h.ruc_pct)}%;background:#00E5A0"><\/div><\/div><\/div>
+        <div class="rm"><div class="rmlbl">QR<\/div><div class="rmpct" style="color:#A855F7">\${h.qr_pct}%<\/div><div class="rmval">\${h.qr_n} activos<\/div><div class="rmbar"><div class="rmfill" style="width:\${Math.min(100,h.qr_pct)}%;background:#A855F7"><\/div><\/div><\/div>
+        <div class="rm"><div class="rmlbl">Arisale<\/div><div class="rmpct" style="color:#F59E0B">\${h.aris_pct}%<\/div><div class="rmval">\${h.aris_val>0?fm(h.aris_val):'S/.0'}<\/div><div class="rmbar"><div class="rmfill" style="width:\${Math.min(100,h.aris_pct)}%;background:#F59E0B"><\/div><\/div><\/div>
+      <\/div>
+    <\/div>\`;
+  }).join('');
+}
+function bP3(){
+  dc('cEne');CHS['cEne']=new Chart(document.getElementById('cEne'),{type:'line',data:{labels:['01-Ene','07-Ene','14-Ene','21-Ene','31-Ene'],datasets:[{label:'Real enero',data:[0,58000,145000,280000,424922],borderColor:'#00E5A0',backgroundColor:'rgba(0,229,160,.06)',pointRadius:[3,3,3,3,8],tension:.4,fill:true,borderWidth:2.5}]},options:{...dkO()}});
+  dc('cFeb');CHS['cFeb']=new Chart(document.getElementById('cFeb'),{type:'line',data:{labels:['01-Feb','07-Feb','14-Feb','21-Feb','28-Feb'],datasets:[{label:'Real febrero',data:[0,80000,198000,380000,570244],borderColor:'#3B82F6',backgroundColor:'rgba(59,130,246,.06)',pointRadius:[3,3,3,3,8],tension:.4,fill:true,borderWidth:2.5}]},options:{...dkO()}});
+  dc('cMar');CHS['cMar']=new Chart(document.getElementById('cMar'),{type:'line',data:{labels:DM,datasets:[{label:'Real',data:MR,borderColor:'#00E5A0',backgroundColor:'rgba(0,229,160,.06)',pointRadius:5,tension:.4,fill:true,borderWidth:2},{label:'Proyectado',data:MP,borderColor:'#F59E0B',borderDash:[6,4],pointRadius:3,tension:.4,borderWidth:1.5}]},options:dkO(true)});
+  dc('cAbr');CHS['cAbr']=new Chart(document.getElementById('cAbr'),{type:'line',data:{labels:['Abr-07','Abr-13','Abr-16','Abr-20','Abr-21','Abr-28','Abr-30'],datasets:[{label:'Real Abril',data:[4,40619,107948,447753,647967,2284088,2823950],borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,.08)',pointRadius:[6,6,7,8,9,10,11],borderWidth:2.5,tension:.3,fill:true},{label:'Proyectado',data:[1870151,1662040,2247591,2472525,2501809,2716801,2823950],borderColor:'rgba(255,255,255,.4)',pointRadius:[5,5,7,7,8,9,10],borderWidth:1.5,borderDash:[6,4],tension:.3}]},options:{...dkO(true)}});
+}
+function bP4(){
+  dc('cCurva');CHS['cCurva']=new Chart(document.getElementById('cCurva'),{type:'line',data:{labels:['Abr-07','Abr-13','Abr-16','Abr-20','Abr-21','Abr-28','Abr-30'],datasets:[{label:'Real Abril',data:[4,40619,107948,447753,647967,2284088,2823950],borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,.08)',pointRadius:[6,6,7,8,9,10,11],borderWidth:2.5,tension:.3,fill:true},{label:'Proyectado',data:[1870151,1662040,2247591,2472525,2501809,2716801,2823950],borderColor:'rgba(255,255,255,.4)',pointRadius:[5,5,7,7,8,9,10],borderWidth:1.5,borderDash:[6,4],tension:.3}]},options:{...dkO(true)}});
+  updH();
+}
+function updH(){
+  const v=document.getElementById('hSel').value;
+  const labels=['Abr-07','Abr-13','Abr-16','Abr-20','Abr-21','Abr-28','Abr-30'];
+  const ds=v==='ALL'?TRAJ_ABR.filter(h=>h.data.some(x=>x!==0)).map(h=>({label:h.label,data:h.data,borderColor:h.borderColor,backgroundColor:'transparent',pointRadius:4,tension:.3,fill:false,borderWidth:1.5})):(()=>{const f=TRAJ_ABR.find(x=>x.fullname===v);return f?[{label:f.label,data:f.data,borderColor:f.borderColor,backgroundColor:f.borderColor+'15',pointRadius:6,tension:.3,fill:true,borderWidth:2.5}]:[];})();
+  dc('cHL');CHS['cHL']=new Chart(document.getElementById('cHL'),{type:'line',data:{labels,datasets:ds},options:{...dkO(v==='ALL')}});
+}
+function bP5(){
+  document.getElementById('arisTabla').innerHTML=\`<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr>\${['Hunter','Cuenta','Estado','Lic.','Valor'].map(t=>\`<th style="font-size:9px;text-transform:uppercase;color:var(--t3);padding:0 0 10px;text-align:\${['Lic.','Valor'].includes(t)?'right':'left'}">\${t}<\/th>\`).join('')}<\/tr><\/thead><tbody>\${ARIS_ABR.map(a=>\`<tr><td style="padding:7px 0;border-top:1px solid rgba(255,255,255,.04)"><div style="font-size:12px;font-weight:600;color:\${a.col}">\${a.n}<\/div><\/td><td style="padding:7px 0;border-top:1px solid rgba(255,255,255,.04);font-size:10px;color:var(--t2)">—<\/td><td style="padding:7px 0;border-top:1px solid rgba(255,255,255,.04);text-align:center"><span style="background:rgba(0,229,160,.12);color:#00E5A0;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px">CERRADO<\/span><\/td><td style="padding:7px 0;border-top:1px solid rgba(255,255,255,.04);font-size:14px;font-weight:700;font-family:var(--m);color:\${a.col};text-align:right">\${a.lic}<\/td><td style="padding:7px 0;border-top:1px solid rgba(255,255,255,.04);font-size:14px;font-weight:700;font-family:var(--m);color:\${a.col};text-align:right">S/.\${a.val}<\/td><\/tr>\`).join('')}<tr><td colspan="3" style="padding:8px 0;border-top:1px solid rgba(255,255,255,.06);font-size:11px;font-weight:600;color:var(--t2)">TOTAL<\/td><td style="padding:8px 0;border-top:1px solid rgba(255,255,255,.06);font-size:14px;font-weight:700;font-family:var(--m);color:#00E5A0;text-align:right">28<\/td><td style="padding:8px 0;border-top:1px solid rgba(255,255,255,.06);font-size:14px;font-weight:700;font-family:var(--m);color:#00E5A0;text-align:right">S/.1,955<\/td><\/tr><\/tbody><\/table>\`;
+  document.getElementById('arisProg').innerHTML=ARIS_ABR.map(a=>{const p=Math.min(100,Math.round(a.val/a.meta*100));const col=p>=100?'#00E5A0':p>=50?'#F59E0B':'#EF4444';return\`<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:10px;color:var(--t1)">\${a.n}<\/span><span style="font-size:10px;font-family:var(--m);color:\${col}">\${p}%<\/span><\/div><div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden"><div style="width:\${p}%;height:100%;background:\${col};border-radius:3px"><\/div><\/div><\/div>\`;}).join('');
+  dc('cADon');CHS['cADon']=new Chart(document.getElementById('cADon'),{type:'doughnut',data:{labels:ARIS_ABR.map(a=>\`\${a.ini} S/.\${a.val}\`),datasets:[{data:ARIS_ABR.map(a=>a.val),backgroundColor:ARIS_ABR.map(a=>a.col+'CC'),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{font:{size:10},color:'#8BA0BC',boxWidth:10,padding:8}}}}});
+}
+function bP6(){
+  document.getElementById('qrPend').innerHTML='<div style="font-size:11px;color:var(--t2);padding:12px 0;">37 QR activos · S/.180,715 total<br>17 pendientes por activar · S/.2,078<br><br>Ver tabla completa en el archivo fuente ACTUAL_30_ABRIL.xlsx<\/div>';
+  dc('cQAH');CHS['cQAH']=new Chart(document.getElementById('cQAH'),{type:'doughnut',data:{labels:['AS S/.53,707','MV S/.24,890','PA S/.24,776','CH S/.20,628','AZ S/.7,888','YC S/.7,525','ML S/.4,959','RT S/.4,522','OL S/.1,890','AQ S/.679'],datasets:[{data:[53707,24890,24776,20628,7888,7525,4959,4522,1890,679],backgroundColor:['#FFD93DCC','#FF6B6BCC','#00E5A0CC','#00C9FFCC','#F59E0BCC','#888780CC','#FF6B9DCC','#6BCF7FCC','#4ECDC4CC','#FF8C42CC'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'right',labels:{font:{size:9},color:'#8BA0BC',boxWidth:8,padding:5}}}}});
+  const QP=[{n:'Andrea Soto',col:'#FFD93D',act:7,monto:62694},{n:'Patricia Astorga',col:'#00E5A0',act:6,monto:32809},{n:'Melissa Vasquez',col:'#FF6B6B',act:4,monto:29378},{n:'Cristian Huaman',col:'#00C9FF',act:5,monto:11232},{n:'Yasmin Checa',col:'#888780',act:4,monto:8710},{n:'Rosa Torres',col:'#6BCF7F',act:4,monto:5682},{n:'Melisa Llacchuas',col:'#FF6B9D',act:2,monto:5507},{n:'Analiz Castillo',col:'#F59E0B',act:1,monto:9305},{n:'Oliver Lopez',col:'#4ECDC4',act:2,monto:2760},{n:'Alicia Quinones',col:'#FF8C42',act:2,monto:2195}];
+  document.getElementById('qrMeta').innerHTML=QP.map(q=>{const p=Math.min(100,Math.round(q.act/3*100));const col=p>=100?'#00E5A0':p>=50?'#F59E0B':'#EF4444';return\`<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="font-size:10px;color:var(--t1)">\${q.n}<\/span><span style="font-size:10px;font-family:var(--m);color:\${col}">\${p}%<\/span><\/div><div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden"><div style="width:\${p}%;height:100%;background:\${col};border-radius:3px"><\/div><\/div><div style="font-size:9px;color:var(--t3)">\${q.act} activos · S/.\${q.monto.toLocaleString()}<\/div><\/div>\`;}).join('');
+}
+function initP7(){
+  ['hSelC','f7h'].forEach(id=>{const s=document.getElementById(id);if(!s||s.options.length>1)return;[...new Set(CTS2.map(c=>c.h))].sort().forEach(h=>{const o=document.createElement('option');o.value=h;o.textContent=h;s.appendChild(o);});});
+}
+function updCC(){
+  initP7();
+  const v=document.getElementById('hSelC').value;
+  const ds=v==='ALL'?TRAJ2.map(d=>({...d,fill:false})):(()=>{const f=TRAJ2.find(d=>d.fullname===v);return f?[{...f,fill:true,backgroundColor:f.borderColor+'25'}]:[];})();
+  dc('cCuentas');CHS['cCuentas']=new Chart(document.getElementById('cCuentas'),{type:'line',data:{labels:['Ene','Feb','Mzo','Abr-07','Abr-13','Abr-16','Abr-20','Abr-21','Abr-28','Abr-30','Proy'],datasets:ds},options:{...dkO(v==='ALL')}});
+}
+function rC(){
+  initP7();
+  const fh=document.getElementById('f7h').value,fm_=document.getElementById('f7m').value,ft=document.getElementById('f7t').value,fq=document.getElementById('f7q').value.toLowerCase();
+  const rows=CTS2.filter(c=>{if(fh&&c.h!==fh)return false;if(fm_&&c.mes!==fm_)return false;if(ft&&c.t!==ft)return false;if(fq&&!c.r.toLowerCase().includes(fq))return false;return true;});
+  const cv=v=>\`<td style="padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px;font-family:'Space Mono',monospace;color:\${v<-500?'#EF4444':v>200?'#00E5A0':'#8BA0BC'};text-align:right">\${fm(v)}<\/td>\`;
+  document.getElementById('cTB').innerHTML=rows.map(c=>\`<tr><td style="padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px;color:#8BA0BC">\${c.h}<\/td><td style="padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px;color:#8BA0BC">\${c.mes}<\/td><td style="padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04)">\${c.t==='ADDS'?'<span style=\\"font-size:9px;font-weight:600;background:rgba(59,130,246,.15);color:#3B82F6;padding:2px 5px;border-radius:4px\\">ADDS<\/span>':'<span style=\\"font-size:9px;font-weight:600;background:rgba(245,158,11,.12);color:#F59E0B;padding:2px 5px;border-radius:4px\\">NEWS<\/span>'}<\/td><td style="padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px;color:#8BA0BC;max-width:155px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\${c.r}<\/td>\${cv(c.pot||0)}\${cv(c.e||0)}\${cv(c.f||0)}\${cv(c.m||0)}\${cv(c.a07||0)}\${cv(c.a13||0)}\${cv(c.a16||0)}\${cv(c.a20||0)}\${cv(c.a21||0)}\${cv(c.a28||0)}\${cv(c.a30||0)}\${cv(c.p||0)}<\/tr>\`).join('');
+  document.getElementById('cRes').textContent=\`\${rows.length} cuentas mostradas\`;
+}
+function bP8(){
+  document.getElementById('rucTabla').innerHTML='<div style="font-size:11px;color:var(--t2);padding:12px;">42 RUC nuevos · 40 superarán S/.25K · 2 no superan<br>Ver detalle completo en el archivo fuente.<\/div>';
+  dc('cRUCd');CHS['cRUCd']=new Chart(document.getElementById('cRUCd'),{type:'doughnut',data:{labels:['ROSA S/.434K','MELISSA S/.147K','ANALIZ S/.40K','ALICIA S/.28K','PATRICIA S/.13K','ANDREA S/.8K','OLIVER S/.2.5K','MELISA S/.1K','CRISTIAN S/.80'],datasets:[{data:[434000,147000,40000,28000,13000,8000,2500,1000,80],backgroundColor:['#6BCF7FCC','#FF6B6BCC','#F59E0BCC','#FF8C42CC','#00E5A0CC','#FFD93DCC','#4ECDC4CC','#FF6B9DCC','#00C9FFCC'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'right',labels:{font:{size:9},color:'#8BA0BC',boxWidth:8,padding:5}}}}});
+  document.getElementById('rucMeta').innerHTML=[{n:'Rosa Torres',col:'#6BCF7F',n_ruc:4,p:100},{n:'Melissa Vasquez',col:'#FF6B6B',n_ruc:5,p:100},{n:'Analiz Castillo',col:'#F59E0B',n_ruc:3,p:100},{n:'Alicia Quinones',col:'#FF8C42',n_ruc:6,p:100},{n:'Ana Carrera',col:'#A855F7',n_ruc:8,p:100},{n:'Oliver Lopez',col:'#4ECDC4',n_ruc:4,p:100},{n:'Melisa Llacchuas',col:'#FF6B9D',n_ruc:4,p:100},{n:'Andrea Soto',col:'#FFD93D',n_ruc:2,p:67},{n:'Patricia Astorga',col:'#00E5A0',n_ruc:2,p:67},{n:'Cristian Huaman',col:'#00C9FF',n_ruc:1,p:33},{n:'Yasmin Checa',col:'#888780',n_ruc:1,p:33}].map(q=>{const col=q.p>=100?'#00E5A0':q.p>=67?'#F59E0B':'#EF4444';return\`<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="font-size:10px;color:var(--t1)">\${q.n}<\/span><span style="font-size:10px;font-family:var(--m);color:\${col}">\${q.p}%<\/span><\/div><div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden"><div style="width:\${q.p}%;height:100%;background:\${col};border-radius:3px"><\/div><\/div><div style="font-size:9px;color:var(--t3)">\${q.n_ruc} RUC ≥ S/.25K<\/div><\/div>\`;}).join('');
+}
+const PAGES={p1:{title:'Resumen general',sub:'Corte al 30 de Abril 2026 · Enero — Abril',build:bP1},p2:{title:'Ranking hunters',sub:'Score: Captura 70% + RUC 10% + QR 10% + Arisale 10%',build:bP2},p3:{title:'Graficos por mes',sub:'Enero · Febrero · Marzo · Abril',build:bP3},p4:{title:'Curva Abril',sub:'Abr-07 al Abr-30',build:bP4},p5:{title:'Arisale abril',sub:'28 licencias · S/.1,955 · 8 hunters',build:bP5},p6:{title:'QR Parlante abril',sub:'37 activos · 17 pendientes · S/.180,715',build:bP6},p7:{title:'Estado cuentas',sub:'Ene · Feb · Mar · Abr · Proyeccion',build:function(){updCC();rC();}},p8:{title:'RUC Abril',sub:'42 RUC nuevos · 40 ≥ S/.25K · Proy S/.673K',build:bP8}};
+const done={};
+function go(id,btn){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  document.querySelectorAll('.tab-btn,.sb-it').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  document.getElementById('pgT').textContent=PAGES[id]?.title||'';
+  document.getElementById('pgS').textContent=PAGES[id]?.sub||'';
+  if(!done[id]&&PAGES[id]?.build){PAGES[id].build();done[id]=true;}
+}
+bP1();bP2();done.p1=done.p2=true;
+<\/script>
+<\/body>
+<\/html>`;
+</script>
+</body>
+</html>
