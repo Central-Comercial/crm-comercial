@@ -6,14 +6,15 @@
 <title>Dashboard CRM · Comercial 2026</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
- 
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;height:100vh;overflow:hidden;}
 /* LOGIN */
 #login-screen{display:flex;align-items:center;justify-content:center;height:100vh;}
 .login-card{background:#fff;border-radius:16px;padding:40px 36px;width:360px;border:1px solid #e8eaed;}
-.login-logo{width:44px;height:44px;background:#534AB7;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;margin:0 auto 20px;}
+.login-logo{width:90px;height:90px;border-radius:12px;overflow:hidden;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;background:#fff;}
 .login-card h2{font-size:18px;font-weight:700;color:#1a1f2e;text-align:center;margin-bottom:4px;}
 .login-card p{font-size:13px;color:#888;text-align:center;margin-bottom:24px;}
 .lf label{font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px;}
@@ -22,14 +23,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;height:10
 .login-btn{width:100%;padding:10px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
 .login-btn:hover{background:#3C3489;}
 .login-error{font-size:12px;color:#E24B4A;text-align:center;margin-top:8px;min-height:16px;}
-.login-hint{margin-top:18px;background:#f7f8fa;border-radius:8px;padding:12px;font-size:11px;color:#888;line-height:1.8;}
-.login-hint strong{color:#444;}
 /* APP */
 #app{display:none;height:100vh;overflow:hidden;}
 .layout{display:flex;height:100vh;}
 /* sidebar */
 .sidebar{width:52px;background:#1a1f2e;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;flex-shrink:0;}
-.sb-logo{width:32px;height:32px;background:#534AB7;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;margin-bottom:10px;}
+.sb-logo{width:38px;height:38px;border-radius:8px;overflow:hidden;margin-bottom:10px;background:#fff;display:flex;align-items:center;justify-content:center;}
 .sb-icon{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#8892a4;font-size:18px;cursor:pointer;}
 .sb-icon:hover,.sb-icon.active{background:#2d3548;color:#fff;}
 .sb-spacer{flex:1;}
@@ -44,7 +43,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;height:10
 .user-name{font-size:12px;color:#666;}
 .btn-sm{font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #dde1e7;background:#fff;color:#555;cursor:pointer;}
 .btn-sm:hover{background:#f5f5f5;}
-.import-lbl{font-size:11px;padding:4px 10px;border-radius:8px;border:1px dashed #bbb;background:#fff;color:#777;cursor:pointer;}
+.filter-sel{font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid #dde1e7;background:#fff;color:#444;cursor:pointer;height:28px;}
+.import-lbl{font-size:11px;padding:4px 12px;border-radius:8px;border:1px dashed #bbb;background:#fff;color:#555;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:inherit;}
 /* tab nav */
 .tab-nav{background:#fff;border-bottom:1px solid #e8eaed;padding:0 18px;display:flex;gap:2px;flex-shrink:0;overflow-x:auto;}
 .tab-nav::-webkit-scrollbar{height:3px;}
@@ -133,11 +133,11 @@ tr:hover td{background:#fafbff;}
 </style>
 </head>
 <body>
- 
+
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">S</div>
+    <div class="login-logo"><img src="data:image/png;base64,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" style="width:90px;height:90px;object-fit:contain;" alt="Central Comercial"></div>
     <h2>Bienvenido</h2>
     <p>Ingresa con tus credenciales</p>
     <div class="lf">
@@ -148,40 +148,55 @@ tr:hover td{background:#fafbff;}
     </div>
     <button class="login-btn" onclick="doLogin()">Ingresar</button>
     <div class="login-error" id="lerr"></div>
-    <div class="login-hint">
-      <strong>Accesos:</strong><br>
-      vpena / Director2026A &nbsp;→ Director<br>
-      cportal / HeadA2026 &nbsp;&nbsp;&nbsp;→ Head Equipo A<br>
-      acarrera / HeadB2026 &nbsp;&nbsp;→ Head Equipo B<br>
-      mvasquez / HunterA1 &nbsp;&nbsp;→ Hunter Equipo A<br>
-      olopez / HunterB2 &nbsp;&nbsp;&nbsp;→ Hunter Equipo B<br>
-      <span style="color:#534AB7;font-size:10px">✓ Conectado a Supabase</span>
-    </div>
+
   </div>
 </div>
- 
+
 <!-- APP -->
 <div id="app">
 <div class="layout">
   <div class="sidebar">
-    <div class="sb-logo">S</div>
+    <div class="sb-logo"><img src="data:image/png;base64,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" style="width:38px;height:38px;object-fit:contain;" alt="CC"></div>
     <div class="sb-icon active" id="nav-crm" title="Pipeline CRM" onclick="switchView('crm')"><i class="ti ti-layout-dashboard"></i></div>
     <div class="sb-icon" id="nav-kpi" title="Dashboard Mayo" onclick="switchView('kpi')"><i class="ti ti-layout-grid"></i></div>
     <div class="sb-icon" id="nav-hunters" title="Dashboard Hunters — Abril" onclick="switchView('hunters')"><i class="ti ti-activity"></i></div>
-    <div class="sb-icon" title="Email"><i class="ti ti-mail"></i></div>
-    <div class="sb-icon" title="Contactos"><i class="ti ti-users"></i></div>
-    <div class="sb-icon" title="Calendario"><i class="ti ti-calendar"></i></div>
-    <div class="sb-icon" title="Reportes"><i class="ti ti-chart-bar"></i></div>
-    <div class="sb-icon" title="Tareas"><i class="ti ti-checkbox"></i></div>
+    <div class="sb-icon" id="nav-allleads" title="Todos los leads" onclick="goAllLeads()" style="display:none;"><i class="ti ti-table"></i></div>
+    <div class="sb-icon" id="nav-delete-all" title="Borrar todos los leads" onclick="deleteAllLeads()" style="display:none;background:rgba(226,75,74,0.15);"><i class="ti ti-trash" style="color:#E24B4A;"></i></div>
+    <div class="sb-icon" id="nav-reimport" title="Limpiar e importar de nuevo" onclick="clearAndImport()" style="display:none;background:rgba(245,166,35,0.15);"><i class="ti ti-refresh" style="color:#F5A623;"></i></div>
+    <div class="sb-sep" style="width:32px;height:1px;background:rgba(255,255,255,.08);margin:4px 0;"></div>
+    <div id="sb-teamA-group" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goTeam('A')">
+      <div style="font-size:8px;color:#1D9E75;text-align:center;line-height:1.2;">Equipo<br>Carlos</div>
+      <div class="sb-icon" style="color:#1D9E75;pointer-events:none;"><i class="ti ti-users"></i></div>
+    </div>
+    <div class="sb-sep" style="width:32px;height:1px;background:rgba(255,255,255,.08);margin:4px 0;"></div>
+    <div id="sb-teamB-group" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goTeam('B')">
+      <div style="font-size:8px;color:#D85A30;text-align:center;line-height:1.2;">Equipo<br>Ana</div>
+      <div class="sb-icon" style="color:#D85A30;pointer-events:none;"><i class="ti ti-users"></i></div>
+    </div>
+    <div class="sb-sep" style="width:32px;height:1px;background:rgba(255,255,255,.08);margin:4px 0;"></div>
+    <div id="nav-cerrados" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goCerrados()">
+      <div style="font-size:8px;color:#1D9E75;text-align:center;line-height:1.2;">Leads<br>Cerrados</div>
+      <div class="sb-icon" style="pointer-events:none;background:rgba(29,158,117,.15);"><i class="ti ti-trophy" style="color:#1D9E75;"></i></div>
+    </div>
+    <div id="nav-caidos" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goCaidos()">
+      <div style="font-size:8px;color:#E24B4A;text-align:center;line-height:1.2;">Leads<br>Caídos</div>
+      <div class="sb-icon" style="pointer-events:none;background:rgba(226,75,74,.15);"><i class="ti ti-trending-down" style="color:#E24B4A;"></i></div>
+    </div>
+    <div id="nav-sva2" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goSVA2()">
+      <div style="font-size:8px;color:#00C9FF;text-align:center;line-height:1.2;">Leads<br>SVA</div>
+      <div class="sb-icon" style="pointer-events:none;background:rgba(0,201,255,.15);"><i class="ti ti-layers-difference" style="color:#00C9FF;"></i></div>
+    </div>
+    <div class="sb-sep" style="width:32px;height:1px;background:rgba(255,255,255,.08);margin:4px 0;"></div>
+
     <div class="sb-spacer"></div>
     <div class="sb-icon"><i class="ti ti-settings"></i></div>
     <div class="sb-avatar" id="sb-av" title="Mi perfil"></div>
   </div>
- 
+
   <div class="main">
     <!-- KPI DASHBOARD VIEW -->
     <div id="view-kpi" style="display:none;flex:1;overflow-y:auto;background:#f5f6fa;">
- 
+
       <!-- Filtros top -->
       <div style="background:#fff;border-bottom:1px solid #e8eaed;padding:10px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
         <div style="font-size:13px;font-weight:600;color:#1a1f2e;margin-right:8px;">Analytics · Mayo 2026</div>
@@ -203,12 +218,12 @@ tr:hover td{background:#fafbff;}
           <option>Equipo B</option>
         </select>
       </div>
- 
+
       <div style="padding:16px 20px;">
- 
+
         <!-- Fila 1: KPI cards estilo imagen -->
         <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1.3fr 1.3fr;gap:12px;margin-bottom:14px;">
- 
+
           <!-- Win/Loss % -->
           <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
             <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px;">Deal win/loss %</div>
@@ -225,7 +240,7 @@ tr:hover td{background:#fafbff;}
               <span style="font-size:10px;color:#888;">Deals lost <strong style="color:#E24B4A;">6</strong></span>
             </div>
           </div>
- 
+
           <!-- Revenue won -->
           <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
             <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;">Revenue won</div>
@@ -233,7 +248,7 @@ tr:hover td{background:#fafbff;}
             <div style="font-size:11px;color:#1D9E75;margin-top:4px;">▲ +12.4% vs abril</div>
             <div style="margin-top:8px;height:4px;background:#f0f2f5;border-radius:2px;"><div style="width:75%;height:100%;background:#1D9E75;border-radius:2px;"></div></div>
           </div>
- 
+
           <!-- Revenue lost -->
           <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
             <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;">Revenue lost</div>
@@ -241,7 +256,7 @@ tr:hover td{background:#fafbff;}
             <div style="font-size:11px;color:#E24B4A;margin-top:4px;">Oportunidades perdidas</div>
             <div style="margin-top:8px;height:4px;background:#f0f2f5;border-radius:2px;"><div style="width:38%;height:100%;background:#E24B4A;border-radius:2px;"></div></div>
           </div>
- 
+
           <!-- Razones de pérdida -->
           <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
             <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;">Razones de pérdida</div>
@@ -252,24 +267,24 @@ tr:hover td{background:#fafbff;}
               <span style="font-size:9px;color:#888;background:#f0f2f5;padding:2px 6px;border-radius:4px;">Sin respuesta</span>
             </div>
           </div>
- 
+
           <!-- Valor por forecast -->
           <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
             <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;">Valor por categoría</div>
             <div id="kpi-forecast-bars"></div>
           </div>
         </div>
- 
+
         <!-- Fila 2: Funnel + Tabla deals -->
         <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;margin-bottom:14px;">
- 
+
           <!-- Funnel por etapa -->
           <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
             <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:12px;">Valor de deals por etapa</div>
             <div id="kpi-funnel-bars"></div>
             <div style="margin-top:14px;position:relative;height:160px;"><canvas id="kpi-funnel-chart" role="img" aria-label="Funnel por etapa"></canvas></div>
           </div>
- 
+
           <!-- Open deals table -->
           <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -297,7 +312,7 @@ tr:hover td{background:#fafbff;}
             </table>
           </div>
         </div>
- 
+
         <!-- Fila 3: Revenue trend + Top hunters -->
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
           <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
@@ -313,7 +328,7 @@ tr:hover td{background:#fafbff;}
             <div id="kpi-top-hunters"></div>
           </div>
         </div>
- 
+
       </div>
     </div>
     <!-- / KPI DASHBOARD VIEW -->
@@ -337,42 +352,105 @@ tr:hover td{background:#fafbff;}
       </div>
       <div class="topbar-right">
         <span class="user-name" id="user-name-lbl"></span>
-        <label class="import-lbl">
-          <i class="ti ti-upload"></i> Importar Excel
-          <input type="file" accept=".xlsx,.csv" style="display:none;" onchange="handleImport(this)">
-        </label>
+        <button class="import-lbl" id="import-lbl-wrap" style="display:none;" onclick="document.getElementById('import-file').click()">
+          <i class="ti ti-upload" id="import-icon"></i> <span id="import-txt">Importar Excel</span>
+        </button>
+        <input type="file" id="import-file" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleImport(this)">
         <button class="btn-sm" onclick="doLogout()"><i class="ti ti-logout"></i> Salir</button>
       </div>
     </div>
- 
+
     <div class="tab-nav" id="tab-nav"></div>
     <div class="content" id="content"></div>
   </div>
 </div>
 </div>
- 
+
 <!-- MODAL -->
 <div class="modal-bg" id="modal-bg">
-  <div class="modal">
+  <div class="modal" style="max-width:680px;width:95%;">
     <button class="close-modal" onclick="closeModal()">&#x2715;</button>
     <h3 id="modal-title">Nuevo lead</h3>
-    <div class="mgrid">
-      <div class="mf" style="grid-column:1/-1;"><label>Empresa</label><input id="m-name" placeholder="Empresa S.A.C."></div>
-      <div class="mf"><label>Responsable</label><select id="m-owner"></select></div>
-      <div class="mf"><label>Estado</label>
-        <select id="m-status">
-          <option value="prospecto">Prospecto</option><option value="contactado">Contactado</option>
-          <option value="reunión">Reunión</option><option value="propuesta">Propuesta</option>
-          <option value="cerrado">Cerrado</option>
+    <div class="mgrid" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="mf" style="grid-column:1/-1;"><label>Razón Social / Empresa</label><input id="m-name" placeholder="Ej: Empresa S.A.C."></div>
+      <div class="mf"><label>RUC</label><input id="m-ruc" placeholder="20xxxxxxxxx" maxlength="11"></div>
+      <div class="mf"><label>Hunter (Responsable)</label><select id="m-owner"></select></div>
+      <div class="mf"><label>Giros</label>
+        <select id="m-giros">
+          <option value="">Seleccionar...</option>
+          <option>COLEGIOS Y UNIVERSIDADES</option>
+          <option>ACTIVIDADES DE RESTAURANTES</option>
+          <option>PANADERIA</option>
+          <option>VENTA AL PORMENOR</option>
+          <option>VENTA X MENOR</option>
+          <option>MINORISTA</option>
+          <option>OTROS GIROS</option>
         </select>
       </div>
-      <div class="mf"><label>Cierre estimado</label><input id="m-close" type="date"></div>
-      <div class="mf"><label>Fuente</label>
-        <select id="m-source"><option>Google Ads</option><option>Referido</option><option>Directo</option><option>LinkedIn</option><option>Evento</option></select>
+      <div class="mf"><label>Origen</label>
+        <select id="m-source">
+          <option value="">Seleccionar...</option>
+          <option>LEAD IZIPAY (W...)</option>
+          <option>LEAD PROPIO</option>
+          <option>REFERIDO</option>
+          <option>Google Ads</option>
+          <option>Directo</option>
+          <option>LinkedIn</option>
+          <option>Evento</option>
+        </select>
       </div>
-      <div class="mf"><label>Valor (S/)</label><input id="m-value" type="number" placeholder="0"></div>
-      <div class="mf"><label>Probabilidad (%)</label><input id="m-prob" type="number" min="0" max="100" placeholder="10"></div>
-      <div class="mf" style="grid-column:1/-1;"><label>Comentario</label><textarea id="m-note" rows="2" style="resize:none;"></textarea></div>
+      <div class="mf"><label>Tipo de Producto</label>
+        <select id="m-tipo-producto">
+          <option value="">Seleccionar...</option>
+          <option>FISICO</option>
+          <option>LINK DE PAGO</option>
+          <option>QR</option>
+          <option>ECOMMERCE</option>
+          <option>ARISALE</option>
+          <option>PLANILLAS</option>
+        </select>
+      </div>
+      <div class="mf"><label>Tipo de Cuenta</label>
+        <select id="m-tipo-cuenta">
+          <option value="">Seleccionar...</option>
+          <option>WINBACK (6 MESES)</option>
+          <option>NUEVO</option>
+          <option>REACTIVACION</option>
+        </select>
+      </div>
+      <div class="mf"><label>Banco</label>
+        <select id="m-banco">
+          <option value="">Seleccionar...</option>
+          <option>BCP</option>
+          <option>BBVA</option>
+          <option>IBK</option>
+          <option>SCOTIABANK</option>
+          <option>INTERBANK</option>
+          <option>OTRO</option>
+        </select>
+      </div>
+      <div class="mf"><label>Potencial (S/)</label><input id="m-value" type="number" placeholder="0"></div>
+      <div class="mf"><label>Etapa</label>
+        <select id="m-status">
+          <option value="prospecto">10% Prospección</option>
+          <option value="oportunidad">25% Oportunidad</option>
+          <option value="negociacion">50% Negociación</option>
+          <option value="precierre">75% Pre-cierre</option>
+          <option value="cerrado">100% Cierre</option>
+        </select>
+      </div>
+      <div class="mf"><label>Mes de Cierre</label>
+        <select id="m-close">
+          <option value="">Seleccionar...</option>
+          <option>ENERO</option><option>FEBRERO</option><option>MARZO</option>
+          <option>ABRIL</option><option>MAYO</option><option>JUNIO</option>
+          <option>JULIO</option><option>AGOSTO</option><option>SEPTIEMBRE</option>
+          <option>OCTUBRE</option><option>NOVIEMBRE</option><option>DICIEMBRE</option>
+        </select>
+      </div>
+      <div class="mf"><label>Fecha de Ingreso</label><input id="m-fecha-ingreso" type="date"></div>
+      <div class="mf"><label>Fecha de Modificación</label><input id="m-fecha-modif" type="date"></div>
+      <div class="mf" style="grid-column:1/-1;"><label>Comentarios</label><textarea id="m-note" rows="2" style="resize:none;"></textarea></div>
     </div>
     <div class="mactions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
@@ -380,12 +458,12 @@ tr:hover td{background:#fafbff;}
     </div>
   </div>
 </div>
- 
+
 <script>
 /* ─── SUPABASE CONFIG ─── */
 const SB_URL = 'https://lvnjawvgbvlghaodyurv.supabase.co';
 const SB_KEY = 'sb_publishable_2zwQO3oeLN1Ed9sZBJ1IsQ_REV5Fa1f';
- 
+
 async function sbGet(table, params=''){
   const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, {
     headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'}
@@ -401,6 +479,23 @@ async function sbPost(table, body){
   });
   return r.json();
 }
+async function sbInsert(table, body){
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method:'POST',
+    headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal'},
+    body: JSON.stringify(body)
+  });
+  return r.ok;
+}
+
+async function sbDelete(table, id){
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method:'DELETE',
+    headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'}
+  });
+  return r.ok;
+}
+
 async function sbPatch(table, id, body){
   const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
     method:'PATCH',
@@ -409,63 +504,69 @@ async function sbPatch(table, id, body){
   });
   return r.json();
 }
- 
+
 /* usuarios y leads se cargan desde Supabase */
 let SB_USUARIOS = [];
 let LEADS = [];
 const USERS = {}; /* vacío, se usa Supabase */
- 
+
 /* ── HUNTERS (14 reales) ── */
 const HUNTERS_DEF = [
-  {username:'mvasquez',   name:'Melissa Vasquez',   initials:'MV', color:'#FF6B6B', team:'A', meta:25000, real:0},
-  {username:'mllacchuas', name:'Melissa Llacchuas', initials:'ML', color:'#FF6B9D', team:'A', meta:25000, real:0},
-  {username:'rtorres',    name:'Rosa Torres',        initials:'RT', color:'#6BCF7F', team:'A', meta:25000, real:0},
-  {username:'asoto',      name:'Andrea Soto',        initials:'AS', color:'#FFD93D', team:'A', meta:25000, real:0},
-  {username:'ycheca',     name:'Yasmin Checa',       initials:'YC', color:'#888780', team:'A', meta:25000, real:0},
-  {username:'mflores',    name:'Maria Flores',       initials:'MF', color:'#E84393', team:'A', meta:25000, real:0},
-  {username:'kpaulino',   name:'Kevin Paulino',      initials:'KP', color:'#00C9FF', team:'A', meta:25000, real:0},
-  {username:'aquinones',  name:'Alicia Quiñones',    initials:'AQ', color:'#FF8C42', team:'B', meta:25000, real:0},
-  {username:'olopez',     name:'Oliver Lopez',       initials:'OL', color:'#4ECDC4', team:'B', meta:25000, real:0},
-  {username:'chuaman',    name:'Christian Huaman',   initials:'CH', color:'#00C9FF', team:'B', meta:25000, real:0},
-  {username:'pastorga',   name:'Patricia Astorga',   initials:'PA', color:'#00E5A0', team:'B', meta:25000, real:0},
-  {username:'acastillo',  name:'Analiz Castillo',    initials:'AC', color:'#F59E0B', team:'B', meta:25000, real:0},
-  {username:'rllanos',    name:'Rock Llanos',         initials:'RL', color:'#7F77DD', team:'B', meta:25000, real:0},
-  {username:'frouillon',  name:'Franco Rouillon',     initials:'FR', color:'#D4537E', team:'B', meta:25000, real:0},
+  {username:'mvasquez',   name:'Melissa Vasquez',   initials:'MV', color:'#FF6B6B', team:'A', meta:0, real:0},
+  {username:'mllacchuas', name:'Melissa Llacchuas', initials:'ML', color:'#FF6B9D', team:'A', meta:0, real:0},
+  {username:'rtorres',    name:'Rosa Torres',        initials:'RT', color:'#6BCF7F', team:'A', meta:0, real:0},
+  {username:'asoto',      name:'Andrea Soto',        initials:'AS', color:'#FFD93D', team:'A', meta:0, real:0},
+  {username:'ycheca',     name:'Yasmin Checa',       initials:'YC', color:'#888780', team:'A', meta:0, real:0},
+  {username:'mflores',    name:'Maria Flores',       initials:'MF', color:'#E84393', team:'A', meta:0, real:0},
+  {username:'kpaulino',   name:'Kevin Paulino',      initials:'KP', color:'#00C9FF', team:'A', meta:0, real:0},
+  {username:'aquinones',  name:'Alicia Quiñones',    initials:'AQ', color:'#FF8C42', team:'B', meta:0, real:0},
+  {username:'olopez',     name:'Oliver Lopez',       initials:'OL', color:'#4ECDC4', team:'B', meta:0, real:0},
+  {username:'chuaman',    name:'Christian Huaman',   initials:'CH', color:'#00C9FF', team:'B', meta:0, real:0},
+  {username:'pastorga',   name:'Patricia Astorga',   initials:'PA', color:'#00E5A0', team:'B', meta:0, real:0},
+  {username:'acastillo',  name:'Analiz Castillo',    initials:'AC', color:'#F59E0B', team:'B', meta:0, real:0},
+  {username:'rllanos',    name:'Rock Llanos',         initials:'RL', color:'#7F77DD', team:'B', meta:0, real:0},
+  {username:'frouillon',  name:'Franco Rouillon',     initials:'FR', color:'#D4537E', team:'B', meta:0, real:0},
 ];
 const HUNTERS = Object.fromEntries(HUNTERS_DEF.map(h=>[h.username, h]));
 const HUNTERS_A = HUNTERS_DEF.filter(h=>h.team==='A');
 const HUNTERS_B = HUNTERS_DEF.filter(h=>h.team==='B');
- 
+
 const TEAMS = {
   A:{name:'Equipo A', head:'Carlos Portal', headColor:'#F59E0B', hunters:HUNTERS_A.map(h=>h.username)},
   B:{name:'Equipo B', head:'Ana Carrera',   headColor:'#A855F7', hunters:HUNTERS_B.map(h=>h.username)},
 };
- 
+
 const SC={
-  prospecto: {bg:'#E6F1FB',c:'#0C447C',l:'Prospecto'},
-  contactado:{bg:'#EEEDFE',c:'#3C3489',l:'Contactado'},
-  'reunión': {bg:'#FFF3CD',c:'#856404',l:'Reunión'},
-  propuesta: {bg:'#EAF3DE',c:'#27500A',l:'Propuesta'},
-  cerrado:   {bg:'#D4EDDA',c:'#155724',l:'Cerrado'},
+  prospecto:  {bg:'#E6F1FB',c:'#0C447C', l:'10% Prospección', pct:10},
+  oportunidad:{bg:'#EDE9FE',c:'#5B21B6', l:'25% Oportunidad',  pct:25},
+  negociacion:{bg:'#FFF3CD',c:'#92400E', l:'50% Negociación',  pct:50},
+  precierre:  {bg:'#FFEDD5',c:'#C2410C', l:'75% Pre-cierre',   pct:75},
+  cerrado:    {bg:'#D1FAE5',c:'#065F46', l:'100% Cierre',      pct:100},
 };
- 
+
 const O2H={'Carlos Mendoza':'h1','Sofía Paredes':'h2','Diego Vega':'h3','Valeria Cruz':'h4'};
- 
+
 /* leads cargados desde Supabase */
- 
+
 /* ─── STATE ─── */
 let curUser=null, curTab='', curFilter='all', curSearch='', editingId=null;
 let chartObj=null;
- 
+
 /* ─── HELPERS ─── */
 function mapEstado(e){
-  const m = {
-    'prospecto':'prospecto','contactado':'contactado','reunion':'reunión',
-    'reunión':'reunión','propuesta':'propuesta','cerrado':'cerrado'
-  };
-  return m[(e||'').toLowerCase()] || 'prospecto';
+  const s = (e||'').toLowerCase().trim();
+  /* New stage names */
+  if(s==='oportunidad' || s.includes('oportunidad') || s==='25%') return 'oportunidad';
+  if(s==='negociacion' || s.includes('negociaci')   || s==='50%') return 'negociacion';
+  if(s==='precierre'   || s.includes('pre-cierre')  || s==='75%') return 'precierre';
+  if(s==='cerrado'     || s.includes('cierre')      || s==='100%'|| s.includes('cerr')) return 'cerrado';
+  /* Old stage names - map to closest new equivalent */
+  if(s==='propuesta'  || s==='propuesta') return 'precierre';
+  if(s==='reunión'    || s==='reunion'   || s==='reuni') return 'negociacion';
+  if(s==='contactado' || s==='contactado') return 'oportunidad';
+  return 'prospecto';
 }
- 
+
 /* ─── AUTH ─── */
 async function doLogin(){
   const username = document.getElementById('lu').value.trim().toLowerCase();
@@ -497,7 +598,7 @@ async function doLogin(){
     SB_USUARIOS = await sbGet('usuarios','select=*&activo=eq.true');
     /* cargar leads */
     const rawLeads = await sbGet('leads','select=*&order=created_at.desc');
- 
+
     /* ── Reconstruir HUNTERS_DEF y HUNTERS desde Supabase ── */
     const hunterUsers = SB_USUARIOS.filter(u => u.rol === 'hunter');
     HUNTERS_DEF.length = 0;
@@ -511,7 +612,7 @@ async function doLogin(){
           initials: initials,
           color: u.color || '#7F77DD',
           team: u.equipo || 'A',
-          meta: 25000,
+          meta: 0,
           real: 0
         });
       }
@@ -526,40 +627,56 @@ async function doLogin(){
     HUNTERS_DEF.filter(h=>h.team==='B').forEach(h=>HUNTERS_B.push(h));
     TEAMS.A.hunters = HUNTERS_A.map(h=>h.username);
     TEAMS.B.hunters = HUNTERS_B.map(h=>h.username);
- 
+
     /* Heads */
     const headA = SB_USUARIOS.find(u=>u.username==='cportal');
     const headB = SB_USUARIOS.find(u=>u.username==='acarrera');
     if(headA){ TEAMS.A.head = headA.nombre; TEAMS.A.headColor = headA.color||'#F59E0B'; }
     if(headB){ TEAMS.B.head = headB.nombre; TEAMS.B.headColor = headB.color||'#A855F7'; }
- 
+
     /* ── Transformar leads de Supabase al formato interno ── */
     const hunterMap = {};
     SB_USUARIOS.forEach(u => { hunterMap[u.id] = u.username; });
- 
+
     LEADS = rawLeads.map((l,i) => ({
-      id:       l.id || i+1,
-      hunter:   hunterMap[l.hunter_id] || '',
-      name:     l.nombre || '(Sin nombre)',
-      created:  l.created_at ? new Date(l.created_at).toLocaleDateString('es-PE') : '',
-      close:    l.fecha_cierre || '',
-      owner:    l.nombre || '',
-      status:   mapEstado(l.estado || 'prospecto'),
-      conflict: l.conflicto || false,
-      source:   l.fuente || 'Directo',
-      prob:     l.probabilidad || 10,
-      value:    l.valor || 0,
-      note:     l.comentario || '',
-      ruc:      l.ruc || '',
-      razon:    l.razon_social || ''
+      id:            l.id || i+1,
+      hunter:        hunterMap[l.hunter_id] || '',
+      name:          l.razon_social || l.nombre || '(Sin nombre)',
+      ruc:           l.ruc || '',
+      razon:         l.razon_social || '',
+      owner:         (SB_USUARIOS.find(u=>u.id===l.hunter_id)||{}).nombre || '',
+      giros:         l.giros || '',
+      source:        l.fuente || '',
+      tipo_producto: l.tipo_producto || '',
+      tipo_cuenta:   l.tipo_cuenta || '',
+      banco:         l.banco || '',
+      status:        mapEstado(l.estado || 'prospecto'),
+      categoria:     l.categoria || 'activo',
+      value:         l.valor || 0,
+      close:         l.mes_cierre || '',
+      note:          l.comentario || '',
+      prob:          l.probabilidad || 10,
+      conflict:      l.conflicto || false,
+      created:       l.created_at ? new Date(l.created_at).toLocaleDateString('es-PE') : '',
+      fecha_ingreso: l.fecha_ingreso ? new Date(l.fecha_ingreso).toLocaleDateString('es-PE') : (l.created_at ? new Date(l.created_at).toLocaleDateString('es-PE') : '—'),
+      fecha_ingreso_raw: l.fecha_ingreso || (l.created_at ? l.created_at.slice(0,10) : ''),
+      fecha_cierre_dt: l.fecha_cierre ? new Date(l.fecha_cierre).toLocaleDateString('es-PE') : '—',
+      fecha_cierre_raw: l.fecha_cierre ? l.fecha_cierre.slice(0,10) : '',
+      fecha_modif:   l.fecha_modif ? new Date(l.fecha_modif).toLocaleDateString('es-PE') : (l.updated_at ? new Date(l.updated_at).toLocaleDateString('es-PE') : '—'),
+      fecha_modif_raw: l.fecha_modif || (l.updated_at ? l.updated_at.slice(0,10) : ''),
+      fecha_mod_late: l.fecha_modif ? (Date.now()-new Date(l.fecha_modif).getTime())>86400000 : (l.updated_at ? (Date.now()-new Date(l.updated_at).getTime())>86400000 : false),
+      modified_today: l.fecha_modif ? new Date(l.fecha_modif).toDateString()===new Date().toDateString() : (l.updated_at ? new Date(l.updated_at).toDateString()===new Date().toDateString() : false),
     }));
- 
+
+    /* Re-map any old status values to new ones */
+    LEADS.forEach(l => { l.status = mapEstado(l.status); });
+
     /* Actualizar real en HUNTERS */
     HUNTERS_DEF.forEach(h => { h.real = 0; }); // reset
     LEADS.forEach(l => {
       if(HUNTERS[l.hunter]) HUNTERS[l.hunter].real += (l.value||0);
     });
- 
+
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
     initApp();
@@ -579,11 +696,11 @@ const KPI_DEALS=[
   {empresa:'Theta Industrial',owner:'Valeria Cruz',etapa:'Contactado',valor:6800,prob:25,equipo:'B'},
   {empresa:'Iota Comercial',owner:'Valeria Cruz',etapa:'Prospecto',valor:4500,prob:15,equipo:'B'},
 ];
-const STAGE_COLORS={Prospecto:'#378ADD',Contactado:'#534AB7',Reunión:'#EF9F27',Propuesta:'#1D9E75',Cerrado:'#639922'};
+const STAGE_COLORS={'10% Prospección':'#3DB8E8','25% Oportunidad':'#7F77DD','50% Negociación':'#F5A623','75% Pre-cierre':'#E8721C','100% Cierre':'#27AE60'};
 let kpiCharts={};
- 
+
 function destroyKpi(id){if(kpiCharts[id]){kpiCharts[id].destroy();delete kpiCharts[id];}}
- 
+
 function renderKPI(){
   const owner=document.getElementById('kpi-owner')?.value||'';
   const team=document.getElementById('kpi-team')?.value||'';
@@ -592,7 +709,7 @@ function renderKPI(){
     if(team&&d.equipo!==(team==='Equipo A'?'A':'B'))return false;
     return true;
   });
- 
+
   // Forecast bars (static)
   const forecasts=[['Comprometido','S/ 43K','#534AB7',72],['Mejor caso','S/ 28K','#378ADD',47],['Pipeline','S/ 13K','#1D9E75',22]];
   const fbEl=document.getElementById('kpi-forecast-bars');
@@ -600,9 +717,9 @@ function renderKPI(){
     var l=x[0],v=x[1],c=x[2],w=x[3];
     return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;"><span style="font-size:10px;color:#666;width:80px;flex-shrink:0;">'+l+'<\/span><div style="flex:1;background:#f0f2f5;border-radius:3px;height:14px;overflow:hidden;"><div style="width:'+w+'%;height:100%;background:'+c+';border-radius:3px;"><\/div><\/div><span style="font-size:10px;font-weight:600;color:'+c+';width:36px;text-align:right;">'+v+'<\/span><\/div>';
   }).join('');
- 
+
   // Funnel bars
-  const stages=['Prospecto','Contactado','Reunión','Propuesta','Cerrado'];
+  const stages=['10% Prospección','25% Oportunidad','50% Negociación','75% Pre-cierre','100% Cierre'];
   const stageVals=stages.map(s=>deals.filter(d=>d.etapa===s).reduce((sum,d)=>sum+d.valor,0));
   const maxV=Math.max(...stageVals,1);
   document.getElementById('kpi-funnel-bars').innerHTML=stages.map((s,i)=>{
@@ -617,7 +734,7 @@ function renderKPI(){
       <span style="font-size:10px;font-weight:600;color:${STAGE_COLORS[s]};width:40px;text-align:right;">${deals.filter(d=>d.etapa===s).length} deals</span>
     </div>`;
   }).join('');
- 
+
   // Funnel doughnut
   destroyKpi('kpi-funnel-chart');
   kpiCharts['kpi-funnel-chart']=new Chart(document.getElementById('kpi-funnel-chart'),{
@@ -625,7 +742,7 @@ function renderKPI(){
     data:{labels:stages,datasets:[{data:stageVals,backgroundColor:stages.map(s=>STAGE_COLORS[s]+'CC'),borderWidth:0,hoverOffset:4}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right',labels:{font:{size:10},color:'#666',boxWidth:10,padding:6}}}}
   });
- 
+
   // Tabla deals
   const search=(document.getElementById('kpi-search')?.value||'').toLowerCase();
   const filtered=deals.filter(d=>!search||d.empresa.toLowerCase().includes(search)||d.owner.toLowerCase().includes(search));
@@ -640,7 +757,7 @@ function renderKPI(){
     </tr>`).join('');
   const total=filtered.reduce((s,d)=>s+d.valor,0);
   document.getElementById('kpi-total').textContent=`S/ ${total.toLocaleString()}`;
- 
+
   // Lost reasons chart
   destroyKpi('kpi-lost');
   const lostCtx=document.getElementById('kpi-lost');
@@ -651,7 +768,7 @@ function renderKPI(){
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9},color:'#888'}},y:{display:false}}}
     });
   }
- 
+
   // Trend chart
   destroyKpi('kpi-trend');
   const tCtx=document.getElementById('kpi-trend');
@@ -668,7 +785,7 @@ function renderKPI(){
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#888'}},y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:9},color:'#888',callback:v=>'S/'+(v>=1000?(v/1000).toFixed(0)+'K':v)}}}}
     });
   }
- 
+
   // Top hunters
   const hunters=[
     {n:'Carlos M.',conv:66,deals:5,col:'#378ADD'},
@@ -687,12 +804,15 @@ function renderKPI(){
       </div>
     </div>`).join('');
 }
- 
+
 function filterDeals(){renderKPI();}
- 
+
 let kpiChartsBuilt=false, huntersLoaded=false;
 function switchView(v){
-  ['crm','kpi','hunters'].forEach(n=>document.getElementById('nav-'+n).classList.toggle('active',n===v));
+  ['crm','kpi','hunters'].forEach(n=>{
+    const el=document.getElementById('nav-'+n);
+    if(el) el.classList.toggle('active',n===v);
+  });
   const kpiEl=document.getElementById('view-kpi');
   const huntersEl=document.getElementById('view-hunters');
   const crmEls=['.topbar','.tab-nav','#content'].map(s=>document.querySelector('.main '+s));
@@ -740,57 +860,78 @@ function doLogout(){
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
 }
- 
+
 /* ─── INIT ─── */
 function initApp(){
   const av=document.getElementById('sb-av');
   av.textContent=curUser.name.split(' ').map(x=>x[0]).join('').substring(0,2);
   av.style.background=curUser.color;
   document.getElementById('user-name-lbl').textContent=curUser.name;
- 
+  /* Show import only for director, analista, head */
+  const importWrap = document.getElementById('import-lbl-wrap');
+  if(importWrap) importWrap.style.display = ['director','analista','head'].includes(curUser.role) ? '' : 'none';
+
+  /* Show sidebar team/leads icons */
+  const isDA = ['director','analista'].includes(curUser.role);
+  const isDAH = ['director','analista','head'].includes(curUser.role);
+  const el = id => document.getElementById(id);
+  if(el('nav-allleads'))   el('nav-allleads').style.display   = isDA ? '' : 'none';
+  if(el('nav-delete-all')) el('nav-delete-all').style.display = isDA ? '' : 'none';
+  if(el('nav-reimport'))   el('nav-reimport').style.display   = isDA ? '' : 'none';
+  /* Show team groups */
+  const tAg = el('sb-teamA-group');
+  const tBg = el('sb-teamB-group');
+  if(tAg) tAg.style.display = isDAH ? 'flex' : 'none';
+  if(tBg) tBg.style.display = isDAH ? 'flex' : 'none';
+  /* Cerrados / Caídos - visible for head, analista, director */
+  const nc   = el('nav-cerrados');
+  const nca  = el('nav-caidos');
+  const nsva2= el('nav-sva2');
+  if(nc)    nc.style.display    = isDAH ? 'flex' : 'none';
+  if(nca)   nca.style.display   = isDAH ? 'flex' : 'none';
+  if(nsva2) nsva2.style.display = 'flex'; /* Todos los roles ven SVA */
+
   const tabs=getTabs();
   buildTabNav(tabs);
   curTab=tabs[0].id;
   renderTab(curTab);
 }
- 
+
 /* ─── TABS POR ROL ─── */
 function getTabs(){
   const r = curUser.role;
- 
+
   const hunterTab = h => {
     const parts = h.name.split(' ');
     const label = parts[0] + (parts[1] ? ' '+parts[1][0]+'.' : '');
     return {id: h.username, label, icon:'ti-user', dot: h.color};
   };
- 
+
   if(r==='director' || r==='analista') {
     const tabs = [
-      {id:'general', label:'Vista general', icon:'ti-home',  dot:'#534AB7'},
-      {id:'teamA',   label:'Equipo A',      icon:'ti-users', dot:'#1D9E75'},
+      {id:'general', label:'Vista general', icon:'ti-home', dot:'#534AB7'},
     ];
-    HUNTERS_A.forEach(h => tabs.push(hunterTab(h)));
-    tabs.push({id:'teamB', label:'Equipo B', icon:'ti-users', dot:'#D85A30'});
-    HUNTERS_B.forEach(h => tabs.push(hunterTab(h)));
     return tabs;
   }
- 
+
   if(r==='head') {
     const myTeam = curUser.equipo;
     const hunters = myTeam==='A' ? HUNTERS_A : HUNTERS_B;
+    const headName = myTeam==='A' ? 'Carlos' : 'Ana';
     const tabs = [
-      {id:'team'+myTeam, label:'Mi Equipo '+myTeam, icon:'ti-users', dot: myTeam==='A'?'#1D9E75':'#D85A30'}
+      {id:'general',     label:'Vista general',   icon:'ti-home',  dot:'#534AB7'},
+      {id:'team'+myTeam, label:'Equipo '+headName, icon:'ti-users', dot: myTeam==='A'?'#1D9E75':'#D85A30'}
     ];
     hunters.forEach(h => tabs.push(hunterTab(h)));
     return tabs;
   }
- 
+
   /* hunter — solo ve sus propios leads */
   const h = HUNTERS[curUser.username];
   if(!h) return [{id: curUser.username, label: curUser.name, icon:'ti-user', dot: curUser.color}];
   return [hunterTab(h)];
 }
- 
+
 function getAccess(){
   const r = curUser.role;
   if(r==='director')  return {label:'Director',             badgeBg:'#EDE9FE', badgeColor:'#5B21B6'};
@@ -798,7 +939,7 @@ function getAccess(){
   if(r==='head')      return {label:'Head · Equipo '+curUser.equipo, badgeBg:'#D1FAE5', badgeColor:'#065F46'};
   return {label:'Hunter', badgeBg:'#DBEAFE', badgeColor:'#1E40AF'};
 }
- 
+
 function buildTabNav(tabs){
   const nav=document.getElementById('tab-nav');
   nav.innerHTML=tabs.map(t=>`
@@ -812,7 +953,7 @@ function buildTabNav(tabs){
   b.style.background=access.badgeBg;
   b.style.color=access.badgeColor;
 }
- 
+
 function switchTab(id){
   curTab=id; curFilter='all'; curSearch='';
   document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
@@ -820,42 +961,403 @@ function switchTab(id){
   if(el) el.classList.add('active');
   renderTab(id);
 }
- 
+
 /* ─── RENDER TABS ─── */
 function renderTab(id){
-  if(id==='general') renderGeneral();
+  if(id==='general')    renderGeneral();
+  else if(id==='allleads')  renderAllLeads();
+  else if(id==='cerrados')  renderCerradosCaidos('cerrado');
+  else if(id==='caidos')    renderCerradosCaidos('caido');
+  else if(id==='sva2')      renderSVA2();
   else if(id==='teamA'||id==='teamB') renderTeam(id==='teamA'?'A':'B');
   else renderHunter(id);
 }
- 
+
+/* ── LEADS SVA SEPARADO (linea='sva') ── */
+function renderSVA2(){
+  const SVA_TIPOS = ['QR','ARISALE','PLANILLAS'];
+
+  /* Filter only linea='sva' leads by role */
+  const svaLeads = (LEADS||[]).filter(l=>{
+    if((l.linea||'central') !== 'sva') return false;
+    if(curUser.role==='head'){
+      const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo;
+    }
+    if(curUser.role==='hunter') return l.hunter===curUser.username;
+    return true;
+  });
+
+  const totalCap = svaLeads.reduce((s,l)=>s+(l.value||0),0);
+  const cerrados = svaLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
+  const perdidos = svaLeads.filter(l=>l.categoria==='caido').length;
+  const activos  = svaLeads.filter(l=>l.categoria!=='caido').length;
+  const conv     = activos>0?Math.round(cerrados/activos*100):0;
+  const convColor= conv>=30?'#1D9E75':conv>=15?'#F5A623':'#E24B4A';
+
+  document.getElementById('content').innerHTML = `
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+    <div style="background:rgba(0,201,255,.15);border-radius:10px;padding:8px 12px;font-size:20px;">🔷</div>
+    <div>
+      <div style="font-size:16px;font-weight:600;color:#333;">Leads SVA</div>
+      <div style="font-size:11px;color:#999;">QR · Arisale · Planillas — línea separada</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+      ${['director','analista','head'].includes(curUser.role)
+        ? `<button onclick="document.getElementById('sva-import').click()"
+            style="padding:5px 14px;border-radius:7px;border:1px solid #00C9FF;background:rgba(0,201,255,.1);color:#00C9FF;font-size:11px;cursor:pointer;font-weight:600;">
+            📂 Importar Excel SVA
+          </button>
+          <input type="file" id="sva-import" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleSVAImport(this)">`
+        : `<span style="font-size:10px;color:#aaa;">Solo puedes agregar comentarios</span>`}
+      <span style="background:#00C9FF22;color:#00C9FF;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${svaLeads.length} leads</span>
+    </div>
+  </div>
+
+  <!-- Tarjetas -->
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:.5px;">General SVA</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px;">
+    ${kpiCard('Captura Total','S/ '+totalCap.toLocaleString(),'potencial SVA','neutral')}
+    ${kpiCard('Leads Total',activos,perdidos+' caídos aparte','neutral')}
+    ${kpiCard('SVA Cerrado',cerrados,'100% Cierre','up','#1D9E75')}
+    ${kpiCard('SVA Perdido',perdidos,'sin oportunidad','down','#E24B4A')}
+    ${kpiCard('% Conversión',conv+'%','cerrados / total',conv>=30?'up':conv>=15?'neutral':'down',convColor)}
+  </div>
+
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#3DB8E8;text-transform:uppercase;letter-spacing:.5px;">QR</div>
+  ${kpiRowFlat('QR', svaLeads, 'QR')}
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#7F77DD;text-transform:uppercase;letter-spacing:.5px;">Arisale</div>
+  ${kpiRowFlat('Arisale', svaLeads, 'ARISALE')}
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#F5A623;text-transform:uppercase;letter-spacing:.5px;">Planillas</div>
+  ${kpiRowFlat('Planillas', svaLeads, 'PLANILLAS')}
+
+  <!-- Hunter comment note -->
+  ${curUser.role==='hunter'?`<div style="padding:8px 14px;background:#FFF3CD;border-radius:7px;font-size:11px;color:#856404;margin-bottom:10px;">
+    ✏️ En tus leads SVA solo puedes modificar el <strong>comentario</strong>. Usa el botón 💾 Guardar en cada fila.
+  </div>`:''}
+  <!-- Tabla -->
+  <div style="margin:14px 0 8px;font-size:12px;font-weight:600;color:#333;">Leads SVA</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
+    <select class="filter-sel" onchange="window.sva2_tipo=this.value;renderSVA2()">
+      <option value="">Todos los tipos</option>
+      ${SVA_TIPOS.map(t=>`<option value="${t}"${window.sva2_tipo===t?' selected':''}>${t}</option>`).join('')}
+    </select>
+    <select class="filter-sel" onchange="window.sva2_cat=this.value;renderSVA2()">
+      <option value="">Todas las categorías</option>
+      <option value="activo"${window.sva2_cat==='activo'?' selected':''}>Activos</option>
+      <option value="cerrado"${window.sva2_cat==='cerrado'?' selected':''}>Cerrados</option>
+      <option value="caido"${window.sva2_cat==='caido'?' selected':''}>Caídos</option>
+    </select>
+    <span style="font-size:11px;color:#999;margin-left:auto;">${svaLeads.length} leads SVA</span>
+  </div>
+  <div class="tbl-wrap">
+    ${leadsTableHTML(
+      svaLeads.filter(l=>{
+        if(window.sva2_tipo&&(l.tipo_producto||'').toUpperCase()!==window.sva2_tipo) return false;
+        if(window.sva2_cat&&l.categoria!==window.sva2_cat) return false;
+        return true;
+      }), true, 'sva2'
+    )}
+  </div>`;
+}
+
+/* Handler de importación SVA */
+async function handleSVAImport(input){
+  const file = input.files[0];
+  if(!file){ return; }
+  input.value='';
+  /* Same import logic but sets linea='sva' */
+  await handleImportWithLinea(file, 'sva');
+}
+
+/* ── LEADS CERRADOS / CAÍDOS ── */
+function renderCerradosCaidos(tipo){
+  const isDA = ['director','analista'].includes(curUser.role);
+  const leads = (LEADS||[]).filter(l=>{
+    if(l.categoria !== tipo) return false;
+    /* Head only sees their team */
+    if(curUser.role==='head'){
+      const h = HUNTERS[l.hunter];
+      return h && h.team === curUser.equipo;
+    }
+    return true;
+  });
+
+  const color  = tipo==='cerrado' ? '#1D9E75' : '#E24B4A';
+  const icon   = tipo==='cerrado' ? '🏆' : '📉';
+  const titulo = tipo==='cerrado' ? 'Leads Cerrados' : 'Leads Caídos';
+  const desc   = tipo==='cerrado'
+    ? 'Leads que alcanzaron el 100% Cierre'
+    : 'Leads sin oportunidad marcados como caídos';
+
+  document.getElementById('content').innerHTML = `
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+    <span style="font-size:22px;">${icon}</span>
+    <div>
+      <div style="font-size:15px;font-weight:600;color:#333;">${titulo}</div>
+      <div style="font-size:11px;color:#999;">${desc}</div>
+    </div>
+    <span style="margin-left:auto;background:${color}22;color:${color};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${leads.length} leads</span>
+  </div>
+  <div class="tbl-wrap">${leads.length ? leadsTableHTML(leads, false, tipo) :
+    '<div style="padding:40px;text-align:center;color:#aaa;font-style:italic;">Sin leads '+tipo+'s aún.</div>'}</div>`;
+}
+
+/* Mark a lead as cerrado or caido */
+async function markLeadAs(leadId, categoria, key){
+  if(!['director','analista','head'].includes(curUser.role)){
+    alert('No tienes permisos.'); return;
+  }
+  const labels = {cerrado:'✅ Lead Cerrado', caido:'📉 Lead Caído', activo:'↩ Restaurado a Activo'};
+  const msgs   = {
+    cerrado:'¿Marcar este lead como CERRADO (100% Cierre)?',
+    caido:  '¿Marcar este lead como CAÍDO (sin oportunidad)?',
+    activo: '¿Restaurar este lead a ACTIVO?'
+  };
+  if(!confirm(msgs[categoria])) return;
+
+  /* Update in Supabase */
+  await sbPatch('leads', leadId, {
+    categoria: categoria,
+    estado: categoria==='cerrado' ? 'cerrado' : categoria==='activo' ? 'prospecto' : 'prospecto',
+    updated_at: new Date().toISOString()
+  });
+  await saveHistorial(leadId, 'categoria', labels[categoria]);
+
+  /* Update locally */
+  const l = LEADS.find(x=>String(x.id)===String(leadId));
+  if(l){
+    l.categoria = categoria;
+    if(categoria==='cerrado') l.status = 'cerrado';
+  }
+
+  renderTab(curTab);
+  alert(labels[categoria]+' registrado correctamente.');
+}
+
+/* ── TODOS LOS LEADS (Director / Analista) ── */
+function renderAllLeads(){
+  const key = 'allleads';
+  const allLeads = LEADS || [];
+
+  /* Stats row */
+  const total = allLeads.length;
+  const totalVal = allLeads.reduce((s,l)=>s+(l.value||0),0);
+  const cerrados = allLeads.filter(l=>l.status==='cerrado').length;
+  const equipoA = allLeads.filter(l=>{ const h=HUNTERS[l.hunter]; return h&&h.team==='A';}).length;
+  const equipoB = allLeads.filter(l=>{ const h=HUNTERS[l.hunter]; return h&&h.team==='B';}).length;
+
+  /* Filters state */
+  const fHunter = window['al_hunter']||'';
+  const fEstado = window['al_estado']||'all';
+  const fSearch = window['al_search']||'';
+  const fMes    = window['al_mes']||'';
+
+  /* Filtered leads */
+  let filtered = allLeads.filter(l=>{
+    if(fHunter && l.hunter !== fHunter) return false;
+    if(fEstado !== 'all' && l.status !== fEstado) return false;
+    if(fMes && l.close !== fMes) return false;
+    if(fSearch && !l.name.toLowerCase().includes(fSearch.toLowerCase()) && !l.ruc.includes(fSearch)) return false;
+    return true;
+  });
+
+  /* Hunter options */
+  const hunterOpts = [...new Set(allLeads.map(l=>l.hunter))].filter(Boolean)
+    .map(u => `<option value="${u}"${u===fHunter?' selected':''}>${HUNTERS[u]?.name||u}</option>`).join('');
+
+  /* Mes options */
+  const meses = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const mesOpts = meses.map(m=>`<option value="${m}"${m===fMes?' selected':''}>${m}</option>`).join('');
+
+  document.getElementById('content').innerHTML = `
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);">
+    <div class="kpi"><div class="kpi-label">1. Captura Total</div><div class="kpi-val">S/ ${totalVal.toLocaleString()}</div><div class="kpi-sub neutral">potencial pipeline</div></div>
+    <div class="kpi"><div class="kpi-label">2. Leads Total</div><div class="kpi-val">${total}</div><div class="kpi-sub neutral">registrados</div></div>
+    <div class="kpi"><div class="kpi-label">3. Leads Cerrado</div><div class="kpi-val" style="color:#1D9E75;">${cerrados}</div><div class="kpi-sub up">100% Cierre</div></div>
+    <div class="kpi"><div class="kpi-label">4. Leads Perdido</div><div class="kpi-val" style="color:#E24B4A;">${allLeads.filter(l=>l.categoria==='caido').length}</div><div class="kpi-sub down">caídos</div></div>
+    <div class="kpi"><div class="kpi-label">5. % Conversión</div><div class="kpi-val" style="color:${total>0&&Math.round(cerrados/total*100)>=30?'#1D9E75':'#F5A623'};">${total>0?Math.round(cerrados/total*100):0}%</div><div class="kpi-sub neutral">cerrados / total</div></div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 0;">
+    <input class="search-box" placeholder="Buscar empresa o RUC..." value="${fSearch}"
+      oninput="window['al_search']=this.value;renderAllLeads()" style="width:200px;">
+    <select class="filter-sel" onchange="window['al_hunter']=this.value;renderAllLeads()">
+      <option value="">Todos los hunters</option>${hunterOpts}
+    </select>
+    <select class="filter-sel" onchange="window['al_estado']=this.value;renderAllLeads()">
+      <option value="all">Todas las etapas</option>
+      ${Object.keys(SC).map(s=>`<option value="${s}"${s===fEstado?' selected':''}>${SC[s].l}</option>`).join('')}
+    </select>
+    <select class="filter-sel" onchange="window['al_mes']=this.value;renderAllLeads()">
+      <option value="">Todos los meses</option>${mesOpts}
+    </select>
+    <span style="margin-left:auto;font-size:11px;color:#999;">${filtered.length} de ${total} leads</span>
+    <button onclick="exportAllLeads()" style="padding:5px 12px;border-radius:7px;border:1px solid #1D9E75;background:#e8f5e9;color:#1D9E75;font-size:11px;cursor:pointer;font-weight:600;">
+      ⬇ Exportar Excel
+    </button>
+  </div>
+
+  <div class="tbl-wrap">${leadsTableHTML(filtered, true, key)}</div>`;
+}
+
+function exportAllLeads(){
+  if(typeof XLSX === 'undefined'){ alert('SheetJS no cargó'); return; }
+  const fHunter = window['al_hunter']||'';
+  const fEstado = window['al_estado']||'all';
+  const fMes    = window['al_mes']||'';
+  const fSearch = window['al_search']||'';
+  const filtered = (LEADS||[]).filter(l=>{
+    if(fHunter && l.hunter !== fHunter) return false;
+    if(fEstado !== 'all' && l.status !== fEstado) return false;
+    if(fMes && l.close !== fMes) return false;
+    if(fSearch && !l.name.toLowerCase().includes(fSearch.toLowerCase()) && !l.ruc.includes(fSearch)) return false;
+    return true;
+  });
+  const rows = filtered.map(l=>({
+    'Razón Social': l.name,
+    'RUC': l.ruc||'',
+    'Hunter': l.owner||'',
+    'Equipo': HUNTERS[l.hunter]?.team||'',
+    'Giros': l.giros||'',
+    'Origen': l.source||'',
+    'Tipo Producto': l.tipo_producto||'',
+    'Tipo Cuenta': l.tipo_cuenta||'',
+    'Banco': l.banco||'',
+    'Potencial (S/)': l.value||0,
+    'Etapa': SC[l.status]?.l||l.status,
+    'Mes Cierre': l.close||'',
+    'Comentario': l.note||'',
+    'Fecha registro': l.created||'',
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+  XLSX.writeFile(wb, `leads_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+/* ── KPI SINGLE CARD ── */
+function kpiCard(label, val, sub, trend, color){
+  const subCls = trend==='up'?'up':trend==='down'?'down':'neutral';
+  const valStyle = color ? `style="color:${color};"` : '';
+  return `<div class="kpi">
+    <div class="kpi-label">${label}</div>
+    <div class="kpi-val" ${valStyle}>${val}</div>
+    <div class="kpi-sub ${subCls}">${sub}</div>
+  </div>`;
+}
+
+/* ── KPI ROW FLAT (inline 5 cards) ── */
+function kpiRowFlat(label, leads, tipoProd){
+  const filtered = leads.filter(l=>(l.tipo_producto||'').toUpperCase()===tipoProd.toUpperCase());
+  const cerrados = filtered.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
+  const perdidos = filtered.filter(l=>l.categoria==='caido').length;
+  const total    = filtered.length;
+  const captura  = filtered.reduce((s,l)=>s+(l.value||0),0);
+  const conv     = (total-perdidos)>0 ? Math.round(cerrados/(total-perdidos)*100) : 0;
+  const convColor= conv>=30?'#1D9E75':conv>=15?'#F5A623':'#E24B4A';
+  return `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
+    ${kpiCard(label+' Total','S/ '+captura.toLocaleString(),'captura potencial','neutral')}
+    ${kpiCard(label+' Leads Total',total,'registrados','neutral')}
+    ${kpiCard(label+' Cerrado',cerrados,'100% Cierre','up','#1D9E75')}
+    ${kpiCard(label+' Perdido',perdidos,'caídos','down','#E24B4A')}
+    ${kpiCard('% Conversión '+label,conv+'%','cerrados / '+label.toLowerCase()+' total',conv>=30?'up':conv>=15?'neutral':'down',convColor)}
+  </div>`;
+}
+
+/* ── KPI ROW BY PRODUCT TYPE ── */
+function kpiRowHTML(label, leads, tipoProd){
+  const filtered = leads.filter(l=>(l.tipo_producto||'').toUpperCase()===tipoProd.toUpperCase());
+  const cerrados  = filtered.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
+  const perdidos  = filtered.filter(l=>l.categoria==='caido').length;
+  const activos   = filtered.filter(l=>l.categoria!=='caido').length;
+  const total     = filtered.length;
+  const captura   = filtered.reduce((s,l)=>s+(l.value||0),0);
+  const conv      = activos>0 ? Math.round(cerrados/activos*100) : 0;
+  const convColor = conv>=30?'#1D9E75':conv>=15?'#F5A623':'#E24B4A';
+
+  return `
+  <div style="margin-bottom:6px;">
+    <div style="font-size:11px;font-weight:600;color:#534AB7;margin-bottom:6px;padding-left:2px;">
+      ${label}
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">${label} Total</div>
+        <div class="kpi-val">S/ ${captura.toLocaleString()}</div>
+        <div class="kpi-sub neutral">captura potencial</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">${label} Leads Total</div>
+        <div class="kpi-val">${total}</div>
+        <div class="kpi-sub neutral">registrados</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">${label} Cerrado</div>
+        <div class="kpi-val" style="color:#1D9E75;">${cerrados}</div>
+        <div class="kpi-sub up">100% Cierre</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">${label} Perdido</div>
+        <div class="kpi-val" style="color:#E24B4A;">${perdidos}</div>
+        <div class="kpi-sub down">caídos</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">% Conversión ${label}</div>
+        <div class="kpi-val" style="color:${convColor};">${conv}%</div>
+        <div class="kpi-sub ${conv>=30?'up':conv>=15?'neutral':'down'}">cerrados / ${label.toLowerCase()} total</div>
+      </div>
+    </div>
+  </div>`;
+}
+
 /* GENERAL */
 function renderGeneral(){
   const allLeads = LEADS || [];
   const hunters = Object.values(HUNTERS);
   const totalReal = allLeads.reduce((s,l)=>s+(l.value||0),0);
-  const totalMeta = hunters.reduce((s,h)=>s+(h.meta||0),0) || 1;
-  const pct = Math.round(totalReal/totalMeta*100);
-  const cerrados = allLeads.filter(l=>l.status==='cerrado').length;
-  const conv = allLeads.length>0 ? Math.round(cerrados/allLeads.length*100) : 0;
- 
+  const totalMeta = hunters.reduce((s,h)=>s+(h.meta||0),0);
+  const pct = totalMeta>0?Math.round(totalReal/totalMeta*100):0;
+  const cerrados = allLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
+  const perdidos = allLeads.filter(l=>l.categoria==='caido').length;
+  const totalCaptura = allLeads.filter(l=>l.categoria!=='caido').length;
+  const conv = totalCaptura>0 ? Math.round(cerrados/totalCaptura*100) : 0;
+
   if(hunters.length===0){
     document.getElementById('content').innerHTML=`<div style="padding:40px;text-align:center;color:#888;">
       <div style="font-size:32px;margin-bottom:12px;">📋</div>
       <div style="font-size:15px;font-weight:600;color:#333;margin-bottom:6px;">Sin datos aún</div>
-      <div style="font-size:12px;">Los hunters y leads se cargarán desde Supabase al ingresar.</div>
+      <div style="font-size:12px;">Importa un Excel para ver los leads.</div>
     </div>`;
     return;
   }
- 
+  console.log('renderGeneral - hunters:', hunters.length, 'HUNTERS keys:', Object.keys(HUNTERS));
+
   let html=`
-  <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-label">Pipeline total</div><div class="kpi-val">S/ ${totalReal.toLocaleString()}</div><div class="kpi-sub ${pct>=90?'up':pct>=70?'neutral':'down'}">${pct}% de meta</div></div>
-    <div class="kpi"><div class="kpi-label">Meta total</div><div class="kpi-val">S/ ${totalMeta.toLocaleString()}</div><div class="kpi-sub neutral">Mayo 2026</div></div>
-    <div class="kpi"><div class="kpi-label">Leads activos</div><div class="kpi-val">${allLeads.length}</div><div class="kpi-sub neutral">registrados</div></div>
-    <div class="kpi"><div class="kpi-label">Cerrados</div><div class="kpi-val">${cerrados}</div><div class="kpi-sub up">este mes</div></div>
-    <div class="kpi"><div class="kpi-label">Conversión</div><div class="kpi-val">${conv}%</div><div class="kpi-sub neutral">del total</div></div>
+  <!-- ══ TODAS LAS TARJETAS JUNTAS ══ -->
+  <div style="margin-bottom:8px;font-size:10px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:.5px;">General</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
+    ${kpiCard('1. Captura Total','S/ '+totalReal.toLocaleString(),'potencial pipeline','neutral')}
+    ${kpiCard('2. Leads Total',allLeads.filter(l=>l.categoria!=='caido').length,allLeads.filter(l=>l.categoria==='caido').length+' caídos aparte','neutral')}
+    ${kpiCard('3. Leads Cerrado',allLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length,'100% Cierre','up','#1D9E75')}
+    ${kpiCard('4. Leads Perdido',allLeads.filter(l=>l.categoria==='caido').length,'sin oportunidad','down','#E24B4A')}
+    ${kpiCard('5. % Conversión',conv+'%','cerrados / captura',conv>=30?'up':conv>=15?'neutral':'down',conv>=30?'#1D9E75':conv>=15?'#F5A623':'#E24B4A')}
   </div>
- 
+
+
+
+
+
+
+
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#3DB8E8;text-transform:uppercase;letter-spacing:.5px;">QR</div>
+  ${kpiRowFlat('QR', allLeads, 'QR')}
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#7F77DD;text-transform:uppercase;letter-spacing:.5px;">Arisale</div>
+  ${kpiRowFlat('Arisale', allLeads, 'ARISALE')}
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#F5A623;text-transform:uppercase;letter-spacing:.5px;">Planillas</div>
+  ${kpiRowFlat('Planillas', allLeads, 'PLANILLAS')}
+
+  <!-- ══ GRÁFICOS ══ -->
+  <div style="margin:16px 0 8px;font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;">Gráficos</div>
   <div class="cards-row">
     <div class="card">
       <div class="card-title">Funnel general</div>
@@ -866,31 +1368,74 @@ function renderGeneral(){
       ${teamsCompareHTML()}
     </div>
   </div>
- 
-  <div class="card-title" style="margin-bottom:10px;">Rendimiento hunters</div>
-  <div class="hunters-grid">
-    ${hunters.map(h=>hunterCardHTML(h,true)).join('')}
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <div class="card-title">Rendimiento hunters</div>
+  </div>
+
+  <div style="margin-bottom:8px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;" onclick="goTeam('A')">
+      <span style="width:10px;height:10px;border-radius:50%;background:#1D9E75;display:inline-block;"></span>
+      <span style="font-size:12px;font-weight:600;color:#1D9E75;">Equipo Carlos</span>
+      <span style="font-size:11px;color:#999;">→ ver equipo completo</span>
+    </div>
+    <div class="hunters-grid">
+      ${HUNTERS_A.map(h=>hunterCardHTML(h,true)).join('')}
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;" onclick="goTeam('B')">
+      <span style="width:10px;height:10px;border-radius:50%;background:#D85A30;display:inline-block;"></span>
+      <span style="font-size:12px;font-weight:600;color:#D85A30;">Equipo Ana</span>
+      <span style="font-size:11px;color:#999;">→ ver equipo completo</span>
+    </div>
+    <div class="hunters-grid">
+      ${HUNTERS_B.map(h=>hunterCardHTML(h,true)).join('')}
+    </div>
   </div>`;
   document.getElementById('content').innerHTML=html;
 }
- 
+
 /* TEAM */
 function renderTeam(team){
   const t=TEAMS[team];
+  /* Store current view for back nav */
+  window._lastTeam = team;
   const teamLeads=leadsForTeam(team);
+  /* Verify head is only viewing their team */
+  if(curUser.role==='head' && curUser.equipo!==team){
+    document.getElementById('content').innerHTML='<div style="padding:40px;text-align:center;color:#E24B4A;">No tienes acceso al Equipo '+team+'</div>';
+    return;
+  }
   const teamReal=t.hunters.reduce((s,hid)=>s+(HUNTERS[hid]?.real||0),0);
-  const teamMeta=t.hunters.reduce((s,hid)=>s+(HUNTERS[hid]?.meta||0),0)||1;
-  const pct=Math.round(teamReal/teamMeta*100);
+  const teamMeta=t.hunters.reduce((s,hid)=>s+(HUNTERS[hid]?.meta||0),0);
+  const pct=teamMeta>0?Math.round(teamReal/teamMeta*100):0;
   const cerrados=teamLeads.filter(l=>l.status==='cerrado').length;
- 
+
   let html=`
-  <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-label">Pipeline equipo</div><div class="kpi-val">S/${teamReal.toLocaleString()}</div><div class="kpi-sub ${pct>=90?'up':pct>=70?'neutral':'down'}">${pct}% de meta</div></div>
-    <div class="kpi"><div class="kpi-label">Meta equipo</div><div class="kpi-val">S/${teamMeta.toLocaleString()}</div><div class="kpi-sub neutral">Mayo 2026</div></div>
-    <div class="kpi"><div class="kpi-label">Leads activos</div><div class="kpi-val">${teamLeads.length}</div><div class="kpi-sub neutral">este mes</div></div>
-    <div class="kpi"><div class="kpi-label">Cerrados</div><div class="kpi-val">${cerrados}</div><div class="kpi-sub up">este mes</div></div>
+  <!-- ══ TARJETAS EQUIPO ══ -->
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:.5px;">General</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
+    ${(()=>{const c=teamLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
+      const p=teamLeads.filter(l=>l.categoria==='caido').length;
+      const cap=teamLeads.reduce((s,l)=>s+(l.value||0),0);
+      const tot=teamLeads.filter(l=>l.categoria!=='caido').length;
+      const cv=tot>0?Math.round(c/tot*100):0;
+      return kpiCard('1. Captura Total','S/ '+cap.toLocaleString(),'potencial','neutral')
+        +kpiCard('2. Leads Total',tot,p+' caídos aparte','neutral')
+        +kpiCard('3. Leads Cerrado',c,'100% Cierre','up','#1D9E75')
+        +kpiCard('4. Leads Perdido',p,'sin oportunidad','down','#E24B4A')
+        +kpiCard('5. % Conversión',cv+'%','cerrados / captura',cv>=30?'up':cv>=15?'neutral':'down',cv>=30?'#1D9E75':cv>=15?'#F5A623':'#E24B4A');
+    })()}
   </div>
- 
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#3DB8E8;text-transform:uppercase;letter-spacing:.5px;">QR</div>
+  ${kpiRowFlat('QR', teamLeads, 'QR')}
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#7F77DD;text-transform:uppercase;letter-spacing:.5px;">Arisale</div>
+  ${kpiRowFlat('Arisale', teamLeads, 'ARISALE')}
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#F5A623;text-transform:uppercase;letter-spacing:.5px;">Planillas</div>
+  ${kpiRowFlat('Planillas', teamLeads, 'PLANILLAS')}
+
   <div class="cards-row">
     <div class="card">
       <div class="card-title">Funnel del equipo</div>
@@ -901,12 +1446,12 @@ function renderTeam(team){
       ${sourceHTML(teamLeads)}
     </div>
   </div>
- 
+
   <div class="card-title" style="margin-bottom:10px;">Mis hunters</div>
   <div class="hunters-grid" style="margin-bottom:18px;">
     ${t.hunters.map(hid=>hunterCardHTML(HUNTERS[hid],true)).join('')}
   </div>
- 
+
   <div class="tbl-header">
     <div style="display:flex;align-items:center;gap:8px;">
       <span style="font-size:13px;font-weight:700;">Todos los leads del equipo</span>
@@ -916,18 +1461,27 @@ function renderTeam(team){
   <div class="tbl-wrap">${leadsTableHTML(teamLeads,true,'team-'+team)}</div>`;
   document.getElementById('content').innerHTML=html;
 }
- 
+
 /* HUNTER */
 function renderHunter(hid){
+  try {
   const h=HUNTERS[hid];
-  if(!h){ document.getElementById('content').innerHTML=`<div style="padding:40px;text-align:center;color:#888;">Hunter no encontrado: ${hid}</div>`; return; }
+  if(!h){ document.getElementById('content').innerHTML='<div style="padding:40px;text-align:center;color:#E24B4A;">Hunter "'+hid+'" no encontrado.</div>'; return; }
+  /* Head can only view their team's hunters */
+  if(curUser.role==='head' && h.team!==curUser.equipo){
+    document.getElementById('content').innerHTML='<div style="padding:40px;text-align:center;color:#E24B4A;">No tienes acceso a este hunter.</div>';
+    return;
+  }
   const leads=leadsForHunter(hid);
   const pct=h.meta?Math.round((h.real||0)/h.meta*100):0;
   const canEdit=curUser.role!=='director'||true; // director y heads siempre pueden editar; hunter solo el suyo
   const isOwn=curUser.hunter===hid;
   const roleCanEdit=(curUser.role==='director')||(curUser.role==='analista')||(curUser.role==='head'&&(HUNTERS[hid]?.team===curUser.equipo))||(curUser.role==='hunter'&&isOwn);
- 
-  let html=`
+
+  const backBtnHtml = ['director','analista'].includes(curUser.role)
+    ? `<div style="margin-bottom:12px;"><button onclick="window.goTeam('${h.team}')" style="font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid #dde1e7;background:#fff;cursor:pointer;color:#534AB7;font-weight:500;">← Equipo ${h.team==='A'?'Carlos':'Ana'}</button></div>`
+    : '';
+  let html=`${backBtnHtml}
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
     <div style="width:48px;height:48px;border-radius:50%;background:${h.color}20;border:2px solid ${h.color};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:${h.color};">${h.initials}</div>
     <div>
@@ -939,20 +1493,34 @@ function renderHunter(hid){
       <div style="font-size:22px;font-weight:700;color:${pct>=90?'#1D9E75':pct>=70?'#BA7517':'#E24B4A'};">${pct}%</div>
     </div>
   </div>
- 
-  <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-label">Pipeline real</div><div class="kpi-val">S/${h.real.toLocaleString()}</div><div class="kpi-sub ${pct>=90?'up':pct>=70?'neutral':'down'}">${pct}% de meta</div></div>
-    <div class="kpi"><div class="kpi-label">Meta</div><div class="kpi-val">S/${h.meta.toLocaleString()}</div><div class="kpi-sub neutral">Mayo 2026</div></div>
-    <div class="kpi"><div class="kpi-label">Leads</div><div class="kpi-val">${leads.length}</div><div class="kpi-sub neutral">activos</div></div>
-    <div class="kpi"><div class="kpi-label">Cerrados</div><div class="kpi-val">${leads.filter(l=>l.status==='cerrado').length}</div><div class="kpi-sub up">este mes</div></div>
-    <div class="kpi"><div class="kpi-label">En propuesta</div><div class="kpi-val">${leads.filter(l=>l.status==='propuesta').length}</div><div class="kpi-sub neutral">leads</div></div>
+
+  <!-- ══ TARJETAS HUNTER ══ -->
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:.5px;">General</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
+    ${(()=>{const c=leads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
+      const p=leads.filter(l=>l.categoria==='caido').length;
+      const cap=leads.reduce((s,l)=>s+(l.value||0),0);
+      const tot=leads.filter(l=>l.categoria!=='caido').length;
+      const cv=tot>0?Math.round(c/tot*100):0;
+      return kpiCard('1. Captura Total','S/ '+cap.toLocaleString(),'potencial','neutral')
+        +kpiCard('2. Leads Total',tot,p+' caídos aparte','neutral')
+        +kpiCard('3. Leads Cerrado',c,'100% Cierre','up','#1D9E75')
+        +kpiCard('4. Leads Perdido',p,'sin oportunidad','down','#E24B4A')
+        +kpiCard('5. % Conversión',cv+'%','cerrados / captura',cv>=30?'up':cv>=15?'neutral':'down',cv>=30?'#1D9E75':cv>=15?'#F5A623':'#E24B4A');
+    })()}
   </div>
- 
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#3DB8E8;text-transform:uppercase;letter-spacing:.5px;">QR</div>
+  ${kpiRowFlat('QR', leads, 'QR')}
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#7F77DD;text-transform:uppercase;letter-spacing:.5px;">Arisale</div>
+  ${kpiRowFlat('Arisale', leads, 'ARISALE')}
+  <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#F5A623;text-transform:uppercase;letter-spacing:.5px;">Planillas</div>
+  ${kpiRowFlat('Planillas', leads, 'PLANILLAS')}
+
   <div class="cards-row" style="margin-bottom:18px;">
     <div class="card"><div class="card-title">Mi funnel</div>${funnelHTML(leads)}</div>
     <div class="card"><div class="card-title">Fuente</div>${sourceHTML(leads)}</div>
   </div>
- 
+
   <div class="tbl-header">
     <div style="display:flex;align-items:center;gap:8px;">
       <span style="font-size:13px;font-weight:700;">Mis leads</span>
@@ -961,15 +1529,18 @@ function renderHunter(hid){
   </div>
   <div class="tbl-wrap">${leadsTableHTML(leads,roleCanEdit,'hunter-'+hid)}</div>`;
   document.getElementById('content').innerHTML=html;
+  } catch(e){
+    document.getElementById('content').innerHTML='<div style="padding:40px;color:#E24B4A;font-size:12px;">Error renderHunter: '+e.message+'</div>';
+  }
 }
- 
+
 /* ─── HELPERS ─── */
 function funnelHTML(leads){
   const stages=[
-    {k:'prospecto', l:'Prospecto',c:'#534AB7'},
-    {k:'contactado',l:'Contactado',c:'#7F77DD'},
-    {k:'reunión',   l:'Reunión',   c:'#378ADD'},
-    {k:'propuesta', l:'Propuesta', c:'#1D9E75'},
+    {k:'prospecto',   l:'10% Prospección',c:'#3DB8E8'},
+    {k:'oportunidad', l:'25% Oportunidad', c:'#7F77DD'},
+    {k:'negociacion', l:'50% Negociación', c:'#F5A623'},
+    {k:'precierre',   l:'75% Pre-cierre',  c:'#E8721C'},
     {k:'cerrado',   l:'Cerrado',   c:'#639922'},
   ];
   const max=leads.length||1;
@@ -983,7 +1554,7 @@ function funnelHTML(leads){
     </div>`;
   }).join('');
 }
- 
+
 function sourceHTML(leads){
   const sources={};
   leads.forEach(l=>{sources[l.source]=(sources[l.source]||0)+1;});
@@ -996,22 +1567,22 @@ function sourceHTML(leads){
       <span class="pct" style="color:${colors[s]||'#888'};">${Math.round(n/total*100)}%</span>
     </div>`).join('')||'<p style="font-size:12px;color:#aaa;">Sin datos</p>';
 }
- 
+
 function leadsForHunter(username){
   return (LEADS||[]).filter(l => l.hunter === username);
 }
- 
+
 function leadsForTeam(team){
   const hunters = team==='A' ? HUNTERS_A.map(h=>h.username) : HUNTERS_B.map(h=>h.username);
   return (LEADS||[]).filter(l => hunters.includes(l.hunter));
 }
- 
+
 function teamsCompareHTML(){
   return ['A','B'].map(k=>{
     const t=TEAMS[k];
     const hunters=k==='A'?HUNTERS_A:HUNTERS_B;
     const real=leadsForTeam(k).reduce((s,l)=>s+l.value,0);
-    const meta=hunters.reduce((s,h)=>s+h.meta,0)||1;
+    const meta=hunters.reduce((s,h)=>s+(h.meta||0),0);
     const pct=Math.round(real/meta*100);
     return `<div style="margin-bottom:14px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
@@ -1027,12 +1598,16 @@ function teamsCompareHTML(){
     </div>`;
   }).join('');
 }
- 
+
 function hunterCardHTML(h,showBtn=false){
   const leads=leadsForHunter(h.username);
   const pct=h.meta?Math.round(h.real/h.meta*100):0;
-  const stagesCount={prospecto:0,contactado:0,'reunión':0,propuesta:0,cerrado:0};
-  leads.forEach(l=>{if(stagesCount[l.status]!==undefined)stagesCount[l.status]++;});
+  const stagesCount={prospecto:0,oportunidad:0,negociacion:0,precierre:0,cerrado:0};
+  leads.forEach(l=>{
+    const k = mapEstado(l.status);
+    if(stagesCount[k]!==undefined) stagesCount[k]++;
+    else stagesCount.prospecto++;
+  });
   const tabId=h.username;
   return `<div class="hunter-card">
     <div class="hunter-header">
@@ -1050,68 +1625,250 @@ function hunterCardHTML(h,showBtn=false){
     <div class="progress-labels"><span>S/${h.real.toLocaleString()}</span><span>S/${h.meta.toLocaleString()}</span></div>
     <div class="hunter-stats">
       <div class="hstat"><div class="hstat-val">${leads.length}</div><div class="hstat-lbl">Leads</div></div>
-      <div class="hstat"><div class="hstat-val">${stagesCount.propuesta}</div><div class="hstat-lbl">Propuesta</div></div>
+      <div class="hstat"><div class="hstat-val">${stagesCount.precierre||0}</div><div class="hstat-lbl">Pre-cierre</div></div>
       <div class="hstat"><div class="hstat-val">${stagesCount.cerrado}</div><div class="hstat-lbl">Cerrados</div></div>
     </div>
-    ${showBtn&&curUser.role!=='hunter'?`<button style="width:100%;margin-top:10px;font-size:11px;padding:5px;border-radius:7px;border:1px solid #dde1e7;background:#fff;cursor:pointer;color:#534AB7;font-weight:600;" onclick="switchTab('${tabId}')">Ver detalle <i class="ti ti-arrow-right" style="font-size:11px;"></i></button>`:''}
+    ${showBtn&&curUser.role!=='hunter'?`<button style="width:100%;margin-top:10px;font-size:11px;padding:5px;border-radius:7px;border:1px solid #dde1e7;background:#fff;cursor:pointer;color:#534AB7;font-weight:600;" onclick="window.gotoHunter('${tabId}')">Ver detalle <i class="ti ti-arrow-right" style="font-size:11px;"></i></button>`:''}
   </div>`;
 }
- 
+
 function filterBarHTML(leads, key, showNew=true){
+  showNew = canAddLead(); // todos pueden agregar
   return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
     <div class="filter-tabs">
       <button class="ftab active" onclick="setFilter('all','${key}')">Todos <span style="background:rgba(255,255,255,.3);padding:0 5px;border-radius:8px;font-size:10px;">${leads.length}</span></button>
-      ${['prospecto','contactado','reunión','propuesta','cerrado'].map(s=>`<button class="ftab" onclick="setFilter('${s}','${key}')">${SC[s].l}</button>`).join('')}
+      ${Object.keys(SC).map(s=>`<button class="ftab" onclick="setFilter('${s}','${key}')">${SC[s].l}</button>`).join('')}
     </div>
     <input class="search-box" placeholder="Buscar..." oninput="setSearch(this.value,'${key}')">
     ${showNew!==false?`<button class="btn-new" onclick="openModal(null,'${key}')"><i class="ti ti-plus"></i> Nuevo lead</button>`:''}
   </div>`;
 }
- 
+
+/* ─── PERMISOS CENTRALIZADOS ───
+   director / analista → editan TODO
+   head                → editan solo leads de su equipo
+   hunter              → solo añade leads y edita comentario de los suyos
+*/
+/* ── HISTORIAL DE CAMBIOS ── */
+const FIELD_LABELS = {
+  valor:'Potencial', banco:'Banco', estado:'Etapa', mes_cierre:'Mes Cierre',
+  comentario:'Comentario', fecha_ingreso:'F. Ingreso', fecha_modif:'F. Modificación',
+  fecha_cierre:'F. Cierre', nombre:'Razón Social', ruc:'RUC', fuente:'Origen',
+  giros:'Giros', tipo_producto:'Tipo Producto', tipo_cuenta:'Tipo Cuenta'
+};
+
+async function saveHistorial(leadId, campo, valorNuevo){
+  try {
+    await sbInsert('lead_historial', {
+      lead_id:     leadId,
+      usuario:     curUser.name,
+      rol:         curUser.role,
+      campo:       FIELD_LABELS[campo] || campo,
+      valor_nuevo: String(valorNuevo || '—'),
+      fecha:       new Date().toISOString()
+    });
+  } catch(e){ console.warn('historial error:', e); }
+}
+
+async function loadHistorial(leadId){
+  try {
+    const rows = await sbGet('lead_historial',
+      `lead_id=eq.${leadId}&order=fecha.desc&limit=50`);
+    return rows || [];
+  } catch(e){ return []; }
+}
+
+/* ── PERMISOS CENTRALIZADOS ──
+   director / analista  → ven y editan TODO
+   head                 → ven y editan SOLO su equipo
+   hunter               → solo agrega leads y edita comentario + fecha modif de los suyos
+*/
+function isMyTeamLead(lead){
+  if(!lead) return false;
+  const h = HUNTERS[lead.hunter];
+  return h && h.team === curUser.equipo;
+}
+function canDelete(lead){
+  const r = curUser.role;
+  if(r==='director' || r==='analista') return true;
+  if(r==='head') return isMyTeamLead(lead);
+  return false;
+}
+function canFullEdit(lead){
+  const r = curUser.role;
+  if(r==='director' || r==='analista') return true;
+  if(r==='head') return isMyTeamLead(lead);
+  return false;
+}
+function canPartialEdit(lead){
+  // director, analista, head (solo su equipo) pueden editar potencial/banco/etapa/mes/fechas
+  return canFullEdit(lead);
+}
+function canEditComment(lead){
+  // Hunter edita comentario y fecha modif de sus propios leads
+  return curUser.role === 'hunter' && lead?.hunter === curUser.username;
+}
+function canAddLead(){
+  return true; // todos pueden agregar leads
+}
+
+/* Global registry to safely pass UUIDs without quote issues */
+const LEAD_REG = {};
+function regLead(l){ LEAD_REG[l.id] = l; return l.id; }
+function getLead(id){ return LEADS.find(l=>l.id===id) || LEAD_REG[id]; }
+
 function leadsTableHTML(leads, canEdit, key){
-  const filtered=leads.filter(l=>{
+  /* Head only sees their team's leads */
+  const visibleLeads = curUser.role==='head'
+    ? leads.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; })
+    : leads;
+
+  const filtered=visibleLeads.filter(l=>{
     const fs=window['filter_'+key]||'all';
     const ss=window['search_'+key]||'';
-    if(fs!=='all'&&l.status!==fs) return false;
+    if(fs!=='all'&&(SC[l.status]?l.status:mapEstado(l.status))!==fs) return false;
     if(ss&&!l.name.toLowerCase().includes(ss.toLowerCase())) return false;
     return true;
   });
-  const ro=canEdit?'':'readonly';
   if(!filtered.length) return `<table><tbody><tr><td colspan="12" style="text-align:center;padding:24px;color:#aaa;font-size:13px;">Sin leads para mostrar</td></tr></tbody></table>`;
   return `<table>
     <colgroup>
-      <col style="width:22px"><col style="width:145px"><col style="width:86px"><col style="width:86px">
-      <col style="width:105px"><col style="width:100px"><col style="width:60px"><col style="width:88px">
-      <col style="width:52px"><col style="width:78px"><col style="width:150px"><col style="width:60px">
+      <col style="width:18px"><col style="width:26px"><col style="width:150px"><col style="width:80px">
+      <col style="width:82px"><col style="width:82px"><col style="width:95px">
+      <col style="width:100px"><col style="width:110px"><col style="width:100px">
+      <col style="width:85px"><col style="width:100px">
+      <col style="width:60px"><col style="width:80px"><col style="width:100px">
+      <col style="width:80px"><col style="width:140px"><col style="width:50px">
     </colgroup>
     <thead><tr>
-      <th></th><th>Nombre</th><th>F. creación</th><th>Cierre est.</th>
-      <th>Responsable</th><th>Estado</th><th>Conflict.</th><th>Fuente</th>
-      <th>Prob.</th><th>Valor</th><th>Comentario</th><th></th>
+      <th></th><th></th><th>Razón Social</th><th>RUC</th><th>F. Ingreso</th><th>F. Cierre</th><th>F. Modificación</th><th>Hunter</th>
+      <th>Giros</th><th>Origen</th><th>Tipo Producto</th><th>Tipo Cuenta</th>
+      <th>Banco</th><th>Potencial</th><th>Etapa</th><th>Mes Cierre</th><th>Comentarios</th><th></th>
     </tr></thead>
     <tbody>${filtered.map(l=>{
+      const full = canFullEdit(l);
+      const commentOnly = canEditComment(l);
+      const ro = full ? '' : 'readonly';
       const dc=l.prob>=75?'#1D9E75':l.prob>=40?'#BA7517':'#E24B4A';
-      const sc2=SC[l.status]||{bg:'#eee',c:'#333',l:l.status};
-      const statusCell=canEdit
-        ?`<select style="font-size:11px;border:1px solid #dde1e7;padding:2px 6px;border-radius:6px;background:${sc2.bg};color:${sc2.c};font-weight:600;cursor:pointer;" onchange="updateLead(${l.id},'status',this.value,'${key}')">${Object.keys(SC).map(s=>`<option value="${s}"${s===l.status?' selected':''}>${SC[s].l}</option>`).join('')}</select>`
-        :`<span class="sbadge" style="background:${sc2.bg};color:${sc2.c};">${sc2.l}</span>`;
-      return `<tr>
+      const sc2=SC[l.status]||{bg:'#f0f0f0',c:'#666',l:l.status||'—'};
+      const statusCell = full
+        ? `<select style="font-size:11px;border:1px solid #dde1e7;padding:2px 6px;border-radius:6px;background:${sc2.bg};color:${sc2.c};font-weight:600;cursor:pointer;" onchange="updateLead(${l.id},'status',this.value,'${key}')">${Object.keys(SC).map(s=>`<option value="${s}"${s===l.status?' selected':''}>${SC[s].l}</option>`).join('')}</select>`
+        : `<span class="sbadge" style="background:${sc2.bg};color:${sc2.c};">${sc2.l}</span>`;
+      const noteInput = (full || commentOnly)
+        ? `<input class="ecell" value="${l.note||''}" placeholder="—" onchange="updateLead(${l.id},'note',this.value,'${key}')" style="color:#888;font-size:11px;">`
+        : `<span style="font-size:11px;color:#aaa;">${l.note||'—'}</span>`;
+      /* Director/Analista/Head pueden editar inline: potencial, banco, etapa, mes cierre, comentario */
+      const canPartial = canFullEdit(l);
+
+      const potencialCell = canPartial
+        ? `<input class="ecell" type="number" value="${l.value||0}" style="font-weight:700;font-size:11px;width:70px;" data-id="${l.id}" data-field="valor" data-key="${key}" onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)">`
+        : `S/${(l.value||0).toLocaleString()}`;
+
+      const bancoCell = canPartial
+        ? `<select style="font-size:10px;border:1px solid #dde1e7;padding:2px 4px;border-radius:5px;" data-id="${l.id}" data-field="banco" data-key="${key}" onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)">
+            ${['','BCP','BBVA','IBK','SCOTIABANK','INTERBANK','OTRO'].map(b=>`<option value="${b}"${b===l.banco?' selected':''}>${b||'—'}</option>`).join('')}
+           </select>`
+        : `${l.banco||'—'}`;
+
+      const etapaCell = canPartial
+        ? `<select style="font-size:10px;border:1px solid #dde1e7;padding:2px 4px;border-radius:5px;background:${sc2.bg};color:${sc2.c};font-weight:600;" data-id="${l.id}" data-field="estado" data-key="${key}" onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)">
+            ${Object.keys(SC).map(s=>`<option value="${s}"${s===l.status?' selected':''}>${SC[s].l}</option>`).join('')}
+           </select>`
+        : `<span class="sbadge" style="background:${sc2.bg};color:${sc2.c};">${sc2.l}</span>`;
+
+      const mesCierreCell = canPartial
+        ? `<select style="font-size:10px;border:1px solid #dde1e7;padding:2px 4px;border-radius:5px;" data-id="${l.id}" data-field="mes_cierre" data-key="${key}" onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)">
+            ${['','ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'].map(m=>`<option value="${m}"${m===l.close?' selected':''}>${m||'—'}</option>`).join('')}
+           </select>`
+        : `${l.close||'—'}`;
+
+      const comentarioCell = (canPartial || commentOnly)
+        ? `<input class="ecell" id="comentario-${l.id}" value="${(l.note||'').replace(/"/g,'&quot;')}" placeholder="Escribe tu comentario..." style="color:#444;font-size:11px;border:1px solid #c5d0e0;border-radius:5px;padding:3px 6px;">`
+        : `<span style="font-size:11px;color:#aaa;">${l.note||'—'}</span>`;
+
+      const safeId = l.id; regLead(l);
+      /* Hunter daily save button */
+      const hunterSaveBtn = (commentOnly && !full)
+        ? `<button onclick="hunterGuardar('${safeId}','${key}')"
+            style="font-size:10px;padding:4px 10px;border-radius:6px;background:#7F77DD;color:#fff;border:none;cursor:pointer;font-weight:600;white-space:nowrap;">
+            💾 Guardar
+           </button>`
+        : '';
+      const canMark = ['director','analista','head'].includes(curUser.role) && canFullEdit(l);
+      const deleteBtn = canDelete(l)
+        ? `<span class="alink" style="color:#E24B4A;margin-left:4px;cursor:pointer;" data-id="${safeId}" data-key="${key}" data-action="delete" onclick="handleTblAction(this)" title="Eliminar">🗑</span>`
+        : '';
+      const editBtn = full
+        ? `<span class="alink" style="cursor:pointer;" data-id="${safeId}" data-key="${key}" data-action="edit" onclick="handleTblAction(this)" title="Editar">✏️</span>`
+        : '';
+      const cerrarBtn = canMark && l.categoria!=='cerrado'
+        ? `<span style="cursor:pointer;font-size:13px;margin-left:4px;" title="Marcar como Cerrado" onclick="markLeadAs('${safeId}','cerrado','${key}')">🏆</span>`
+        : '';
+      const caidoBtn = canMark && l.categoria!=='caido'
+        ? `<span style="cursor:pointer;font-size:13px;margin-left:4px;" title="Marcar como Caído" onclick="markLeadAs('${safeId}','caido','${key}')">📉</span>`
+        : '';
+      const restoreBtn = (canMark && (l.categoria==='cerrado'||l.categoria==='caido'))
+        ? `<span style="cursor:pointer;font-size:11px;margin-left:4px;color:#888;" title="Restaurar a activo" onclick="markLeadAs('${safeId}','activo','${key}')">↩</span>`
+        : '';
+      const actionBtn = `<span style="white-space:nowrap;">${hunterSaveBtn}${editBtn}${cerrarBtn}${caidoBtn}${restoreBtn}${deleteBtn}</span>`;
+
+      return `<tr id="row-${l.id}">
         <td><span class="dot" style="background:${dc};"></span></td>
-        <td style="font-weight:600;"><input class="ecell" value="${l.name}" ${ro} onchange="updateLead(${l.id},'name',this.value,'${key}')"></td>
-        <td style="color:#aaa;font-size:11px;">${l.created}</td>
-        <td><input class="ecell" value="${l.close}" ${ro} onchange="updateLead(${l.id},'close',this.value,'${key}')"></td>
+        <td style="text-align:center;cursor:pointer;" title="Ver historial" onclick="toggleHistorial('${l.id}',this)">
+          <span style="font-size:13px;" id="exp-${l.id}">▶</span>
+        </td>
+        <td style="font-weight:600;font-size:11px;" title="${l.name}">${l.name}</td>
+        <td style="font-size:11px;color:#666;">${l.ruc||'—'}</td>
+        <td style="padding:4px 8px;">
+          ${canPartial
+            ? `<input type="date" value="${l.fecha_ingreso_raw||''}" data-id="${l.id}" data-field="fecha_ingreso" data-key="${key}"
+                onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)"
+                style="font-size:10px;border:1px solid #dde1e7;border-radius:5px;padding:2px 4px;width:110px;color:#555;">`
+            : `<span style="font-size:10px;color:#999;">${l.fecha_ingreso||'—'}</span>`
+          }
+        </td>
+        <td style="padding:4px 8px;">
+          ${canPartial
+            ? `<input type="date" value="${l.fecha_cierre_raw||''}" data-id="${l.id}" data-field="fecha_cierre" data-key="${key}"
+                onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)"
+                style="font-size:10px;border:1px solid #dde1e7;border-radius:5px;padding:2px 4px;width:110px;color:#555;">`
+            : `<span style="font-size:10px;color:#999;">${l.fecha_cierre_dt||'—'}</span>`
+          }
+        </td>
+        <td style="padding:4px 8px;">
+          ${canPartial
+            ? `<input type="date" value="${l.fecha_modif_raw||''}" data-id="${l.id}" data-field="fecha_modif" data-key="${key}"
+                onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)"
+                style="font-size:10px;border:1px solid #dde1e7;border-radius:5px;padding:2px 4px;width:110px;color:${l.fecha_mod_late?'#E24B4A':'#555'};">`
+            : commentOnly
+              ? `<span style="font-size:10px;color:${l.modified_today?'#1D9E75':l.fecha_mod_late?'#E24B4A':'#999'};">
+                  ${l.fecha_modif||'—'}${l.fecha_mod_late?' ⚠':''}${l.modified_today?' ✓':''}
+                 </span>`
+              : `<span style="font-size:10px;color:#999;">${l.fecha_modif||'—'}</span>`
+          }
+        </td>
         <td style="font-size:11px;color:#666;">${l.owner}</td>
-        <td>${statusCell}</td>
-        <td style="text-align:center;">${l.conflict?'<i class="ti ti-alert-triangle" style="color:#BA7517;font-size:14px;"></i>':'<i class="ti ti-circle-check" style="color:#1D9E75;font-size:14px;"></i>'}</td>
-        <td style="font-size:11px;color:#666;">${l.source}</td>
-        <td style="font-weight:700;">${l.prob}%</td>
-        <td style="font-weight:700;">S/${l.value.toLocaleString()}</td>
-        <td><input class="ecell" value="${l.note}" ${ro} placeholder="—" onchange="updateLead(${l.id},'note',this.value,'${key}')" style="color:#888;font-size:11px;"></td>
-        <td>${canEdit?`<span class="alink" onclick="openModal(${l.id},'${key}')">Editar</span>`:'<span style="font-size:11px;color:#ccc;">Ver</span>'}</td>
+        <td style="font-size:11px;color:#666;">${l.giros||'—'}</td>
+        <td style="font-size:11px;color:#666;">${l.source||'—'}</td>
+        <td style="font-size:11px;color:#666;">${l.tipo_producto||'—'}</td>
+        <td style="font-size:11px;color:#666;">${l.tipo_cuenta||'—'}</td>
+        <td>${bancoCell}</td>
+        <td>${potencialCell}</td>
+        <td>${etapaCell}</td>
+        <td>${mesCierreCell}</td>
+        <td>${comentarioCell}</td>
+        <td>${actionBtn}</td>
+      </tr>
+      <tr id="hist-${l.id}" style="display:none;">
+        <td colspan="17" style="padding:0;">
+          <div id="hist-content-${l.id}" style="background:#f8f9fc;padding:10px 20px;border-top:1px solid #eee;font-size:11px;">
+            <div style="color:#999;text-align:center;">Cargando historial...</div>
+          </div>
+        </td>
       </tr>`;
     }).join('')}</tbody></table>`;
 }
- 
+
 /* ─── ACTIONS ─── */
 function setFilter(f,key){
   window['filter_'+key]=f;
@@ -1122,79 +1879,779 @@ function setFilter(f,key){
   renderTab(curTab);
 }
 function setSearch(v,key){window['search_'+key]=v; renderTab(curTab);}
- 
+
 async function updateLead(id,field,val,key){
   const fieldMap={name:'nombre',status:'estado',conflict:'conflicto',source:'fuente',prob:'probabilidad',value:'valor',note:'comentario',close:'fecha_cierre'};
   const dbField=fieldMap[field]||field;
   await sbPatch('leads',`id=eq.${id}`,{[dbField]:val,updated_at:new Date().toISOString()});
-  const l=LEADS.find(x=>x.id===id);
+  const l=LEADS.find(x=>String(x.id)===String(id));
   if(l){l[field]=val;}
   if(field==='status') renderTab(curTab);
 }
- 
+
+/* Handle table action buttons (edit/delete) safely */
+/* ── DELETE ALL LEADS ── */
+async function deleteAllLeads(){
+  if(!['director','analista'].includes(curUser.role)){
+    alert('Solo el Director o Analista pueden borrar todos los leads.'); return;
+  }
+  const confirm1 = confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR todos los leads (${LEADS.length} registros)?\n\nEsta acción NO se puede deshacer.`);
+  if(!confirm1) return;
+  const confirm2 = confirm('🚨 CONFIRMACIÓN FINAL: ¿Eliminar TODOS los leads permanentemente?');
+  if(!confirm2) return;
+
+  const btn = document.getElementById('nav-delete-all');
+  if(btn){ btn.innerHTML='<i class="ti ti-loader" style="color:#E24B4A;animation:spin .8s linear infinite;"></i>'; btn.onclick=null; }
+
+  try {
+    /* Delete ALL leads from Supabase using a valid filter that matches all rows */
+    const r = await fetch(`${SB_URL}/rest/v1/leads?created_at=gte.2000-01-01`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      }
+    });
+
+    if(!r.ok){
+      const errText = await r.text();
+      throw new Error(`HTTP ${r.status}: ${errText}`);
+    }
+
+    /* Reset everything locally */
+    LEADS = [];
+    HUNTERS_DEF.forEach(h => { h.real = 0; });
+    Object.values(HUNTERS).forEach(h => { h.real = 0; });
+
+    /* Clear import history so same files can be re-imported */
+    localStorage.removeItem('imported_files');
+
+    renderTab(curTab);
+    alert('✅ Todos los leads fueron eliminados correctamente. Ya puedes importar nuevos leads.');
+  } catch(e){
+    alert('❌ Error al eliminar: ' + e.message);
+  }
+
+  if(btn){ btn.innerHTML='<i class="ti ti-trash" style="color:#E24B4A;"></i>'; btn.onclick=()=>deleteAllLeads(); }
+}
+
+/* ── CLEAR AND REIMPORT ── */
+function clearAndImport(){
+  if(!['director','analista'].includes(curUser.role)){
+    alert('Solo el Director o Analista pueden hacer esto.'); return;
+  }
+  const ok = confirm('Esto limpiará el historial de archivos importados para que puedas subir el mismo Excel de nuevo.\n¿Continuar?');
+  if(!ok) return;
+  localStorage.removeItem('imported_files');
+  alert('✅ Historial limpiado. Ahora puedes volver a importar el mismo archivo.');
+  document.getElementById('import-file').click();
+}
+
+/* Sidebar navigation helpers */
+/* Global error catcher */
+window.onerror = function(msg, src, line, col, err){
+  console.error('JS Error:', msg, 'at line', line, err);
+  return false;
+};
+
+window.goSVA2 = function goSVA2(){
+  try {
+    const kpiEl=document.getElementById('view-kpi');
+    const huntersEl=document.getElementById('view-hunters');
+    if(kpiEl) kpiEl.style.display='none';
+    if(huntersEl) huntersEl.style.display='none';
+    ['.topbar','.tab-nav','#content'].forEach(s=>{
+      const el=document.querySelector('.main '+s);
+      if(el) el.style.display='';
+    });
+    const navCrm=document.getElementById('nav-crm');
+    if(navCrm) navCrm.classList.add('active');
+    curTab='sva2';
+    document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+    renderSVA2();
+  } catch(e){
+    document.getElementById('content').innerHTML=
+      '<div style="padding:40px;color:#E24B4A;">Error SVA: '+e.message+'</div>';
+  }
+}
+
+window.goCerrados = function goCerrados(){
+  const kpiEl=document.getElementById('view-kpi');
+  const huntersEl=document.getElementById('view-hunters');
+  if(kpiEl) kpiEl.style.display='none';
+  if(huntersEl) huntersEl.style.display='none';
+  ['.topbar','.tab-nav','#content'].forEach(s=>{
+    const el=document.querySelector('.main '+s);
+    if(el) el.style.display='';
+  });
+  const navCrm=document.getElementById('nav-crm');
+  if(navCrm) navCrm.classList.add('active');
+  curTab='cerrados';
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  renderCerradosCaidos('cerrado');
+}
+
+window.goCaidos = function goCaidos(){
+  const kpiEl=document.getElementById('view-kpi');
+  const huntersEl=document.getElementById('view-hunters');
+  if(kpiEl) kpiEl.style.display='none';
+  if(huntersEl) huntersEl.style.display='none';
+  ['.topbar','.tab-nav','#content'].forEach(s=>{
+    const el=document.querySelector('.main '+s);
+    if(el) el.style.display='';
+  });
+  const navCrm=document.getElementById('nav-crm');
+  if(navCrm) navCrm.classList.add('active');
+  curTab='caidos';
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  renderCerradosCaidos('caido');
+}
+
+window.goAllLeads = function goAllLeads(){
+  const kpiEl=document.getElementById('view-kpi');
+  const huntersEl=document.getElementById('view-hunters');
+  if(kpiEl) kpiEl.style.display='none';
+  if(huntersEl) huntersEl.style.display='none';
+  ['.topbar','.tab-nav','#content'].forEach(s=>{
+    const el=document.querySelector('.main '+s);
+    if(el) el.style.display='';
+  });
+  const navCrm=document.getElementById('nav-crm');
+  if(navCrm) navCrm.classList.add('active');
+  curTab='allleads';
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  renderAllLeads();
+}
+/* Navigate to a specific hunter view even if no tab exists in DOM */
+window.gotoHunter = function gotoHunter(username){
+  try {
+    const kpiEl=document.getElementById('view-kpi');
+    const huntersEl=document.getElementById('view-hunters');
+    if(kpiEl) kpiEl.style.display='none';
+    if(huntersEl) huntersEl.style.display='none';
+    ['.topbar','.tab-nav','#content'].forEach(s=>{
+      const el=document.querySelector('.main '+s);
+      if(el) el.style.display='';
+    });
+    const navCrm=document.getElementById('nav-crm');
+    if(navCrm) navCrm.classList.add('active');
+    curTab=username;
+    document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+    const h = HUNTERS[username];
+    if(!h){
+      document.getElementById('content').innerHTML=
+        '<div style="padding:40px;text-align:center;color:#E24B4A;font-size:13px;">⚠ Hunter no encontrado: '+username+
+        '<br><br>Hunters disponibles: '+Object.keys(HUNTERS).join(', ')+'</div>';
+      return;
+    }
+    renderHunter(username);
+  } catch(e) {
+    document.getElementById('content').innerHTML=
+      '<div style="padding:40px;color:#E24B4A;font-size:12px;">Error en gotoHunter: '+e.message+'<br>'+e.stack+'</div>';
+  }
+}
+
+window.goTeam = function goTeam(team){
+  try {
+    const kpiEl=document.getElementById('view-kpi');
+    const huntersEl=document.getElementById('view-hunters');
+    if(kpiEl) kpiEl.style.display='none';
+    if(huntersEl) huntersEl.style.display='none';
+    ['.topbar','.tab-nav','#content'].forEach(s=>{
+      const el=document.querySelector('.main '+s);
+      if(el) el.style.display='';
+    });
+    const navCrm=document.getElementById('nav-crm');
+    if(navCrm) navCrm.classList.add('active');
+    curTab='team'+team;
+    document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+    renderTeam(team);
+  } catch(e){
+    document.getElementById('content').innerHTML=
+      '<div style="padding:40px;color:#E24B4A;font-size:12px;">Error en goTeam: '+e.message+'<br>'+e.stack+'</div>';
+  }
+}
+
+/* ── HUNTER: Guardar modificación diaria ── */
+async function hunterGuardar(leadId, key){
+  const comentarioEl = document.getElementById('comentario-'+leadId);
+  const comentario = comentarioEl ? comentarioEl.value : '';
+  const hoy = new Date().toISOString().slice(0,10);
+
+  if(!comentario.trim()){
+    alert('Por favor escribe un comentario antes de guardar.');
+    return;
+  }
+
+  const btn = event.target.closest('button');
+  if(btn){ btn.textContent='Guardando...'; btn.disabled=true; }
+
+  try {
+    /* Save comentario and fecha_modif */
+    await sbPatch('leads', leadId, {
+      comentario: comentario,
+      fecha_modif: hoy,
+      updated_at: new Date().toISOString()
+    });
+
+    /* Save to historial */
+    await saveHistorial(leadId, 'comentario', comentario);
+    await saveHistorial(leadId, 'fecha_modif', hoy);
+
+    /* Update local LEADS */
+    const l = LEADS.find(x=>String(x.id)===String(leadId));
+    if(l){
+      l.note = comentario;
+      l.fecha_modif_raw = hoy;
+      l.fecha_modif = new Date(hoy).toLocaleDateString('es-PE');
+      l.modified_today = true;
+      l.fecha_mod_late = false;
+    }
+
+    if(btn){ btn.textContent='✅ Guardado'; btn.style.background='#1D9E75'; }
+    setTimeout(()=>{
+      if(btn){ btn.textContent='💾 Guardar'; btn.style.background='#7F77DD'; btn.disabled=false; }
+    }, 2000);
+
+  } catch(e){
+    alert('Error al guardar: '+e.message);
+    if(btn){ btn.textContent='💾 Guardar'; btn.disabled=false; }
+  }
+}
+
+/* Toggle historial row */
+async function toggleHistorial(leadId, btn){
+  const histRow = document.getElementById('hist-'+leadId);
+  const expIcon = document.getElementById('exp-'+leadId);
+  const contentDiv = document.getElementById('hist-content-'+leadId);
+  if(!histRow) return;
+
+  if(histRow.style.display !== 'none'){
+    histRow.style.display = 'none';
+    expIcon.textContent = '▶';
+    return;
+  }
+
+  histRow.style.display = '';
+  expIcon.textContent = '▼';
+  contentDiv.innerHTML = '<div style="color:#999;text-align:center;padding:8px;">Cargando historial...</div>';
+
+  const rows = await loadHistorial(leadId);
+
+  if(!rows.length){
+    contentDiv.innerHTML = '<div style="color:#aaa;text-align:center;padding:8px;font-style:italic;">Sin modificaciones registradas aún.</div>';
+    return;
+  }
+
+  contentDiv.innerHTML = `
+    <div style="font-weight:600;color:#534AB7;margin-bottom:8px;font-size:11px;">📋 Historial de cambios</div>
+    <table style="width:100%;border-collapse:collapse;font-size:10px;">
+      <thead>
+        <tr style="background:#eef0f8;">
+          <th style="padding:5px 8px;text-align:left;color:#666;font-weight:500;border-bottom:1px solid #e0e3ef;">Fecha</th>
+          <th style="padding:5px 8px;text-align:left;color:#666;font-weight:500;border-bottom:1px solid #e0e3ef;">Usuario</th>
+          <th style="padding:5px 8px;text-align:left;color:#666;font-weight:500;border-bottom:1px solid #e0e3ef;">Rol</th>
+          <th style="padding:5px 8px;text-align:left;color:#666;font-weight:500;border-bottom:1px solid #e0e3ef;">Campo</th>
+          <th style="padding:5px 8px;text-align:left;color:#666;font-weight:500;border-bottom:1px solid #e0e3ef;">Nuevo valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((r,i)=>`
+          <tr style="background:${i%2===0?'#fff':'#f8f9fc'};">
+            <td style="padding:5px 8px;color:#888;">${new Date(r.fecha).toLocaleString('es-PE')}</td>
+            <td style="padding:5px 8px;font-weight:500;color:#333;">${r.usuario||'—'}</td>
+            <td style="padding:5px 8px;color:#888;">${r.rol||'—'}</td>
+            <td style="padding:5px 8px;color:#534AB7;font-weight:500;">${r.campo||'—'}</td>
+            <td style="padding:5px 8px;color:#333;">${r.valor_nuevo||'—'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function handleTblAction(el){
+  const id = el.dataset.id;
+  const key = el.dataset.key;
+  const action = el.dataset.action;
+  if(action === 'delete') deleteLead(id, key);
+  else if(action === 'edit') openModal(id, key);
+}
+
+async function updateLeadDB(id, field, value, key){
+  /* Save single field directly to Supabase */
+  const body = { [field]: field==='valor'?Number(value):value, updated_at: new Date().toISOString() };
+  await sbPatch('leads', id, body);
+  /* Save to historial */
+  await saveHistorial(id, field, value);
+  /* Update local LEADS array */
+  const l = LEADS.find(x => String(x.id) === String(id));
+  if(l){
+    if(field==='valor')          { l.value           = Number(value); }
+    else if(field==='banco')     { l.banco           = value; }
+    else if(field==='estado')    {
+      l.status = mapEstado(value);
+      if(l.status==='cerrado' && l.categoria!=='cerrado'){
+        l.categoria='cerrado';
+        sbPatch('leads', id, {categoria:'cerrado', updated_at:new Date().toISOString()});
+        saveHistorial(id,'categoria','✅ Lead Cerrado (auto)');
+      }
+    }
+    else if(field==='mes_cierre'){ l.close           = value; }
+    else if(field==='comentario'){ l.note            = value; }
+    else if(field==='fecha_ingreso'){ l.fecha_ingreso_raw = value; l.fecha_ingreso = value ? new Date(value).toLocaleDateString('es-PE') : '—'; }
+    else if(field==='fecha_modif')  { l.fecha_modif_raw  = value; l.fecha_modif   = value ? new Date(value).toLocaleDateString('es-PE') : '—';
+      l.fecha_mod_late  = value ? (Date.now()-new Date(value).getTime())>86400000 : false;
+      l.modified_today  = value ? new Date(value).toDateString()===new Date().toDateString() : false; }
+    else if(field==='fecha_cierre') { l.fecha_cierre_raw  = value; l.fecha_cierre_dt = value ? new Date(value).toLocaleDateString('es-PE') : '—'; }
+  }
+  /* Only re-render if status changed (affects funnel) */
+  if(field==='estado') renderTab(curTab);
+}
+
+async function deleteLead(id, key){
+  if(!canDelete()) return;
+  if(!confirm('¿Seguro que deseas eliminar este lead? Esta acción no se puede deshacer.')) return;
+  await sbDelete('leads', id);
+  LEADS = LEADS.filter(l => String(l.id) !== String(id));
+  renderTab(curTab);
+}
+
 let modalKey='';
 async function openModal(id,key){
   modalKey=key||'';editingId=id;
+  const isHunter = curUser.role === 'hunter';
   document.getElementById('modal-title').textContent=id?'Editar lead':'Nuevo lead';
+
+  /* Bloquear campos según rol */
+  const lockFields = ['m-name','m-ruc','m-status','m-source','m-giros','m-tipo-producto','m-tipo-cuenta','m-banco','m-value','m-close','m-fecha-ingreso'];
+  lockFields.forEach(f=>{
+    const el=document.getElementById(f);
+    if(el) el.disabled = isHunter && !!id; // hunter no puede editar esos campos en leads existentes
+  });
+
   const sel=document.getElementById('m-owner');
   sel.innerHTML='';sel.disabled=false;
-  if(curUser.rol==='hunter'){
-    const o=document.createElement('option');o.value=curUser.nombre;o.textContent=curUser.nombre;sel.appendChild(o);sel.disabled=true;
+  if(isHunter){
+    const o=document.createElement('option');o.value=curUser.name;o.textContent=curUser.name;sel.appendChild(o);sel.disabled=true;
   } else {
     let params='rol=eq.hunter&activo=eq.true&select=nombre,equipo&order=nombre';
-    if(curUser.rol==='head') params+=`&equipo=eq.${curUser.equipo}`;
+    if(curUser.role==='head') params+=`&equipo=eq.${curUser.equipo}`;
     const data=await sbGet('usuarios',params);
     (data||[]).forEach(u=>{const o=document.createElement('option');o.value=u.nombre;o.textContent=u.nombre;sel.appendChild(o);});
   }
   if(id){
-    const l=LEADS.find(x=>x.id===id);
+    const l=LEADS.find(x=>String(x.id)===String(id));
     if(l){
-      document.getElementById('m-name').value=l.name;
-      sel.value=l.owner;
-      document.getElementById('m-status').value=l.status;
-      document.getElementById('m-source').value=l.source;
-      document.getElementById('m-value').value=l.value;
-      document.getElementById('m-prob').value=l.prob;
-      document.getElementById('m-note').value=l.note;
+      document.getElementById('m-name').value=l.name||'';
+      document.getElementById('m-ruc').value=l.ruc||'';
+      sel.value=l.owner||'';
+      document.getElementById('m-giros').value=l.giros||'';
+      document.getElementById('m-source').value=l.source||'';
+      document.getElementById('m-tipo-producto').value=l.tipo_producto||'';
+      document.getElementById('m-tipo-cuenta').value=l.tipo_cuenta||'';
+      document.getElementById('m-banco').value=l.banco||'';
+      document.getElementById('m-value').value=l.value||0;
+      document.getElementById('m-status').value=l.status||'prospecto';
       document.getElementById('m-close').value=l.close&&l.close!=='—'?l.close:'';
+      document.getElementById('m-fecha-ingreso').value=l.fecha_ingreso_raw||'';
+      document.getElementById('m-fecha-modif').value=l.fecha_modif_raw||new Date().toISOString().slice(0,10);
+      document.getElementById('m-note').value=l.note||'';
     }
   } else {
-    ['m-name','m-value','m-note'].forEach(x=>document.getElementById(x).value='');
-    document.getElementById('m-prob').value='10';
-    document.getElementById('m-close').value='';
+    ['m-name','m-ruc','m-value','m-note'].forEach(x=>document.getElementById(x).value='');
+    ['m-giros','m-source','m-tipo-producto','m-tipo-cuenta','m-banco','m-close','m-fecha-modif'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('m-fecha-ingreso').value=new Date().toISOString().slice(0,10);
+    document.getElementById('m-fecha-modif').value=new Date().toISOString().slice(0,10);
     document.getElementById('m-status').value='prospecto';
   }
   document.getElementById('modal-bg').classList.add('open');
 }
 function closeModal(){document.getElementById('modal-bg').classList.remove('open');}
- 
+
 async function saveLead(){
-  let hunter_id=curUser.id, equipo=curUser.equipo;
-  if(curUser.rol!=='hunter'){
-    const ownerName=document.getElementById('m-owner').value;
-    const data=await sbGet('usuarios',`nombre=eq.${encodeURIComponent(ownerName)}&select=id,equipo&limit=1`);
-    if(data&&data[0]){hunter_id=data[0].id;equipo=data[0].equipo;}
+  const isHunter = curUser.role === 'hunter';
+  let payload;
+
+  if(isHunter && editingId){
+    /* Hunter solo puede actualizar el comentario */
+    payload = {
+      comentario: document.getElementById('m-note').value,
+      fecha_ingreso: document.getElementById('m-fecha-ingreso').value||null,
+      fecha_modif:   document.getElementById('m-fecha-modif').value||null,
+      updated_at: new Date().toISOString(),
+    };
+  } else {
+    /* Director / Analista / Head: editan todo */
+    let hunter_id=curUser.id, equipo=curUser.equipo;
+    if(!isHunter){
+      const ownerName=document.getElementById('m-owner').value;
+      const data=await sbGet('usuarios',`nombre=eq.${encodeURIComponent(ownerName)}&select=id,equipo&limit=1`);
+      if(data&&data[0]){hunter_id=data[0].id;equipo=data[0].equipo;}
+    }
+    payload={
+      nombre:          document.getElementById('m-name').value||'Nuevo lead',
+      razon_social:    document.getElementById('m-name').value||null,
+      ruc:             document.getElementById('m-ruc').value||null,
+      hunter_id, equipo,
+      giros:           document.getElementById('m-giros').value||null,
+      fuente:          document.getElementById('m-source').value||null,
+      tipo_producto:   document.getElementById('m-tipo-producto').value||null,
+      tipo_cuenta:     document.getElementById('m-tipo-cuenta').value||null,
+      banco:           document.getElementById('m-banco').value||null,
+      valor:           Number(document.getElementById('m-value').value)||0,
+      estado:          document.getElementById('m-status').value,
+      mes_cierre:      document.getElementById('m-close').value||null,
+      comentario:      document.getElementById('m-note').value,
+      fecha_ingreso:   document.getElementById('m-fecha-ingreso').value||null,
+      fecha_modif:     document.getElementById('m-fecha-modif').value||null,
+      updated_at:      new Date().toISOString(),
+    };
   }
-  const cv=document.getElementById('m-close').value;
-  const payload={
-    nombre:document.getElementById('m-name').value||'Nuevo lead',
-    hunter_id,equipo,
-    estado:document.getElementById('m-status').value,
-    fuente:document.getElementById('m-source').value,
-    valor:Number(document.getElementById('m-value').value)||0,
-    probabilidad:Number(document.getElementById('m-prob').value)||10,
-    comentario:document.getElementById('m-note').value,
-    fecha_cierre:cv||null,
-    updated_at:new Date().toISOString(),
-  };
-  if(editingId){await sbPatch('leads',`id=eq.${editingId}`,payload);}
-  else{await sbPost('leads',payload);}
+  let savedId = editingId;
+  if(editingId){
+    await sbPatch('leads',`id=eq.${editingId}`,payload);
+    /* Save historial for edited fields */
+    const editedFields = Object.keys(payload).filter(k=>k!=='updated_at');
+    for(const campo of editedFields){
+      await saveHistorial(editingId, campo, payload[campo]);
+    }
+  } else {
+    const res = await sbPost('leads',payload);
+    savedId = res?.[0]?.id;
+  }
   closeModal();
   LEADS=await fetchLeads();
   renderTab(curTab);
 }
-function handleImport(i){if(i.files[0])alert('Archivo listo para procesar: '+i.files[0].name);i.value='';}
- 
+async function handleImport(input){
+  const file = input.files[0];
+  if(!file){ return; }
+  input.value = '';
+
+  if(!['director','analista','head'].includes(curUser.role)){
+    alert('No tienes permisos para importar.'); return;
+  }
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  let rows = [];
+
+  /* Show loading */
+  const btn = document.getElementById('import-lbl-wrap');
+  const txt = document.getElementById('import-txt');
+  if(txt) txt.textContent = 'Procesando...';
+  if(btn) btn.disabled = true;
+
+  try {
+    if(ext === 'csv'){
+      const text = await file.text();
+      rows = parseCSVToRows(text);
+    } else if(ext === 'xlsx' || ext === 'xls'){
+      if(typeof XLSX === 'undefined'){
+        alert('La librería de Excel no cargó. Verifica tu conexión a internet.');
+        return;
+      }
+      const ab = await file.arrayBuffer();
+      const wb = XLSX.read(ab, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      rows = data.map(r => r.map(c => (c===null||c===undefined)?'':String(c).trim()));
+    } else {
+      alert('Formato no soportado. Usa .xlsx o .csv');
+      return;
+    }
+  } catch(e){
+    alert('Error al leer el archivo: ' + e.message);
+    return;
+  }
+
+  if(rows.length < 2){ alert('El archivo está vacío o no tiene datos.'); return; }
+
+  const headers = rows[0].map(h => (h||'').toString().trim().toUpperCase());
+  console.log('Headers importados:', headers);
+
+  /* Build hunter name → id map */
+  const hunterNameMap = {};
+  SB_USUARIOS.forEach(u => {
+    if(u.rol === 'hunter' || u.rol === 'head'){
+      hunterNameMap[u.nombre.toUpperCase().trim()] = u.id;
+      /* Also match by first name or partial */
+      const parts = u.nombre.toUpperCase().split(' ');
+      if(parts[0]) hunterNameMap[parts[0]] = u.id;
+    }
+  });
+
+  /* Column index finder */
+  const col = (...keys) => {
+    for(const k of keys){
+      const idx = headers.findIndex(h => h.includes(k));
+      if(idx >= 0) return idx;
+    }
+    return -1;
+  };
+
+  const iHunter   = col('HUNTER','EJECUTIV','RESPONSABLE');
+  const iRazon    = col('RAZON SOCIAL','RAZON','EMPRESA','NOMBRE');
+  const iRuc      = col('RUC');
+  const iGiros    = col('GIROS','GIRO','ACTIVIDAD');
+  const iOrigen   = col('ORIGEN','FUENTE','SOURCE');
+  const iTipoP    = col('TIPO DE PRODUCTO','TIPO PROD','PRODUCTO');
+  const iTipoC    = col('TIPO DE CUENTA','TIPO CUEN','CUENTA');
+  const iBanco    = col('BANCO','ENTIDAD');
+  const iPotenc   = col('POTENC','POTENCIAL','VALOR','MONTO');
+  const iEtapa    = col('ETAPA','ESTADO','STAGE');
+  const iMes      = col('MES DE CIERRE','MES CIERR','MES');
+  const iComent   = col('COMENTARIO','COMMENT','NOTA','OBS');
+
+  const g = (row, idx) => idx >= 0 ? (row[idx]||'').toString().trim() : '';
+
+  /* Build existing RUC + name set to detect duplicates */
+  const existingKeys = new Set(LEADS.map(l => {
+    const ruc = (l.ruc||'').trim();
+    const name = (l.name||'').trim().toLowerCase();
+    return ruc ? `ruc:${ruc}` : `name:${name}`;
+  }));
+
+  /* Also track file hash to warn if same file is re-imported */
+  const fileKey = `import_${file.name}_${file.size}_${file.lastModified}`;
+  const prevImports = JSON.parse(localStorage.getItem('imported_files')||'[]');
+  if(prevImports.includes(fileKey)){
+    const proceed = confirm(`⚠️ Ya importaste el archivo "${file.name}" anteriormente.\n\n¿Deseas importarlo de nuevo? Los leads duplicados serán omitidos automáticamente.`);
+    if(!proceed){
+      if(txt) txt.textContent = 'Importar Excel';
+      if(btn) btn.disabled = false;
+      return;
+    }
+  }
+
+  let inserted = 0, skipped = 0, duplicates = 0, errors = [];
+
+  for(let i = 1; i < rows.length; i++){
+    const row = rows[i];
+    if(row.every(c => !c || c.toString().trim() === '')) continue;
+
+    const hunterName = g(row, iHunter).toUpperCase();
+    const razon = g(row, iRazon);
+    if(!razon){ skipped++; continue; }
+
+    /* Check for duplicate by RUC or name */
+    const rucVal = g(row, iRuc).trim();
+    const checkKey = rucVal ? `ruc:${rucVal}` : `name:${razon.trim().toLowerCase()}`;
+    if(existingKeys.has(checkKey)){ duplicates++; continue; }
+    existingKeys.add(checkKey); /* prevent duplicates within same import */
+
+    /* Find hunter_id by name */
+    let hunter_id = null, equipo = null;
+    if(hunterName){
+      /* Try exact match first, then partial */
+      hunter_id = hunterNameMap[hunterName];
+      if(!hunter_id){
+        const match = SB_USUARIOS.find(u =>
+          u.nombre.toUpperCase().includes(hunterName) ||
+          hunterName.includes(u.nombre.toUpperCase().split(' ')[0])
+        );
+        if(match){ hunter_id = match.id; }
+      }
+      if(hunter_id){
+        const hu = SB_USUARIOS.find(u => u.id === hunter_id);
+        if(hu) equipo = hu.equipo;
+      }
+    }
+
+    /* If head is importing and no hunter found, assign to head themselves */
+    if(!hunter_id && curUser.role === 'head'){
+      const meAsUser = SB_USUARIOS.find(u => u.username === curUser.username);
+      if(meAsUser){ hunter_id = meAsUser.id; equipo = meAsUser.equipo; }
+    }
+
+    const potStr = g(row, iPotenc).replace(/[^0-9.]/g,'');
+    const payload = {
+      nombre:        razon,
+      razon_social:  razon,
+      ruc:           g(row, iRuc) || null,
+      hunter_id:     hunter_id || null,
+      equipo:        equipo || null,
+      giros:         g(row, iGiros) || null,
+      fuente:        g(row, iOrigen) || null,
+      tipo_producto: g(row, iTipoP) || null,
+      tipo_cuenta:   g(row, iTipoC) || null,
+      banco:         g(row, iBanco) || null,
+      valor:         parseFloat(potStr) || 0,
+      estado:        mapEstadoImport(g(row, iEtapa)),
+      mes_cierre:    g(row, iMes) || null,
+      comentario:    g(row, iComent) || null,
+    };
+
+    try {
+      await sbPost('leads', payload);
+      inserted++;
+    } catch(e){
+      errors.push(`Fila ${i+1}: ${e.message}`);
+      skipped++;
+    }
+  }
+
+  /* Reload leads */
+  const rawLeads = await sbGet('leads','select=*&order=created_at.desc');
+  const hunterMap2 = {};
+  SB_USUARIOS.forEach(u => { hunterMap2[u.id] = u.username; });
+  LEADS = rawLeads.map((l,i) => ({
+    id:            l.id,
+    hunter:        hunterMap2[l.hunter_id] || '',
+    name:          l.razon_social || l.nombre || '(Sin nombre)',
+    ruc:           l.ruc || '',
+    owner:         (SB_USUARIOS.find(u=>u.id===l.hunter_id)||{}).nombre || '',
+    giros:         l.giros || '',
+    source:        l.fuente || '',
+    tipo_producto: l.tipo_producto || '',
+    tipo_cuenta:   l.tipo_cuenta || '',
+    banco:         l.banco || '',
+    status:        mapEstado(l.estado || 'prospecto'),
+    value:         l.valor || 0,
+    close:         l.mes_cierre || '',
+    note:          l.comentario || '',
+    prob:          l.probabilidad || 10,
+    conflict:      l.conflicto || false,
+    created:       l.created_at ? new Date(l.created_at).toLocaleDateString('es-PE') : '',
+  }));
+
+  HUNTERS_DEF.forEach(h => { h.real = 0; });
+  LEADS.forEach(l => { if(HUNTERS[l.hunter]) HUNTERS[l.hunter].real += (l.value||0); });
+
+  renderTab(curTab);
+  /* Save file as imported */
+  const prevImports2 = JSON.parse(localStorage.getItem('imported_files')||'[]');
+  if(!prevImports2.includes(fileKey)){
+    prevImports2.push(fileKey);
+    localStorage.setItem('imported_files', JSON.stringify(prevImports2.slice(-50)));
+  }
+  if(txt) txt.textContent = 'Importar Excel';
+  if(btn) btn.disabled = false;
+  alert(`✅ Importación completada:\n• ${inserted} leads nuevos importados\n• ${duplicates} duplicados omitidos\n• ${skipped} filas vacías/inválidas${errors.length?'\n\nErrores:\n'+errors.slice(0,5).join('\n'):''}`);
+}
+
+async function handleImportWithLinea(file, linea){
+  if(!['director','analista','head'].includes(curUser.role)){
+    alert('No tienes permisos para importar.'); return;
+  }
+  const ext = file.name.split('.').pop().toLowerCase();
+  let rows = [];
+  try {
+    if(ext==='csv'){
+      const text = await file.text();
+      rows = parseCSVToRows(text);
+    } else if(ext==='xlsx'||ext==='xls'){
+      if(typeof XLSX==='undefined'){ alert('SheetJS no cargó.'); return; }
+      const ab = await file.arrayBuffer();
+      const wb = XLSX.read(ab,{type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:''})
+               .map(r=>r.map(c=>c===null||c===undefined?'':String(c).trim()));
+    } else { alert('Formato no soportado.'); return; }
+  } catch(e){ alert('Error al leer: '+e.message); return; }
+
+  if(rows.length<2){ alert('Archivo vacío.'); return; }
+  const headers = rows[0].map(h=>(h||'').toString().trim().toUpperCase());
+  const col=(...keys)=>{ for(const k of keys){ const i=headers.findIndex(h=>h.includes(k)); if(i>=0) return i; } return -1; };
+  const g=(row,idx)=>idx>=0?(row[idx]||'').toString().trim():'';
+
+  const iHunter=col('HUNTER','EJECUTIV'); const iRazon=col('RAZON','EMPRESA','NOMBRE');
+  const iRuc=col('RUC'); const iGiros=col('GIROS','GIRO');
+  const iOrigen=col('ORIGEN','FUENTE'); const iTipoP=col('TIPO DE PRODUCTO','TIPO PROD','PRODUCTO');
+  const iTipoC=col('TIPO DE CUENTA','TIPO CUEN'); const iBanco=col('BANCO');
+  const iPotenc=col('POTENC','POTENCIAL','VALOR'); const iEtapa=col('ETAPA','ESTADO');
+  const iMes=col('MES'); const iComent=col('COMENTARIO','NOTA');
+
+  const hunterNameMap={};
+  SB_USUARIOS.forEach(u=>{
+    hunterNameMap[u.nombre.toUpperCase().trim()]=u.id;
+    u.nombre.toUpperCase().split(' ').forEach(w=>{ if(!hunterNameMap[w]) hunterNameMap[w]=u.id; });
+  });
+
+  const existingKeys=new Set(LEADS.filter(l=>(l.linea||'central')===linea).map(l=>l.ruc?'ruc:'+l.ruc:'name:'+(l.name||'').toLowerCase()));
+  let inserted=0,duplicates=0,skipped=0;
+
+  for(let i=1;i<rows.length;i++){
+    const row=rows[i];
+    if(row.every(c=>!c||!c.toString().trim())) continue;
+    const razon=g(row,iRazon); if(!razon){skipped++;continue;}
+    const rucVal=g(row,iRuc).trim();
+    const checkKey=rucVal?'ruc:'+rucVal:'name:'+razon.toLowerCase();
+    if(existingKeys.has(checkKey)){duplicates++;continue;}
+    existingKeys.add(checkKey);
+
+    const hunterName=g(row,iHunter).toUpperCase();
+    let hunter_id=null,equipo=null;
+    if(hunterName){
+      hunter_id=hunterNameMap[hunterName]||null;
+      if(!hunter_id){const m=SB_USUARIOS.find(u=>u.nombre.toUpperCase().includes(hunterName)||hunterName.includes(u.nombre.toUpperCase().split(' ')[0]));if(m){hunter_id=m.id;}}
+      if(hunter_id){const hu=SB_USUARIOS.find(u=>u.id===hunter_id);if(hu)equipo=hu.equipo;}
+    }
+    const potStr=g(row,iPotenc).replace(/[^0-9.]/g,'');
+    const payload={
+      nombre:razon,razon_social:razon,ruc:rucVal||null,hunter_id,equipo,
+      giros:g(row,iGiros)||null,fuente:g(row,iOrigen)||null,
+      tipo_producto:g(row,iTipoP)||null,tipo_cuenta:g(row,iTipoC)||null,
+      banco:g(row,iBanco)||null,valor:parseFloat(potStr)||0,
+      estado:mapEstadoImport(g(row,iEtapa)),mes_cierre:g(row,iMes)||null,
+      comentario:g(row,iComent)||null,linea:linea,
+      fecha_ingreso:new Date().toISOString().slice(0,10)
+    };
+    try{ await sbPost('leads',payload); inserted++; }
+    catch(e){ skipped++; }
+  }
+
+  /* Reload leads */
+  const rawLeads=await sbGet('leads','select=*&order=created_at.desc');
+  const hm={};SB_USUARIOS.forEach(u=>{hm[u.id]=u.username;});
+  LEADS=rawLeads.map((l,i)=>({
+    id:l.id,hunter:hm[l.hunter_id]||'',
+    name:l.razon_social||l.nombre||'(Sin nombre)',ruc:l.ruc||'',
+    owner:(SB_USUARIOS.find(u=>u.id===l.hunter_id)||{}).nombre||'',
+    giros:l.giros||'',source:l.fuente||'',tipo_producto:l.tipo_producto||'',
+    tipo_cuenta:l.tipo_cuenta||'',banco:l.banco||'',
+    status:mapEstado(l.estado||'prospecto'),value:l.valor||0,
+    close:l.mes_cierre||'',note:l.comentario||'',prob:l.probabilidad||10,
+    conflict:l.conflicto||false,categoria:l.categoria||'activo',linea:l.linea||'central',
+    created:l.created_at?new Date(l.created_at).toLocaleDateString('es-PE'):'',
+    fecha_ingreso:l.fecha_ingreso?new Date(l.fecha_ingreso).toLocaleDateString('es-PE'):'—',
+    fecha_ingreso_raw:l.fecha_ingreso||'',
+    fecha_modif:l.fecha_modif?new Date(l.fecha_modif).toLocaleDateString('es-PE'):'—',
+    fecha_modif_raw:l.fecha_modif||'',fecha_cierre_dt:l.fecha_cierre?new Date(l.fecha_cierre).toLocaleDateString('es-PE'):'—',
+    fecha_cierre_raw:l.fecha_cierre?l.fecha_cierre.slice(0,10):'',
+    fecha_mod_late:l.fecha_modif?(Date.now()-new Date(l.fecha_modif).getTime())>86400000:false,
+    modified_today:l.fecha_modif?new Date(l.fecha_modif).toDateString()===new Date().toDateString():false,
+  }));
+  LEADS.forEach(l=>{l.status=mapEstado(l.status);});
+  HUNTERS_DEF.forEach(h=>{h.real=0;});
+  LEADS.forEach(l=>{if(HUNTERS[l.hunter])HUNTERS[l.hunter].real+=(l.value||0);});
+  renderTab(curTab);
+  alert('✅ Importación '+linea.toUpperCase()+':\n• '+inserted+' leads nuevos\n• '+duplicates+' duplicados omitidos\n• '+skipped+' omitidos');
+}
+
+function mapEstadoImport(e){
+  const s = (e||'').toLowerCase().trim();
+  if(s.includes('100') || s.includes('cierr')) return 'cerrado';
+  if(s.includes('75')  || s.includes('pre'))   return 'precierre';
+  if(s.includes('50')  || s.includes('negoc')) return 'negociacion';
+  if(s.includes('25')  || s.includes('opor'))  return 'oportunidad';
+  return 'prospecto';
+}
+
+function parseCSVToRows(text){
+  const lines = text.split(/\r?\n/);
+  return lines.map(line => {
+    const cols = []; let cur = '', inQ = false;
+    for(let i=0;i<line.length;i++){
+      if(line[i]==='"'){ inQ=!inQ; }
+      else if(line[i]===','&&!inQ){ cols.push(cur); cur=''; }
+      else { cur+=line[i]; }
+    }
+    cols.push(cur);
+    return cols.map(c=>c.replace(/^"|"$/g,'').trim());
+  });
+}
+
 const HUNTERS_HTML=`<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1495,15 +2952,15 @@ const fm=v=>{const a=Math.abs(v);const s=a>=1e6?(a/1e6).toFixed(2)+'M':a>=1000?(
 const clrS=s=>s>=80?'#00E5A0':s>=50?'#3B82F6':s>=25?'#F59E0B':'#EF4444';
 const CHS={};const dc=id=>{if(CHS[id]){CHS[id].destroy();delete CHS[id];}};
 const dkO=(leg=false)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:leg,position:'top',labels:{font:{size:10,family:'Outfit'},color:'#8BA0BC',boxWidth:10,padding:8}},tooltip:{callbacks:{label:c=>\`\${c.dataset.label||''}: \${fm(c.raw||0)}\`},backgroundColor:'#1A2235',titleColor:'#F0F6FF',bodyColor:'#8BA0BC',borderColor:'rgba(255,255,255,.1)',borderWidth:1}},scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#506080',font:{size:9,family:'Outfit'}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#506080',font:{size:9,family:'Space Mono'},callback:v=>{const a=Math.abs(v);return(v<0?'-':'')+'S/.'+(a>=1e6?(a/1e6).toFixed(1)+'M':a>=1000?(a/1000).toFixed(0)+'K':a)}}}}});
- 
+
 // Sidebar top 5
 document.getElementById('sbH').innerHTML=[...RANK_ABR].sort((a,b)=>b.score-a.score).slice(0,5).map(h=>\`<div class="sb-hrow"><div class="sb-av" style="background:\${h.col}22;color:\${h.col}">\${h.ini}<\/div><div class="sb-hn">\${h.n}<\/div><div class="sb-hp" style="color:\${clrS(h.score)}">\${h.score}%<\/div><\/div>\`).join('');
- 
+
 // table header
 document.getElementById('cTH').innerHTML=['Hunter','Mes','Tipo','Razon Social','Potencial','Ene','Feb','Mzo','Abr-07','Abr-13','Abr-16','Abr-20','Abr-21','Abr-28','Abr-30','Proy'].map(t=>\`<th style="font-size:9px;font-weight:600;text-transform:uppercase;color:#506080;padding:0 8px 10px;text-align:\${['Potencial','Ene','Feb','Mzo','Abr-07','Abr-13','Abr-16','Abr-20','Abr-21','Abr-28','Abr-30','Proy'].includes(t)?'right':'left'};border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap">\${t}<\/th>\`).join('');
- 
+
 ['hSel','f7h','hSelC'].forEach(id=>{const s=document.getElementById(id);if(!s||s.options.length>1)return;RANK_ABR.filter((r,i,a)=>a.findIndex(x=>x.n===r.n)===i).forEach(h=>{const o=document.createElement('option');o.value=h.n;o.textContent=h.n;s.appendChild(o);});});
- 
+
 function bP1(){
   dc('cAll');CHS['cAll']=new Chart(document.getElementById('cAll'),{type:'line',data:{labels:['Abr-07','Abr-13','Abr-16','Abr-20','Abr-21','Abr-28','Abr-30'],datasets:[{label:'Real Abril',data:[4,40619,107948,447753,647967,2284088,2823950],borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,.08)',pointRadius:[6,6,7,8,9,10,11],borderWidth:2.5,tension:.3,fill:true},{label:'Proyectado Abril',data:[1870151,1662040,2247591,2472525,2501809,2716801,2823950],borderColor:'rgba(255,255,255,.4)',pointRadius:[5,5,7,7,8,9,10],borderWidth:1.5,borderDash:[6,4],tension:.3}]},options:{...dkO(true),scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#506080',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#506080',font:{size:9,family:'Space Mono'},callback:v=>{const a=Math.abs(v);return 'S/.'+(a>=1e6?(a/1e6).toFixed(1)+'M':a>=1000?(a/1000).toFixed(0)+'K':a);}}}}}}); 
   document.getElementById('top5').innerHTML=[...RANK_ABR].sort((a,b)=>b.score-a.score).slice(0,5).map((h,i)=>\`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div style="font-size:11px;font-weight:700;color:var(--t3);font-family:var(--m);min-width:22px">#\${i+1}<\/div><div style="width:30px;height:30px;border-radius:8px;background:\${h.col}22;color:\${h.col};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">\${h.ini}<\/div><div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--t1)">\${h.n}<\/div><div style="font-size:9px;color:var(--t3)">Proy: \${fm(h.incr_val)}<\/div><\/div><div style="font-size:14px;font-weight:700;font-family:var(--m);color:\${clrS(h.score)}">\${h.score}%<\/div><\/div>\`).join('');
