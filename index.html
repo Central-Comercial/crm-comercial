@@ -770,7 +770,7 @@ function renderKPI(){
     <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:14px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;">Leads Activos</div>
-        <input id="kpi-search" oninput="renderKPI()" placeholder="Buscar..." style="font-size:11px;padding:4px 10px;border:1px solid #dde1e7;border-radius:7px;background:#f7f8fa;outline:none;width:140px;">
+        <input id="kpi-search" data-key="kpi-search" placeholder="Buscar..." autocomplete="off" style="font-size:11px;padding:4px 10px;border:1px solid #dde1e7;border-radius:7px;background:#f7f8fa;outline:none;width:140px;">
       </div>
       <div style="overflow-y:auto;max-height:280px;">
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
@@ -1291,8 +1291,7 @@ function renderAllLeads(){
   </div>
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 0;">
-    <input class="search-box" placeholder="Buscar empresa o RUC..." value="${fSearch}"
-      oninput="window['al_search']=this.value;renderAllLeads()" style="width:200px;">
+    <input class="search-box" id="srch-allleads" data-key="al_search" placeholder="Buscar empresa o RUC..." value="${fSearch}" autocomplete="off" style="width:200px;">
     <select class="filter-sel" onchange="window['al_hunter']=this.value;renderAllLeads()">
       <option value="">Todos los hunters</option>${hunterOpts}
     </select>
@@ -1890,7 +1889,8 @@ function filterBarHTML(leads, key, showNew=true){
       <button class="ftab active" onclick="setFilter('all','${key}')">Todos <span style="background:rgba(255,255,255,.3);padding:0 5px;border-radius:8px;font-size:10px;">${leads.length}</span></button>
       ${Object.keys(SC).map(s=>`<button class="ftab" onclick="setFilter('${s}','${key}')">${SC[s].l}</button>`).join('')}
     </div>
-    <input class="search-box" placeholder="Buscar..." oninput="setSearch(this.value,'${key}')">
+    <input class="search-box" id="srch-${key}" data-key="${key}" placeholder="Buscar por RUC o Razón Social..." 
+      value="${window['search_'+key]||''}" autocomplete="off">
     ${showNew!==false?`<button class="btn-new" onclick="openModal(null,'${key}')"><i class="ti ti-plus"></i> Nuevo lead</button>`:''}
   </div>`;
 }
@@ -2183,7 +2183,47 @@ function setFilter(f,key){
   });
   renderTab(curTab);
 }
-function setSearch(v,key){window['search_'+key]=v; renderTab(curTab);}
+/* ── GLOBAL SEARCH LISTENER - never loses focus ── */
+let _searchTimer = null;
+
+document.addEventListener('input', function(e){
+  const el = e.target;
+  if(!el.classList.contains('search-box') && el.id !== 'kpi-search') return;
+  const key = el.dataset.key || el.id;
+  const v = el.value;
+  window['search_'+key] = v;
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(()=>{ filterTableRows(el, v); }, 150);
+});
+
+function filterTableRows(inputEl, q){
+  q = (q||'').toLowerCase().trim();
+  /* Find the closest table in content */
+  const content = document.getElementById('content');
+  if(!content) return;
+  const tbodies = content.querySelectorAll('table tbody');
+  tbodies.forEach(tbody=>{
+    let shown = 0, total = 0;
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      if(tr.id && tr.id.startsWith('hist-')) return; /* skip historial rows */
+      total++;
+      const txt = (tr.innerText||tr.textContent||'').toLowerCase();
+      const show = !q || txt.includes(q);
+      tr.style.display = show ? '' : 'none';
+      /* hide historial row too if parent hidden */
+      if(tr.id && tr.id.startsWith('row-')){
+        const hRow = document.getElementById('hist-'+tr.id.slice(4));
+        if(hRow) hRow.style.display = show ? '' : 'none';
+      }
+      if(show) shown++;
+    });
+    /* Update counter */
+    const tc = document.getElementById('tc');
+    if(tc) tc.textContent = 'Mostrando '+shown+' de '+total+' registros';
+  });
+}
+
+function setSearch(v,key){ window['search_'+key]=v; }
 
 async function updateLead(id,field,val,key){
   const fieldMap={name:'nombre',status:'estado',conflict:'conflicto',source:'fuente',prob:'probabilidad',value:'valor',note:'comentario',close:'fecha_cierre'};
