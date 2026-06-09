@@ -2650,14 +2650,16 @@ async function saveLead(){
       if(rucVal && !editingId){
         const existRuc = LEADS.find(l=>l.ruc && l.ruc.trim()===rucVal);
         if(existRuc){
-          showToast(`⚠️ RUC ${rucVal} ya está registrado! (${existRuc.name})`, 'warning');
+          showToast(`⚠️ RUC ${rucVal} ya está registrado! Empresa: ${existRuc.name} — Hunter: ${existRuc.owner||'Sin asignar'}`, 'warning');
           if(saveBtn){ saveBtn.textContent='Guardar'; saveBtn.disabled=false; }
           return;
         }
         /* Also check in Supabase */
         const sbCheck = await sbGet('leads',`ruc=eq.${rucVal}&limit=1`);
         if(sbCheck && sbCheck.length>0){
-          showToast(`⚠️ RUC ${rucVal} ya está registrado en el sistema!`, 'warning');
+          const dupLead = sbCheck[0];
+            const dupHunter = (SB_USUARIOS.find(u=>u.id===dupLead.hunter_id)||{}).nombre||'Sin asignar';
+            showToast(`⚠️ RUC ${rucVal} ya está registrado! Empresa: ${dupLead.razon_social||dupLead.nombre} — Hunter: ${dupHunter}`, 'warning');
           if(saveBtn){ saveBtn.textContent='Guardar'; saveBtn.disabled=false; }
           return;
         }
