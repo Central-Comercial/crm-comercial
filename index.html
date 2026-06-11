@@ -1104,10 +1104,23 @@ function applyOrigenFilter(leads){
   if(!window.origenFilter) return leads;
   const f = window.origenFilter;
   return leads.filter(l=>{
-    const src = (l.source||'').toUpperCase();
+    const src   = (l.source||'').toUpperCase().trim();
+    const banco = (l.banco||'').toUpperCase().trim();
+
     if(f==='WINBANK'){
-      /* "LEAD IZIPAY" = WINBANK */
-      return src.includes('WINBANK') || src.includes('IZIPAY');
+      /* "LEAD IZIPAY (WINBACK)" = WINBANK */
+      return src.includes('WINBANK') || src.includes('IZIPAY') || src.includes('WINBACK');
+    }
+    if(f==='IBK'){
+      /* "LEAD IBK" en origen, o banco Interbank */
+      return src.includes('IBK') || src.includes('INTERBANK')
+          || banco.includes('IBK') || banco.includes('INTERBANK');
+    }
+    if(f==='CENTRAL'){
+      return src.includes('CENTRAL');
+    }
+    if(f==='PROPIO'){
+      return src.includes('PROPIO');
     }
     return src.includes(f);
   });
@@ -3098,11 +3111,23 @@ async function handleImportWithLinea(file, linea){
 }
 
 function mapEstadoImport(e){
-  const s = (e||'').toLowerCase().trim();
-  if(s.includes('100') || s.includes('cierr')) return 'cerrado';
-  if(s.includes('75')  || s.includes('pre'))   return 'precierre';
-  if(s.includes('50')  || s.includes('negoc')) return 'negociacion';
-  if(s.includes('25')  || s.includes('opor'))  return 'oportunidad';
+  const raw = (e||'').toLowerCase().trim();
+
+  /* Códigos internos ya correctos */
+  if(['prospecto','oportunidad','negociacion','precierre','cerrado'].includes(raw)) return raw;
+
+  /* Prioridad: prefijo de porcentaje (más confiable para textos largos del Excel) */
+  if(/^100\s*%/.test(raw) || raw.startsWith('100')) return 'cerrado';
+  if(/^75\s*%/.test(raw)  || raw.startsWith('75'))  return 'precierre';
+  if(/^50\s*%/.test(raw)  || raw.startsWith('50'))  return 'negociacion';
+  if(/^25\s*%/.test(raw)  || raw.startsWith('25'))  return 'oportunidad';
+  if(/^10\s*%/.test(raw)  || raw.startsWith('10'))  return 'prospecto';
+
+  /* Fallback por palabras clave, orden de más a menos específico */
+  if(raw.includes('pre cierre') || raw.includes('pre-cierre') || raw.includes('precierre')) return 'precierre';
+  if(raw.includes('negoci')) return 'negociacion';
+  if(raw.includes('cierre') || raw.includes('cerrado')) return 'cerrado';
+  if(raw.includes('oportunidad')) return 'oportunidad';
   return 'prospecto';
 }
 
