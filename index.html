@@ -2886,12 +2886,15 @@ async function handleImport(input){
 
   const g = (row, idx) => idx >= 0 ? (row[idx]||'').toString().trim() : '';
 
-  /* Build existing RUC + name set to detect duplicates */
-  const existingKeys = new Set(LEADS.map(l => {
+  /* Build existing RUC -> lead id map (for upsert) and name set as fallback */
+  const existingByRuc = {};
+  const existingByName = {};
+  LEADS.forEach(l => {
     const ruc = (l.ruc||'').trim();
     const name = (l.name||'').trim().toLowerCase();
-    return ruc ? `ruc:${ruc}` : `name:${name}`;
-  }));
+    if(ruc) existingByRuc[ruc] = l.id;
+    else if(name) existingByName[name] = l.id;
+  });
 
   /* Also track file hash to warn if same file is re-imported */
   const fileKey = `import_${file.name}_${file.size}_${file.lastModified}`;
@@ -2905,7 +2908,7 @@ async function handleImport(input){
     }
   }
 
-  let inserted = 0, skipped = 0, duplicates = 0, errors = [];
+  let inserted = 0, updated = 0, skipped = 0, duplicates = 0, errors = [];
 
   for(let i = 1; i < rows.length; i++){
     const row = rows[i];
@@ -2915,11 +2918,11 @@ async function handleImport(input){
     const razon = g(row, iRazon);
     if(!razon){ skipped++; continue; }
 
-    /* Check for duplicate by RUC or name */
+    /* Check for existing lead by RUC or name -> will UPSERT instead of skip */
     const rucVal = g(row, iRuc).trim();
-    const checkKey = rucVal ? `ruc:${rucVal}` : `name:${razon.trim().toLowerCase()}`;
-    if(existingKeys.has(checkKey)){ duplicates++; continue; }
-    existingKeys.add(checkKey); /* prevent duplicates within same import */
+    let existingId = null;
+    if(rucVal && existingByRuc[rucVal]) existingId = existingByRuc[rucVal];
+    else if(!rucVal && existingByName[razon.trim().toLowerCase()]) existingId = existingByName[razon.trim().toLowerCase()];
 
     /* Find hunter_id by name */
     let hunter_id = null, equipo = null;
@@ -2964,8 +2967,20 @@ async function handleImport(input){
     };
 
     try {
-      await sbPost('leads', payload);
-      inserted++;
+      if(existingId){
+        /* UPDATE existing lead with new data from this import (etapa, valor, etc.) */
+        await sbPatch('leads', existingId, {
+          ...payload,
+          updated_at: new Date().toISOString()
+        });
+        updated++;
+      } else {
+        const res = await sbPost('leads', payload);
+        const newId = res?.[0]?.id;
+        if(newId && rucVal) existingByRuc[rucVal] = newId;
+        else if(newId) existingByName[razon.trim().toLowerCase()] = newId;
+        inserted++;
+      }
     } catch(e){
       errors.push(`Fila ${i+1}: ${e.message}`);
       skipped++;
@@ -3008,7 +3023,7 @@ async function handleImport(input){
   }
   if(txt) txt.textContent = 'Importar Excel';
   if(btn) btn.disabled = false;
-  alert(`✅ Importación completada:\n• ${inserted} leads nuevos importados\n• ${duplicates} duplicados omitidos\n• ${skipped} filas vacías/inválidas${errors.length?'\n\nErrores:\n'+errors.slice(0,5).join('\n'):''}`);
+  alert(`✅ Importación completada:\n• ${inserted} leads nuevos\n• ${updated} leads actualizados (RUC ya existía)\n• ${skipped} filas vacías/con error${errors.length?'\n\nErrores:\n'+errors.slice(0,5).join('\n'):''}`);
 }
 
 async function handleImportWithLinea(file, linea){
