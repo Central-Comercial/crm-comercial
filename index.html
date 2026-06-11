@@ -2962,6 +2962,7 @@ async function handleImport(input){
       banco:         g(row, iBanco) || null,
       valor:         parseFloat(potStr) || 0,
       estado:        mapEstadoImport(g(row, iEtapa)),
+      categoria:     mapEstadoImport(g(row, iEtapa))==='cerrado' ? 'cerrado' : 'activo',
       mes_cierre:    g(row, iMes) || null,
       comentario:    g(row, iComent) || null,
     };
