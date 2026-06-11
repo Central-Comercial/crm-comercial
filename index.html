@@ -2924,18 +2924,42 @@ async function handleImport(input){
     if(rucVal && existingByRuc[rucVal]) existingId = existingByRuc[rucVal];
     else if(!rucVal && existingByName[razon.trim().toLowerCase()]) existingId = existingByName[razon.trim().toLowerCase()];
 
-    /* Find hunter_id by name */
+    /* Find hunter_id by name - exact match, then word-overlap fuzzy match */
     let hunter_id = null, equipo = null;
     if(hunterName){
-      /* Try exact match first, then partial */
+      /* 1) Try exact match */
       hunter_id = hunterNameMap[hunterName];
+
+      /* 2) Substring match (covers "OLIVER LOPEZ" vs "LOPEZ SUMALAVIA, OLIVER ENRIQUE") */
       if(!hunter_id){
         const match = SB_USUARIOS.find(u =>
-          u.nombre.toUpperCase().includes(hunterName) ||
-          hunterName.includes(u.nombre.toUpperCase().split(' ')[0])
+          (u.rol==='hunter'||u.rol==='head') && (
+            u.nombre.toUpperCase().includes(hunterName) ||
+            hunterName.includes(u.nombre.toUpperCase())
+          )
         );
-        if(match){ hunter_id = match.id; }
+        if(match) hunter_id = match.id;
       }
+
+      /* 3) Word-overlap fuzzy match - tolerates spelling diffs (Melissa/Melisa) by matching surnames */
+      if(!hunter_id){
+        const importWords = hunterName.split(/[\s,]+/).filter(w=>w.length>=3);
+        let best = null, bestScore = 0;
+        SB_USUARIOS.forEach(u=>{
+          if(u.rol!=='hunter' && u.rol!=='head') return;
+          const dbWords = u.nombre.toUpperCase().split(/[\s,]+/).filter(w=>w.length>=3);
+          let score = 0;
+          importWords.forEach(iw=>{
+            dbWords.forEach(dw=>{
+              if(iw===dw) score += 2; /* exact word match */
+              else if(iw.length>=5 && dw.length>=5 && (iw.includes(dw)||dw.includes(iw))) score += 1; /* partial (Melisa/Melissa) */
+            });
+          });
+          if(score > bestScore){ bestScore = score; best = u; }
+        });
+        if(best && bestScore >= 1) hunter_id = best.id;
+      }
+
       if(hunter_id){
         const hu = SB_USUARIOS.find(u => u.id === hunter_id);
         if(hu) equipo = hu.equipo;
@@ -2962,6 +2986,7 @@ async function handleImport(input){
       banco:         g(row, iBanco) || null,
       valor:         parseFloat(potStr) || 0,
       estado:        mapEstadoImport(g(row, iEtapa)),
+      categoria:     mapEstadoImport(g(row, iEtapa))==='cerrado' ? 'cerrado' : 'activo',
       mes_cierre:    g(row, iMes) || null,
       comentario:    g(row, iComent) || null,
     };
@@ -3080,7 +3105,25 @@ async function handleImportWithLinea(file, linea){
     let hunter_id=null,equipo=null;
     if(hunterName){
       hunter_id=hunterNameMap[hunterName]||null;
-      if(!hunter_id){const m=SB_USUARIOS.find(u=>u.nombre.toUpperCase().includes(hunterName)||hunterName.includes(u.nombre.toUpperCase().split(' ')[0]));if(m){hunter_id=m.id;}}
+      if(!hunter_id){
+        const m=SB_USUARIOS.find(u=>(u.rol==='hunter'||u.rol==='head')&&(u.nombre.toUpperCase().includes(hunterName)||hunterName.includes(u.nombre.toUpperCase())));
+        if(m){hunter_id=m.id;}
+      }
+      if(!hunter_id){
+        const importWords=hunterName.split(/[\s,]+/).filter(w=>w.length>=3);
+        let best=null,bestScore=0;
+        SB_USUARIOS.forEach(u=>{
+          if(u.rol!=='hunter'&&u.rol!=='head')return;
+          const dbWords=u.nombre.toUpperCase().split(/[\s,]+/).filter(w=>w.length>=3);
+          let score=0;
+          importWords.forEach(iw=>dbWords.forEach(dw=>{
+            if(iw===dw)score+=2;
+            else if(iw.length>=5&&dw.length>=5&&(iw.includes(dw)||dw.includes(iw)))score+=1;
+          }));
+          if(score>bestScore){bestScore=score;best=u;}
+        });
+        if(best&&bestScore>=1)hunter_id=best.id;
+      }
       if(hunter_id){const hu=SB_USUARIOS.find(u=>u.id===hunter_id);if(hu)equipo=hu.equipo;}
     }
     const potStr=g(row,iPotenc).replace(/[^0-9.]/g,'');
