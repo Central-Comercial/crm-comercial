@@ -1654,9 +1654,9 @@ function kpiRucRow(leads){
 
   return `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
     ${kpiCard('RUC Total',total,'leads con RUC','neutral')}
-    ${kpiFunnelCard('RUC Funnel', activosArr)}
-    ${kpiCard('RUC Cerrado','S/ '+rucLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'100% Cierre','up','#1D9E75')}
-    ${kpiCard('RUC Perdido','S/ '+rucLeads.filter(l=>l.categoria==='caido').reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'sin oportunidad','down','#E24B4A')}
+    ${kpiFunnelCardCount('RUC Funnel', activosArr)}
+    ${kpiCard('RUC Cerrado',cerrado,'100% Cierre','up','#1D9E75')}
+    ${kpiCard('RUC Perdido',perdido,'sin oportunidad','down','#E24B4A')}
     ${kpiCard('% Conversión RUC',conv+'%','cerrados / ruc total',conv>=30?'up':conv>=15?'neutral':'down',convColor)}
   </div>`;
 }
