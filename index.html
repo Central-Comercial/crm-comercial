@@ -1454,6 +1454,9 @@ function renderCerradosCaidos(tipo){
     </div>
     <span style="margin-left:auto;background:${color}22;color:${color};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${leads.length} leads</span>
   </div>
+  <div style="margin-bottom:10px;">
+    <input class="search-box" id="srch-${tipo}" data-key="${tipo}" placeholder="Buscar por RUC o Razón Social..." value="${window['search_'+tipo]||''}" autocomplete="off" style="width:260px;">
+  </div>
   <div class="tbl-wrap">${leads.length ? leadsTableHTML(leads, false, tipo) :
     '<div style="padding:40px;text-align:center;color:#aaa;font-style:italic;">Sin leads '+tipo+'s aún.</div>'}</div>`;
 }
@@ -1659,20 +1662,61 @@ function kpiRucRow(leads){
 }
 
 /* ── KPI ROW FLAT (inline 5 cards) ── */
+/* Mini-funnel en CANTIDAD (no S/) - usado para QR y Planillas */
+function kpiFunnelCardCount(label, leads){
+  const total = leads.length;
+  const neg50 = leads.filter(l=>l.status==='negociacion').length;
+  const pre75 = leads.filter(l=>l.status==='precierre').length;
+  return `<div class="kpi">
+    <div class="kpi-label">${label}</div>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:10px;color:#E8721C;font-weight:500;">50% Negociación</span>
+        <span style="font-size:16px;font-weight:600;color:#E8721C;">${neg50}</span>
+      </div>
+      <div style="height:3px;background:#f0f0f0;border-radius:2px;overflow:hidden;">
+        <div style="width:${total>0?Math.round(neg50/total*100):0}%;height:100%;background:#E8721C;border-radius:2px;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
+        <span style="font-size:10px;color:#C0392B;font-weight:500;">75% Pre-cierre</span>
+        <span style="font-size:16px;font-weight:600;color:#C0392B;">${pre75}</span>
+      </div>
+      <div style="height:3px;background:#f0f0f0;border-radius:2px;overflow:hidden;">
+        <div style="width:${total>0?Math.round(pre75/total*100):0}%;height:100%;background:#C0392B;border-radius:2px;"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
 function kpiRowFlat(label, leads, tipoProd){
   const filtered = leads.filter(l=>(l.tipo_producto||'').toUpperCase()===tipoProd.toUpperCase());
-  const cerrados = filtered.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
-  const perdidos = filtered.filter(l=>l.categoria==='caido').length;
+  const cerradosArr = filtered.filter(l=>l.categoria==='cerrado'||l.status==='cerrado');
+  const perdidosArr = filtered.filter(l=>l.categoria==='caido');
+  const cerrados = cerradosArr.length;
+  const perdidos = perdidosArr.length;
   const activosArr = filtered.filter(isActiveLead);
   const captura  = activosArr.reduce((s,l)=>s+(l.value||0),0);
   const totalCaptura = activosArr.length + cerrados;
   const conv     = totalCaptura>0 ? Math.round(cerrados/totalCaptura*100) : 0;
   const convColor= conv>=30?'#1D9E75':conv>=15?'#F5A623':'#E24B4A';
+
+  /* QR y PLANILLAS se miden por CANTIDAD de leads; ARISALE se mide en S/ */
+  const byCount = (tipoProd.toUpperCase()==='QR' || tipoProd.toUpperCase()==='PLANILLAS');
+
+  const totalCard   = byCount ? kpiCard(label+' Total', filtered.length, 'leads totales','neutral')
+                               : kpiCard(label+' Total','S/ '+captura.toLocaleString(),'captura potencial','neutral');
+  const leadsTotalCard = byCount ? kpiFunnelCardCount(label+' Leads Total', activosArr)
+                                  : kpiFunnelCard(label+' Leads Total', activosArr);
+  const cerradoCard = byCount ? kpiCard(label+' Cerrado', cerrados, '100% Cierre','up','#1D9E75')
+                               : kpiCard(label+' Cerrado','S/ '+cerradosArr.reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'100% Cierre','up','#1D9E75');
+  const perdidoCard = byCount ? kpiCard(label+' Perdido', perdidos, 'caídos','down','#E24B4A')
+                               : kpiCard(label+' Perdido','S/ '+perdidosArr.reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'caídos','down','#E24B4A');
+
   return `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
-    ${kpiCard(label+' Total','S/ '+captura.toLocaleString(),'captura potencial','neutral')}
-    ${kpiFunnelCard(label+' Leads Total', activosArr)}
-    ${kpiCard(label+' Cerrado','S/ '+filtered.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'100% Cierre','up','#1D9E75')}
-    ${kpiCard(label+' Perdido','S/ '+filtered.filter(l=>l.categoria==='caido').reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'caídos','down','#E24B4A')}
+    ${totalCard}
+    ${leadsTotalCard}
+    ${cerradoCard}
+    ${perdidoCard}
     ${kpiCard('% Conversión '+label,conv+'%','cerrados / '+label.toLowerCase()+' total',conv>=30?'up':conv>=15?'neutral':'down',convColor)}
   </div>`;
 }
@@ -2356,10 +2400,11 @@ function leadsTableHTML(leads, canEdit, key){
     if(ss&&!l.name.toLowerCase().includes(ss.toLowerCase())) return false;
     return true;
   });
-  if(!filtered.length) return `<table><tbody><tr><td colspan="20" style="text-align:center;padding:24px;color:#aaa;font-size:13px;">Sin leads para mostrar</td></tr></tbody></table>`;
+  if(!filtered.length) return `<table><tbody><tr><td colspan="22" style="text-align:center;padding:24px;color:#aaa;font-size:13px;">Sin leads para mostrar</td></tr></tbody></table>`;
   return `<table>
     <colgroup>
       <col style="width:18px"><col style="width:26px"><col style="width:150px"><col style="width:80px">
+      <col style="width:130px"><col style="width:90px">
       <col style="width:82px"><col style="width:82px"><col style="width:95px">
       <col style="width:100px"><col style="width:110px"><col style="width:100px">
       <col style="width:85px"><col style="width:100px">
@@ -2369,7 +2414,9 @@ function leadsTableHTML(leads, canEdit, key){
       <col style="width:50px">
     </colgroup>
     <thead><tr>
-      <th></th><th></th><th>Razón Social</th><th>RUC</th><th>F. Ingreso</th><th>F. Cierre</th><th>F. Modificación</th><th>Hunter</th>
+      <th></th><th></th><th>Razón Social</th><th>RUC</th>
+      <th>Representante Legal</th><th>Teléfono</th>
+      <th>F. Ingreso</th><th>F. Cierre</th><th>F. Modificación</th><th>Hunter</th>
       <th>Giros</th><th>Origen</th><th>Tipo Producto</th><th>Tipo Cuenta</th>
       <th>Banco</th><th>Potencial</th><th>Etapa</th><th>Mes Cierre</th><th>Comentarios</th>
       ${isSVA?'<th>Tipo SVA</th><th>Cantidad/Valor</th><th>Etapa Implement.</th>':''}
@@ -2448,6 +2495,16 @@ function leadsTableHTML(leads, canEdit, key){
         <td style="font-weight:600;font-size:11px;" title="${l.name}">${l.name}</td>
         <td style="font-size:11px;color:#666;">${l.ruc||'—'}</td>
         <td style="padding:4px 8px;">
+          ${full
+            ? `<input class="ecell" value="${l.representante_legal||''}" placeholder="—" onchange="updateLeadDB('${safeId}','representante_legal',this.value,'${key}')" style="font-size:11px;">`
+            : `<span style="font-size:11px;color:#666;">${l.representante_legal||'—'}</span>`}
+        </td>
+        <td style="padding:4px 8px;">
+          ${full
+            ? `<input class="ecell" value="${l.telefono||''}" placeholder="—" maxlength="9" onchange="updateLeadDB('${safeId}','telefono',this.value,'${key}')" style="font-size:11px;">`
+            : `<span style="font-size:11px;color:#666;">${l.telefono||'—'}</span>`}
+        </td>
+        <td style="padding:4px 8px;">
           ${canPartial
             ? `<input type="date" value="${l.fecha_ingreso_raw||''}" data-id="${l.id}" data-field="fecha_ingreso" data-key="${key}"
                 onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)"
@@ -2500,7 +2557,7 @@ function leadsTableHTML(leads, canEdit, key){
         <td>${actionBtn}</td>
       </tr>
       <tr id="hist-${l.id}" style="display:none;">
-        <td colspan="${isSVA?20:17}" style="padding:0;">
+        <td colspan="${isSVA?22:19}" style="padding:0;">
           <div id="hist-content-${l.id}" style="background:#f8f9fc;padding:10px 20px;border-top:1px solid #eee;font-size:11px;">
             <div style="color:#999;text-align:center;">Cargando historial...</div>
           </div>
