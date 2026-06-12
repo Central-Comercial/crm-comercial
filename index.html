@@ -368,6 +368,96 @@ tr:hover td{background:#fafbff;}
   </div>
 </div>
 
+<!-- ══ MODAL LEADS SVA ══ -->
+<div class="modal-bg" id="modal-sva-bg">
+  <div class="modal" style="max-width:760px;width:95%;">
+    <button class="close-modal" onclick="closeSVAModal()">&#x2715;</button>
+    <h3 id="modal-sva-title">Nuevo lead SVA</h3>
+    <div class="mgrid" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="mf"><label>Head</label><input id="sva-head" readonly style="background:#f5f6fa;color:#888;"></div>
+      <div class="mf"><label>Hunter</label><select id="sva-hunter"></select></div>
+      <div class="mf"><label>Teléfono</label><input id="sva-telefono" placeholder="9XXXXXXXX" maxlength="9"></div>
+
+      <div class="mf" style="grid-column:1/-1;"><label>Razón Social / Empresa</label><input id="sva-razon" placeholder="Ej: Empresa S.A.C."></div>
+      <div class="mf"><label>RUC</label><input id="sva-ruc" placeholder="20xxxxxxxxx" maxlength="11"></div>
+      <div class="mf" style="grid-column:span 2;"><label>Representante Legal</label><input id="sva-rep-legal" placeholder="Nombre completo"></div>
+
+      <div class="mf"><label>Giros</label>
+        <select id="sva-giros">
+          <option value="">Seleccionar...</option>
+          <option>COLEGIOS Y UNIVERSIDADES</option>
+          <option>ACTIVIDADES DE RESTAURANTES</option>
+          <option>PANADERIA</option>
+          <option>VENTA AL PORMENOR</option>
+          <option>VENTA X MENOR</option>
+          <option>MINORISTA</option>
+          <option>OTROS GIROS</option>
+        </select>
+      </div>
+      <div class="mf"><label>Origen</label>
+        <select id="sva-source">
+          <option value="">Seleccionar...</option>
+          <option>LEAD IZIPAY (WINBACK)</option>
+          <option>LEAD PROPIO</option>
+          <option>LEAD CENTRAL</option>
+          <option>LEAD IBK</option>
+          <option>REFERIDO</option>
+        </select>
+      </div>
+      <div class="mf"><label>Tipo SVA</label>
+        <select id="sva-tipo">
+          <option value="">Seleccionar...</option>
+          <option value="QR">QR</option>
+          <option value="ARISALE">ARISALE</option>
+          <option value="PLANILLAS">PLANILLAS</option>
+        </select>
+      </div>
+
+      <div class="mf"><label>Parlantes (QR Parlante)</label><input id="sva-parlantes" type="number" placeholder="0"></div>
+      <div class="mf"><label>Arisale - Valor Licencias (S/)</label><input id="sva-arisale-valor" type="number" placeholder="0"></div>
+      <div class="mf"><label>Arisale - Total Licencias</label><input id="sva-arisale-licencias" type="number" placeholder="0"></div>
+
+      <div class="mf"><label>Planillas (Colaboradores)</label><input id="sva-planillas" type="number" placeholder="0"></div>
+      <div class="mf"><label>Etapa</label>
+        <select id="sva-status">
+          <option value="prospecto">10% Prospección</option>
+          <option value="oportunidad">25% Oportunidad</option>
+          <option value="negociacion">50% Negociación</option>
+          <option value="precierre">75% Pre-cierre</option>
+          <option value="cerrado">100% Cierre</option>
+        </select>
+      </div>
+      <div class="mf"><label>Mes de Cierre</label>
+        <select id="sva-close">
+          <option value="">Seleccionar...</option>
+          <option>ENERO</option><option>FEBRERO</option><option>MARZO</option>
+          <option>ABRIL</option><option>MAYO</option><option>JUNIO</option>
+          <option>JULIO</option><option>AGOSTO</option><option>SEPTIEMBRE</option>
+          <option>OCTUBRE</option><option>NOVIEMBRE</option><option>DICIEMBRE</option>
+        </select>
+      </div>
+
+      <div class="mf"><label>Etapa Implementación</label>
+        <select id="sva-etapa-impl">
+          <option value="">Seleccionar...</option>
+          <option>PENDIENTE</option>
+          <option>EN PROCESO</option>
+          <option>IMPLEMENTADO</option>
+          <option>COMPLETADO</option>
+        </select>
+      </div>
+      <div class="mf"><label>Fecha de Ingreso</label><input id="sva-fecha-ingreso" type="date"></div>
+      <div class="mf"><label>Fecha de Modificación</label><input id="sva-fecha-modif" type="date"></div>
+
+      <div class="mf" style="grid-column:1/-1;"><label>Comentarios</label><textarea id="sva-note" rows="2" style="resize:none;"></textarea></div>
+    </div>
+    <div class="mactions">
+      <button class="btn-cancel" onclick="closeSVAModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveSVALead()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ─── SUPABASE CONFIG ─── */
 const SB_URL = 'https://lvnjawvgbvlghaodyurv.supabase.co';
@@ -1223,6 +1313,7 @@ function renderSVA2(){
   <!-- Tabla -->
   <div style="margin:14px 0 8px;font-size:12px;font-weight:600;color:#333;">Leads SVA</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
+    <input class="search-box" id="srch-sva2" data-key="sva2" placeholder="Buscar por RUC o Razón Social..." value="${window['search_sva2']||''}" autocomplete="off">
     <select class="filter-sel" onchange="window.sva2_tipo=this.value;renderSVA2()">
       <option value="">Todos los tipos</option>
       ${SVA_TIPOS.map(t=>`<option value="${t}"${window.sva2_tipo===t?' selected':''}>${t}</option>`).join('')}
@@ -1233,6 +1324,7 @@ function renderSVA2(){
       <option value="cerrado"${window.sva2_cat==='cerrado'?' selected':''}>Cerrados</option>
       <option value="caido"${window.sva2_cat==='caido'?' selected':''}>Caídos</option>
     </select>
+    <button class="btn-new" onclick="openModal(null,'sva2')"><i class="ti ti-plus"></i> Nuevo lead</button>
     <span style="font-size:11px;color:#999;margin-left:auto;">${svaLeads.length} leads SVA</span>
   </div>
   <div class="tbl-wrap">
@@ -2012,6 +2104,11 @@ async function fetchLeads(){
     note:l.comentario||'', prob:l.probabilidad||10,
     conflict:l.conflicto||false, categoria:l.categoria||'activo',
     linea:l.linea||'central',
+    telefono:l.telefono||'', representante_legal:l.representante_legal||'',
+    tipo_sva:l.tipo_sva||'', parlantes:l.parlantes||0,
+    arisale_valor:l.arisale_valor||0, arisale_licencias:l.arisale_licencias||0,
+    planillas_colaboradores:l.planillas_colaboradores||0,
+    etapa_implementacion:l.etapa_implementacion||'',
     created:l.created_at?new Date(l.created_at).toLocaleDateString('es-PE'):'',
     fecha_ingreso:l.fecha_ingreso?new Date(l.fecha_ingreso).toLocaleDateString('es-PE'):'—',
     fecha_ingreso_raw:l.fecha_ingreso||'',
@@ -2054,7 +2151,11 @@ const FIELD_LABELS = {
   valor:'Potencial', banco:'Banco', estado:'Etapa', mes_cierre:'Mes Cierre',
   comentario:'Comentario', fecha_ingreso:'F. Ingreso', fecha_modif:'F. Modificación',
   fecha_cierre:'F. Cierre', nombre:'Razón Social', ruc:'RUC', fuente:'Origen',
-  giros:'Giros', tipo_producto:'Tipo Producto', tipo_cuenta:'Tipo Cuenta'
+  giros:'Giros', tipo_producto:'Tipo Producto', tipo_cuenta:'Tipo Cuenta',
+  telefono:'Teléfono', representante_legal:'Representante Legal', tipo_sva:'Tipo SVA',
+  parlantes:'Parlantes', arisale_valor:'Valor Licencias Arisale', arisale_licencias:'Licencias Arisale',
+  planillas_colaboradores:'Colaboradores Planillas', etapa_implementacion:'Etapa Implementación',
+  categoria:'Categoría', razon_social:'Razón Social', nuevo_lead:'Nuevo Lead'
 };
 
 async function saveHistorial(leadId, campo, valorNuevo){
@@ -2118,6 +2219,7 @@ function regLead(l){ LEAD_REG[l.id] = l; return l.id; }
 function getLead(id){ return LEADS.find(l=>l.id===id) || LEAD_REG[id]; }
 
 function leadsTableHTML(leads, canEdit, key){
+  const isSVA = (key==='sva2');
   /* Head only sees their team's leads */
   const visibleLeads = curUser.role==='head'
     ? leads.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; })
@@ -2130,7 +2232,7 @@ function leadsTableHTML(leads, canEdit, key){
     if(ss&&!l.name.toLowerCase().includes(ss.toLowerCase())) return false;
     return true;
   });
-  if(!filtered.length) return `<table><tbody><tr><td colspan="12" style="text-align:center;padding:24px;color:#aaa;font-size:13px;">Sin leads para mostrar</td></tr></tbody></table>`;
+  if(!filtered.length) return `<table><tbody><tr><td colspan="20" style="text-align:center;padding:24px;color:#aaa;font-size:13px;">Sin leads para mostrar</td></tr></tbody></table>`;
   return `<table>
     <colgroup>
       <col style="width:18px"><col style="width:26px"><col style="width:150px"><col style="width:80px">
@@ -2138,12 +2240,16 @@ function leadsTableHTML(leads, canEdit, key){
       <col style="width:100px"><col style="width:110px"><col style="width:100px">
       <col style="width:85px"><col style="width:100px">
       <col style="width:60px"><col style="width:80px"><col style="width:100px">
-      <col style="width:80px"><col style="width:140px"><col style="width:50px">
+      <col style="width:80px"><col style="width:140px">
+      ${isSVA?'<col style="width:90px"><col style="width:90px"><col style="width:110px">':''}
+      <col style="width:50px">
     </colgroup>
     <thead><tr>
       <th></th><th></th><th>Razón Social</th><th>RUC</th><th>F. Ingreso</th><th>F. Cierre</th><th>F. Modificación</th><th>Hunter</th>
       <th>Giros</th><th>Origen</th><th>Tipo Producto</th><th>Tipo Cuenta</th>
-      <th>Banco</th><th>Potencial</th><th>Etapa</th><th>Mes Cierre</th><th>Comentarios</th><th></th>
+      <th>Banco</th><th>Potencial</th><th>Etapa</th><th>Mes Cierre</th><th>Comentarios</th>
+      ${isSVA?'<th>Tipo SVA</th><th>Cantidad/Valor</th><th>Etapa Implement.</th>':''}
+      <th></th>
     </tr></thead>
     <tbody>${filtered.map(l=>{
       const full = canFullEdit(l);
@@ -2257,10 +2363,22 @@ function leadsTableHTML(leads, canEdit, key){
         <td>${etapaCell}</td>
         <td>${mesCierreCell}</td>
         <td>${comentarioCell}</td>
+        ${isSVA?(()=>{
+          const tipoSva=(l.tipo_sva||l.tipo_producto||'').toUpperCase();
+          let cantVal='—';
+          if(tipoSva==='QR') cantVal=(l.parlantes||0)+' parlantes';
+          else if(tipoSva==='ARISALE') cantVal='S/'+(l.arisale_valor||0).toLocaleString()+' · '+(l.arisale_licencias||0)+' lic.';
+          else if(tipoSva==='PLANILLAS') cantVal=(l.planillas_colaboradores||0)+' colab.';
+          const implColors={'PENDIENTE':'#E24B4A','EN PROCESO':'#F5A623','IMPLEMENTADO':'#3DB8E8','COMPLETADO':'#1D9E75'};
+          const implColor=implColors[(l.etapa_implementacion||'').toUpperCase()]||'#999';
+          return `<td style="font-size:10px;font-weight:600;color:#7F77DD;">${tipoSva||'—'}</td>
+            <td style="font-size:10px;color:#555;white-space:nowrap;">${cantVal}</td>
+            <td><span class="sbadge" style="background:${implColor}22;color:${implColor};font-size:10px;">${l.etapa_implementacion||'—'}</span></td>`;
+        })():''}
         <td>${actionBtn}</td>
       </tr>
       <tr id="hist-${l.id}" style="display:none;">
-        <td colspan="17" style="padding:0;">
+        <td colspan="${isSVA?20:17}" style="padding:0;">
           <div id="hist-content-${l.id}" style="background:#f8f9fc;padding:10px 20px;border-top:1px solid #eee;font-size:11px;">
             <div style="color:#999;text-align:center;">Cargando historial...</div>
           </div>
@@ -2660,6 +2778,10 @@ async function deleteLead(id, key){
 let modalKey='';
 async function openModal(id,key){
   modalKey=key||'';editingId=id;
+
+  /* Leads SVA usan un modal con campos distintos */
+  if(key==='sva2'){ return openSVAModal(id); }
+
   const isHunter = curUser.role === 'hunter';
   document.getElementById('modal-title').textContent=id?'Editar lead':'Nuevo lead';
 
@@ -2708,6 +2830,192 @@ async function openModal(id,key){
   document.getElementById('modal-bg').classList.add('open');
 }
 function closeModal(){document.getElementById('modal-bg').classList.remove('open');}
+
+/* ══ MODAL LEADS SVA ══ */
+async function openSVAModal(id){
+  modalKey='sva2'; editingId=id;
+  const isHunter = curUser.role === 'hunter';
+  document.getElementById('modal-sva-title').textContent = id?'Editar lead SVA':'Nuevo lead SVA';
+
+  /* Bloquear campos según rol (hunter solo edita comentario en leads existentes) */
+  const lockFields = ['sva-hunter','sva-telefono','sva-razon','sva-ruc','sva-rep-legal','sva-giros','sva-source',
+    'sva-tipo','sva-parlantes','sva-arisale-valor','sva-arisale-licencias','sva-planillas',
+    'sva-status','sva-close','sva-etapa-impl','sva-fecha-ingreso'];
+  lockFields.forEach(f=>{
+    const el=document.getElementById(f);
+    if(el) el.disabled = isHunter && !!id;
+  });
+
+  /* Poblar Hunter select */
+  const sel=document.getElementById('sva-hunter');
+  sel.innerHTML='';sel.disabled=false;
+  if(isHunter){
+    const o=document.createElement('option');o.value=curUser.name;o.textContent=curUser.name;sel.appendChild(o);sel.disabled=true;
+  } else {
+    let params='rol=eq.hunter&activo=eq.true&select=nombre,equipo&order=nombre';
+    if(curUser.role==='head') params+=`&equipo=eq.${curUser.equipo}`;
+    const data=await sbGet('usuarios',params);
+    (data||[]).forEach(u=>{const o=document.createElement('option');o.value=u.nombre;o.textContent=u.nombre;sel.appendChild(o);});
+  }
+
+  /* Head field - auto from current user or hunter's head */
+  const headEl = document.getElementById('sva-head');
+  if(curUser.role==='head'){
+    headEl.value = curUser.equipo==='A'?'Carlos Portal':'Ana Carrera';
+  } else if(curUser.role==='hunter'){
+    const myHead = HUNTERS[curUser.username]?.team==='A'?'Carlos Portal':'Ana Carrera';
+    headEl.value = myHead;
+  } else {
+    headEl.value = '';
+  }
+
+  if(id){
+    const l=LEADS.find(x=>String(x.id)===String(id));
+    if(l){
+      document.getElementById('sva-razon').value = l.name||'';
+      document.getElementById('sva-ruc').value = l.ruc||'';
+      sel.value = l.owner||'';
+      document.getElementById('sva-telefono').value = l.telefono||'';
+      document.getElementById('sva-rep-legal').value = l.representante_legal||'';
+      document.getElementById('sva-giros').value = l.giros||'';
+      document.getElementById('sva-source').value = l.source||'';
+      document.getElementById('sva-tipo').value = l.tipo_producto||'';
+      document.getElementById('sva-parlantes').value = l.parlantes||'';
+      document.getElementById('sva-arisale-valor').value = l.arisale_valor||'';
+      document.getElementById('sva-arisale-licencias').value = l.arisale_licencias||'';
+      document.getElementById('sva-planillas').value = l.planillas_colaboradores||'';
+      document.getElementById('sva-status').value = l.status||'prospecto';
+      document.getElementById('sva-close').value = l.close&&l.close!=='—'?l.close:'';
+      document.getElementById('sva-etapa-impl').value = l.etapa_implementacion||'';
+      document.getElementById('sva-fecha-ingreso').value = l.fecha_ingreso_raw||'';
+      document.getElementById('sva-fecha-modif').value = l.fecha_modif_raw||new Date().toISOString().slice(0,10);
+      document.getElementById('sva-note').value = l.note||'';
+      /* Update head field based on the lead's hunter */
+      const h = HUNTERS[l.hunter];
+      if(h) headEl.value = h.team==='A'?'Carlos Portal':'Ana Carrera';
+    }
+  } else {
+    ['sva-razon','sva-ruc','sva-telefono','sva-rep-legal','sva-parlantes','sva-arisale-valor','sva-arisale-licencias','sva-planillas','sva-note']
+      .forEach(x=>document.getElementById(x).value='');
+    ['sva-giros','sva-source','sva-tipo','sva-close','sva-etapa-impl'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('sva-status').value='prospecto';
+    document.getElementById('sva-fecha-ingreso').value=new Date().toISOString().slice(0,10);
+    document.getElementById('sva-fecha-modif').value=new Date().toISOString().slice(0,10);
+    /* Update head field on hunter selection change */
+    sel.onchange = ()=>{
+      const hu = SB_USUARIOS.find(u=>u.nombre===sel.value);
+      if(hu) headEl.value = hu.equipo==='A'?'Carlos Portal':'Ana Carrera';
+    };
+    sel.onchange();
+  }
+
+  document.getElementById('modal-sva-bg').classList.add('open');
+}
+
+function closeSVAModal(){ document.getElementById('modal-sva-bg').classList.remove('open'); }
+
+async function saveSVALead(){
+  const isHunter = curUser.role === 'hunter';
+  const saveBtn = document.querySelector('#modal-sva-bg .btn-save');
+  if(saveBtn){ saveBtn.textContent='Guardando...'; saveBtn.disabled=true; }
+
+  try {
+    let payload;
+
+    if(isHunter && editingId){
+      /* Hunter solo actualiza comentario + fecha modif */
+      payload = {
+        comentario: document.getElementById('sva-note').value,
+        fecha_modif: document.getElementById('sva-fecha-modif').value || new Date().toISOString().slice(0,10),
+        updated_at: new Date().toISOString(),
+      };
+    } else {
+      let hunter_id = curUser.id, equipo = curUser.equipo;
+      const ownerName = document.getElementById('sva-hunter').value;
+      if(!isHunter){
+        const data = await sbGet('usuarios',`nombre=eq.${encodeURIComponent(ownerName)}&select=id,equipo&limit=1`);
+        if(data&&data[0]){ hunter_id=data[0].id; equipo=data[0].equipo; }
+      } else {
+        const meUser = SB_USUARIOS.find(u=>u.username===curUser.username);
+        if(meUser){ hunter_id=meUser.id; equipo=meUser.equipo; }
+      }
+
+      const rucVal = (document.getElementById('sva-ruc').value||'').trim();
+
+      /* ── RUC DUPLICATE CHECK ── */
+      if(rucVal && !editingId){
+        const existRuc = LEADS.find(l=>l.ruc && l.ruc.trim()===rucVal);
+        if(existRuc){
+          showToast(`⚠️ RUC ${rucVal} ya está registrado! Empresa: ${existRuc.name} — Hunter: ${existRuc.owner||'Sin asignar'}`, 'warning');
+          if(saveBtn){ saveBtn.textContent='Guardar'; saveBtn.disabled=false; }
+          return;
+        }
+        const sbCheck = await sbGet('leads',`ruc=eq.${rucVal}&limit=1`);
+        if(sbCheck && sbCheck.length>0){
+          const dupLead = sbCheck[0];
+          const dupHunter = (SB_USUARIOS.find(u=>u.id===dupLead.hunter_id)||{}).nombre||'Sin asignar';
+          showToast(`⚠️ RUC ${rucVal} ya está registrado! Empresa: ${dupLead.razon_social||dupLead.nombre} — Hunter: ${dupHunter}`, 'warning');
+          if(saveBtn){ saveBtn.textContent='Guardar'; saveBtn.disabled=false; }
+          return;
+        }
+      }
+
+      const tipoSVA = document.getElementById('sva-tipo').value || null;
+      const arisaleValor = Number(document.getElementById('sva-arisale-valor').value)||0;
+
+      payload = {
+        nombre:                  document.getElementById('sva-razon').value || 'Nuevo lead SVA',
+        razon_social:            document.getElementById('sva-razon').value || null,
+        ruc:                     rucVal || null,
+        hunter_id, equipo,
+        telefono:                document.getElementById('sva-telefono').value || null,
+        representante_legal:     document.getElementById('sva-rep-legal').value || null,
+        giros:                   document.getElementById('sva-giros').value || null,
+        fuente:                  document.getElementById('sva-source').value || null,
+        tipo_producto:           tipoSVA,
+        tipo_sva:                tipoSVA,
+        parlantes:               Number(document.getElementById('sva-parlantes').value)||null,
+        arisale_valor:           arisaleValor||null,
+        arisale_licencias:       Number(document.getElementById('sva-arisale-licencias').value)||null,
+        planillas_colaboradores: Number(document.getElementById('sva-planillas').value)||null,
+        valor:                   arisaleValor,
+        estado:                  document.getElementById('sva-status').value,
+        categoria:               document.getElementById('sva-status').value==='cerrado' ? 'cerrado' : 'activo',
+        mes_cierre:              document.getElementById('sva-close').value || null,
+        etapa_implementacion:    document.getElementById('sva-etapa-impl').value || null,
+        comentario:              document.getElementById('sva-note').value,
+        fecha_ingreso:           document.getElementById('sva-fecha-ingreso').value || new Date().toISOString().slice(0,10),
+        fecha_modif:             document.getElementById('sva-fecha-modif').value || new Date().toISOString().slice(0,10),
+        linea:                   'sva',
+        updated_at:              new Date().toISOString(),
+      };
+    }
+
+    let savedId = editingId;
+    if(editingId){
+      await sbPatch('leads',`id=eq.${editingId}`,payload);
+      const editedFields = Object.keys(payload).filter(k=>k!=='updated_at');
+      for(const campo of editedFields){
+        await saveHistorial(editingId, campo, payload[campo]);
+      }
+      showToast('✅ Lead SVA actualizado correctamente', 'success');
+    } else {
+      const res = await sbPost('leads', payload);
+      savedId = res?.[0]?.id;
+      await saveHistorial(savedId, 'nuevo_lead', payload.nombre||'Lead SVA nuevo');
+      showToast('✅ Lead SVA guardado correctamente', 'success');
+    }
+
+    closeSVAModal();
+    LEADS = await fetchLeads();
+    renderTab(curTab);
+
+  } catch(e){
+    showToast('❌ Error al guardar: '+e.message, 'error');
+  }
+
+  if(saveBtn){ saveBtn.textContent='Guardar'; saveBtn.disabled=false; }
+}
 
 async function saveLead(){
   const isHunter = curUser.role === 'hunter';
@@ -2772,6 +3080,7 @@ async function saveLead(){
         banco:           document.getElementById('m-banco').value||null,
         valor:           Number(document.getElementById('m-value').value)||0,
         estado:          document.getElementById('m-status').value,
+        linea:           (modalKey==='sva2') ? 'sva' : 'central',
         mes_cierre:      document.getElementById('m-close').value||null,
         comentario:      document.getElementById('m-note').value,
         fecha_ingreso:   document.getElementById('m-fecha-ingreso').value||new Date().toISOString().slice(0,10),
@@ -3152,6 +3461,11 @@ async function handleImportWithLinea(file, linea){
     status:mapEstado(l.estado||'prospecto'),value:l.valor||0,
     close:l.mes_cierre||'',note:l.comentario||'',prob:l.probabilidad||10,
     conflict:l.conflicto||false,categoria:l.categoria||'activo',linea:l.linea||'central',
+    telefono:l.telefono||'', representante_legal:l.representante_legal||'',
+    tipo_sva:l.tipo_sva||'', parlantes:l.parlantes||0,
+    arisale_valor:l.arisale_valor||0, arisale_licencias:l.arisale_licencias||0,
+    planillas_colaboradores:l.planillas_colaboradores||0,
+    etapa_implementacion:l.etapa_implementacion||'',
     created:l.created_at?new Date(l.created_at).toLocaleDateString('es-PE'):'',
     fecha_ingreso:l.fecha_ingreso?new Date(l.fecha_ingreso).toLocaleDateString('es-PE'):'—',
     fecha_ingreso_raw:l.fecha_ingreso||'',
