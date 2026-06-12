@@ -3637,6 +3637,15 @@ async function handleImportWithLinea(file, linea){
   const iTipoC=col('TIPO DE CUENTA','TIPO CUEN'); const iBanco=col('BANCO');
   const iPotenc=col('POTENC','POTENCIAL','VALOR'); const iEtapa=col('ETAPA','ESTADO');
   const iMes=col('MES'); const iComent=col('COMENTARIO','NOTA');
+  /* Columnas específicas de SVA */
+  const iTelefono=col('TELEFONO','TELÉFONO','CELULAR');
+  const iRepLegal=col('REPRESENTANTE','REP. LEGAL','REP LEGAL');
+  const iTipoSva=col('TIPO SVA');
+  const iParlantes=col('PARLANTE');
+  const iArisaleValor=col('ARISALE (VALOR','VALOR LICENCIAS','ARISALE VALOR');
+  const iArisaleLic=col('LICENCIAS ARISALE','TOTAL LICENCIAS','LICENCIAS (TOTAL');
+  const iPlanillasColab=col('PLANILLAS','COLABORADORES');
+  const iEtapaImpl=col('ETAPA IMPLEMENTACION','ETAPA IMPLEMENTACIÓN','IMPLEMENTACION');
 
   const hunterNameMap={};
   SB_USUARIOS.forEach(u=>{
@@ -3644,17 +3653,23 @@ async function handleImportWithLinea(file, linea){
     u.nombre.toUpperCase().split(' ').forEach(w=>{ if(!hunterNameMap[w]) hunterNameMap[w]=u.id; });
   });
 
-  const existingKeys=new Set(LEADS.filter(l=>(l.linea||'central')===linea).map(l=>l.ruc?'ruc:'+l.ruc:'name:'+(l.name||'').toLowerCase()));
-  let inserted=0,duplicates=0,skipped=0;
+  const existingByRuc={}, existingByName={};
+  LEADS.forEach(l=>{
+    const ruc=(l.ruc||'').trim();
+    const name=(l.name||'').trim().toLowerCase();
+    if(ruc) existingByRuc[ruc]=l.id;
+    else if(name) existingByName[name]=l.id;
+  });
+  let inserted=0,updated=0,skipped=0;
 
   for(let i=1;i<rows.length;i++){
     const row=rows[i];
     if(row.every(c=>!c||!c.toString().trim())) continue;
     const razon=g(row,iRazon); if(!razon){skipped++;continue;}
     const rucVal=g(row,iRuc).trim();
-    const checkKey=rucVal?'ruc:'+rucVal:'name:'+razon.toLowerCase();
-    if(existingKeys.has(checkKey)){duplicates++;continue;}
-    existingKeys.add(checkKey);
+    let existingId=null;
+    if(rucVal && existingByRuc[rucVal]) existingId=existingByRuc[rucVal];
+    else if(!rucVal && existingByName[razon.trim().toLowerCase()]) existingId=existingByName[razon.trim().toLowerCase()];
 
     const hunterName=g(row,iHunter).toUpperCase();
     let hunter_id=null,equipo=null;
@@ -3682,16 +3697,57 @@ async function handleImportWithLinea(file, linea){
       if(hunter_id){const hu=SB_USUARIOS.find(u=>u.id===hunter_id);if(hu)equipo=hu.equipo;}
     }
     const potStr=g(row,iPotenc).replace(/[^0-9.]/g,'');
+    const estadoMapped=mapEstadoImport(g(row,iEtapa));
+
+    let tipoSvaVal = (g(row,iTipoSva)||g(row,iTipoP)||'').toUpperCase();
+    /* Normalizar variantes: "QR PARLANTE"->QR, "PLANILLAS IBK"->PLANILLAS, etc. */
+    if(tipoSvaVal.includes('QR')) tipoSvaVal='QR';
+    else if(tipoSvaVal.includes('ARISALE')) tipoSvaVal='ARISALE';
+    else if(tipoSvaVal.includes('PLANILLA')) tipoSvaVal='PLANILLAS';
+    tipoSvaVal = tipoSvaVal || null;
+    const parlantesVal = parseInt(g(row,iParlantes).replace(/[^0-9]/g,''))||null;
+    const arisaleValorVal = parseFloat(g(row,iArisaleValor).replace(/[^0-9.]/g,''))||0;
+    const arisaleLicVal = parseInt(g(row,iArisaleLic).replace(/[^0-9]/g,''))||null;
+    const planillasColabVal = parseInt(g(row,iPlanillasColab).replace(/[^0-9]/g,''))||null;
+    const etapaImplVal = g(row,iEtapaImpl).toUpperCase()||null;
+
+    /* Para SVA, el "valor" principal es el de Arisale (licencias); si no es Arisale, usa Potencial si existe */
+    let valorFinal = arisaleValorVal;
+    if(!valorFinal) valorFinal = parseFloat(potStr)||0;
+
     const payload={
       nombre:razon,razon_social:razon,ruc:rucVal||null,hunter_id,equipo,
       giros:g(row,iGiros)||null,fuente:g(row,iOrigen)||null,
-      tipo_producto:g(row,iTipoP)||null,tipo_cuenta:g(row,iTipoC)||null,
-      banco:g(row,iBanco)||null,valor:parseFloat(potStr)||0,
-      estado:mapEstadoImport(g(row,iEtapa)),mes_cierre:g(row,iMes)||null,
+      tipo_producto:(linea==='sva'?tipoSvaVal:g(row,iTipoP)||null),
+      tipo_cuenta:g(row,iTipoC)||null,
+      banco:g(row,iBanco)||null,valor:valorFinal,
+      estado:estadoMapped,
+      categoria: estadoMapped==='cerrado' ? 'cerrado' : 'activo',
+      mes_cierre:g(row,iMes)||null,
       comentario:g(row,iComent)||null,linea:linea,
+      telefono:g(row,iTelefono)||null,
+      representante_legal:g(row,iRepLegal)||null,
+      tipo_sva:tipoSvaVal,
+      parlantes:parlantesVal,
+      arisale_valor:arisaleValorVal||null,
+      arisale_licencias:arisaleLicVal,
+      planillas_colaboradores:planillasColabVal,
+      etapa_implementacion:etapaImplVal,
       fecha_ingreso:new Date().toISOString().slice(0,10)
     };
-    try{ await sbPost('leads',payload); inserted++; }
+
+    try{
+      if(existingId){
+        await sbPatch('leads', existingId, {...payload, updated_at:new Date().toISOString()});
+        updated++;
+      } else {
+        const res=await sbPost('leads',payload);
+        const newId=res?.[0]?.id;
+        if(newId && rucVal) existingByRuc[rucVal]=newId;
+        else if(newId) existingByName[razon.trim().toLowerCase()]=newId;
+        inserted++;
+      }
+    }
     catch(e){ skipped++; }
   }
 
@@ -3725,7 +3781,7 @@ async function handleImportWithLinea(file, linea){
   HUNTERS_DEF.forEach(h=>{h.real=0;});
   LEADS.forEach(l=>{if(HUNTERS[l.hunter])HUNTERS[l.hunter].real+=(l.value||0);});
   renderTab(curTab);
-  alert('✅ Importación '+linea.toUpperCase()+':\n• '+inserted+' leads nuevos\n• '+duplicates+' duplicados omitidos\n• '+skipped+' omitidos');
+  alert('✅ Importación '+linea.toUpperCase()+':\n• '+inserted+' leads nuevos\n• '+updated+' leads actualizados\n• '+skipped+' omitidos');
 }
 
 function mapEstadoImport(e){
