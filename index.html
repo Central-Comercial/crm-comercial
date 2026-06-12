@@ -2297,12 +2297,6 @@ function leadsTableHTML(leads, canEdit, key){
       const ro = full ? '' : 'readonly';
       const dc=l.prob>=75?'#1D9E75':l.prob>=40?'#BA7517':'#E24B4A';
       const sc2=SC[l.status]||{bg:'#f0f0f0',c:'#666',l:l.status||'—'};
-      const statusCell = full
-        ? `<select style="font-size:11px;border:1px solid #dde1e7;padding:2px 6px;border-radius:6px;background:${sc2.bg};color:${sc2.c};font-weight:600;cursor:pointer;" onchange="updateLead(${l.id},'status',this.value,'${key}')">${Object.keys(SC).map(s=>`<option value="${s}"${s===l.status?' selected':''}>${SC[s].l}</option>`).join('')}</select>`
-        : `<span class="sbadge" style="background:${sc2.bg};color:${sc2.c};">${sc2.l}</span>`;
-      const noteInput = (full || commentOnly)
-        ? `<input class="ecell" value="${l.note||''}" placeholder="—" onchange="updateLead(${l.id},'note',this.value,'${key}')" style="color:#888;font-size:11px;">`
-        : `<span style="font-size:11px;color:#aaa;">${l.note||'—'}</span>`;
       /* Director/Analista/Head pueden editar inline: potencial, banco, etapa, mes cierre, comentario */
       const canPartial = canFullEdit(l);
 
@@ -2481,15 +2475,6 @@ function filterTableRows(inputEl, q){
 }
 
 function setSearch(v,key){ window['search_'+key]=v; }
-
-async function updateLead(id,field,val,key){
-  const fieldMap={name:'nombre',status:'estado',conflict:'conflicto',source:'fuente',prob:'probabilidad',value:'valor',note:'comentario',close:'fecha_cierre'};
-  const dbField=fieldMap[field]||field;
-  await sbPatch('leads',`id=eq.${id}`,{[dbField]:val,updated_at:new Date().toISOString()});
-  const l=LEADS.find(x=>String(x.id)===String(id));
-  if(l){l[field]=val;}
-  if(field==='status') renderTab(curTab);
-}
 
 /* Handle table action buttons (edit/delete) safely */
 /* ── DELETE ALL LEADS ── */
@@ -2786,41 +2771,57 @@ async function updateLeadDB(id, field, value, key){
   const body = { [field]: field==='valor'?Number(value):value, updated_at: new Date().toISOString() };
   /* Cualquier modificación actualiza también la fecha de modificación (salvo que el campo editado SEA esa fecha) */
   if(field!=='fecha_modif'){ body.fecha_modif = hoy; }
+  /* Auto-cerrado: si la nueva etapa es 100%, marcar categoría=cerrado en el mismo PATCH */
+  if(field==='estado' && mapEstado(value)==='cerrado'){ body.categoria = 'cerrado'; }
+
   await sbPatch('leads', id, body);
   /* Save to historial */
   await saveHistorial(id, field, value);
-  /* Update local LEADS array */
-  const l = LEADS.find(x => String(x.id) === String(id));
-  if(l){
-    /* Sync fecha_modif locally too (unless the edited field IS fecha_modif, handled below) */
-    if(field!=='fecha_modif'){
-      l.fecha_modif_raw = hoy;
-      l.fecha_modif = new Date(hoy).toLocaleDateString('es-PE');
-      l.fecha_mod_late = false;
-      l.modified_today = true;
-    }
-    if(field==='valor')          { l.value           = Number(value); }
-    else if(field==='banco')     { l.banco           = value; }
-    else if(field==='estado')    {
-      l.status = mapEstado(value);
-      if(l.status==='cerrado' && l.categoria!=='cerrado'){
-        l.categoria='cerrado';
-        sbPatch('leads', id, {categoria:'cerrado', updated_at:new Date().toISOString()});
-        saveHistorial(id,'categoria','✅ Lead Cerrado (auto)');
-      }
-    }
-    else if(field==='mes_cierre'){ l.close           = value; }
-    else if(field==='comentario'){ l.note            = value; }
-    else if(field==='fecha_ingreso'){ l.fecha_ingreso_raw = value; l.fecha_ingreso = value ? new Date(value).toLocaleDateString('es-PE') : '—'; }
-    else if(field==='fecha_modif')  { l.fecha_modif_raw  = value; l.fecha_modif   = value ? new Date(value).toLocaleDateString('es-PE') : '—';
-      l.fecha_mod_late  = value ? (Date.now()-new Date(value).getTime())>86400000 : false;
-      l.modified_today  = value ? new Date(value).toDateString()===new Date().toDateString() : false; }
-    else if(field==='fecha_cierre') { l.fecha_cierre_raw  = value; l.fecha_cierre_dt = value ? new Date(value).toLocaleDateString('es-PE') : '—'; }
+  if(field==='estado' && mapEstado(value)==='cerrado'){
+    await saveHistorial(id,'categoria','✅ Lead Cerrado (auto)');
   }
+
+  /* ── Releer el lead directamente de Supabase para garantizar que la fila
+     refleje exactamente la última modificación guardada (sin depender de
+     mutaciones locales que podían desincronizarse) ── */
+  const fresh = await sbGet('leads', `id=eq.${id}&select=*&limit=1`);
+  const row = fresh && fresh[0];
+  const l = LEADS.find(x => String(x.id) === String(id));
+  if(l && row){
+    l.name = row.razon_social || row.nombre || '(Sin nombre)';
+    l.ruc = row.ruc || '';
+    l.giros = row.giros || '';
+    l.source = row.fuente || '';
+    l.tipo_producto = row.tipo_producto || '';
+    l.tipo_cuenta = row.tipo_cuenta || '';
+    l.banco = row.banco || '';
+    l.status = mapEstado(row.estado || 'prospecto');
+    l.value = row.valor || 0;
+    l.close = row.mes_cierre || '';
+    l.note = row.comentario || '';
+    l.categoria = row.categoria || 'activo';
+    l.telefono = row.telefono || '';
+    l.representante_legal = row.representante_legal || '';
+    l.tipo_sva = row.tipo_sva || '';
+    l.parlantes = row.parlantes || 0;
+    l.arisale_valor = row.arisale_valor || 0;
+    l.arisale_licencias = row.arisale_licencias || 0;
+    l.planillas_colaboradores = row.planillas_colaboradores || 0;
+    l.etapa_implementacion = row.etapa_implementacion || '';
+    l.fecha_ingreso_raw = row.fecha_ingreso || '';
+    l.fecha_ingreso = row.fecha_ingreso ? new Date(row.fecha_ingreso).toLocaleDateString('es-PE') : '—';
+    l.fecha_modif_raw = row.fecha_modif || '';
+    l.fecha_modif = row.fecha_modif ? new Date(row.fecha_modif).toLocaleDateString('es-PE') : '—';
+    l.fecha_mod_late = row.fecha_modif ? (Date.now()-new Date(row.fecha_modif).getTime())>86400000 : false;
+    l.modified_today = row.fecha_modif ? new Date(row.fecha_modif).toDateString()===new Date().toDateString() : false;
+    l.fecha_cierre_raw = row.fecha_cierre ? row.fecha_cierre.slice(0,10) : '';
+    l.fecha_cierre_dt = row.fecha_cierre ? new Date(row.fecha_cierre).toLocaleDateString('es-PE') : '—';
+  }
+
   /* Mostrar confirmación de guardado */
   showToast('✅ Guardado', 'success');
 
-  /* Re-render para reflejar F. Modificación actualizada y/o cambios de funnel */
+  /* Re-render para reflejar la última modificación y/o cambios de funnel */
   renderTab(curTab);
 }
 
