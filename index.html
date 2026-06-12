@@ -2782,13 +2782,23 @@ function handleTblAction(el){
 
 async function updateLeadDB(id, field, value, key){
   /* Save single field directly to Supabase */
+  const hoy = new Date().toISOString().slice(0,10);
   const body = { [field]: field==='valor'?Number(value):value, updated_at: new Date().toISOString() };
+  /* Cualquier modificación actualiza también la fecha de modificación (salvo que el campo editado SEA esa fecha) */
+  if(field!=='fecha_modif'){ body.fecha_modif = hoy; }
   await sbPatch('leads', id, body);
   /* Save to historial */
   await saveHistorial(id, field, value);
   /* Update local LEADS array */
   const l = LEADS.find(x => String(x.id) === String(id));
   if(l){
+    /* Sync fecha_modif locally too (unless the edited field IS fecha_modif, handled below) */
+    if(field!=='fecha_modif'){
+      l.fecha_modif_raw = hoy;
+      l.fecha_modif = new Date(hoy).toLocaleDateString('es-PE');
+      l.fecha_mod_late = false;
+      l.modified_today = true;
+    }
     if(field==='valor')          { l.value           = Number(value); }
     else if(field==='banco')     { l.banco           = value; }
     else if(field==='estado')    {
@@ -2810,8 +2820,8 @@ async function updateLeadDB(id, field, value, key){
   /* Mostrar confirmación de guardado */
   showToast('✅ Guardado', 'success');
 
-  /* Only re-render if status changed (affects funnel) */
-  if(field==='estado') renderTab(curTab);
+  /* Re-render para reflejar F. Modificación actualizada y/o cambios de funnel */
+  renderTab(curTab);
 }
 
 /* Guardar fila completa - para director/analista/head: marca fecha_modif=hoy y confirma guardado */
