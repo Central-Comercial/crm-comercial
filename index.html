@@ -1725,6 +1725,7 @@ function renderGeneral(){
     <div class="card-title">Rendimiento hunters</div>
   </div>
 
+  ${curUser.role!=='head' || curUser.equipo==='A' ? `
   <div style="margin-bottom:8px;">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;" onclick="goTeam('A')">
       <span style="width:10px;height:10px;border-radius:50%;background:#1D9E75;display:inline-block;"></span>
@@ -1734,8 +1735,9 @@ function renderGeneral(){
     <div class="hunters-grid">
       ${HUNTERS_A.map(h=>hunterCardHTML(h,true)).join('')}
     </div>
-  </div>
+  </div>` : ''}
 
+  ${curUser.role!=='head' || curUser.equipo==='B' ? `
   <div style="margin-top:16px;">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;" onclick="goTeam('B')">
       <span style="width:10px;height:10px;border-radius:50%;background:#D85A30;display:inline-block;"></span>
@@ -1745,7 +1747,7 @@ function renderGeneral(){
     <div class="hunters-grid">
       ${HUNTERS_B.map(h=>hunterCardHTML(h,true)).join('')}
     </div>
-  </div>`;
+  </div>` : ''}`;
   document.getElementById('content').innerHTML=html;
 }
 
