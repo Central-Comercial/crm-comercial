@@ -1103,11 +1103,16 @@ function initApp(){
   if(nalg) nalg.style.display = 'flex'; /* Todos los roles ven Lead Central */
   if(el('nav-delete-all')) el('nav-delete-all').style.display = isDA ? '' : 'none';
   if(el('nav-reimport'))   el('nav-reimport').style.display   = isDA ? '' : 'none';
-  /* Show team groups */
+  /* Show team groups - Head solo ve su propio equipo, Director/Analista ven ambos */
   const tAg = el('sb-teamA-group');
   const tBg = el('sb-teamB-group');
-  if(tAg) tAg.style.display = isDAH ? 'flex' : 'none';
-  if(tBg) tBg.style.display = isDAH ? 'flex' : 'none';
+  if(curUser.role==='head'){
+    if(tAg) tAg.style.display = curUser.equipo==='A' ? 'flex' : 'none';
+    if(tBg) tBg.style.display = curUser.equipo==='B' ? 'flex' : 'none';
+  } else {
+    if(tAg) tAg.style.display = isDAH ? 'flex' : 'none';
+    if(tBg) tBg.style.display = isDAH ? 'flex' : 'none';
+  }
   /* Cerrados / Caídos - visible for head, analista, director */
   const nc   = el('nav-cerrados');
   const nca  = el('nav-caidos');
@@ -1658,8 +1663,14 @@ function kpiRowHTML(label, leads, tipoProd){
 
 /* GENERAL */
 function renderGeneral(){
-  const allLeads = applyOrigenFilter(LEADS || []);
-  const hunters = Object.values(HUNTERS);
+  let allLeads = applyOrigenFilter(LEADS || []);
+  let hunters = Object.values(HUNTERS);
+
+  /* Head solo ve información de su propio equipo - nada del equipo contrario */
+  if(curUser.role==='head'){
+    hunters = hunters.filter(h=>h.team===curUser.equipo);
+    allLeads = allLeads.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; });
+  }
   const activeLeads = allLeads.filter(isActiveLead);
   const totalReal = activeLeads.reduce((s,l)=>s+(l.value||0),0);
   const totalMeta = hunters.reduce((s,h)=>s+(h.meta||0),0);
@@ -1708,7 +1719,7 @@ function renderGeneral(){
   ${kpiRowFlat('Planillas', allLeads, 'PLANILLAS')}
 
   <!-- ══ GRÁFICOS ══ -->
-  ${chartsSectionHTML(allLeads, true)}
+  ${chartsSectionHTML(allLeads, curUser.role!=='head')}
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
     <div class="card-title">Rendimiento hunters</div>
