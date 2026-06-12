@@ -497,7 +497,16 @@ async function sbPatch(table, id, body){
     headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation'},
     body: JSON.stringify(body)
   });
-  return r.json();
+  const data = await r.json();
+  if(!r.ok){
+    const msg = (data && data.message) ? data.message : `HTTP ${r.status}`;
+    throw new Error(msg);
+  }
+  if(Array.isArray(data) && data.length===0){
+    /* 0 filas afectadas -> probablemente RLS bloquea UPDATE para este rol/clave */
+    throw new Error('No se pudo guardar (0 filas actualizadas). Verifica el permiso UPDATE (RLS) de la tabla "leads" en Supabase.');
+  }
+  return data;
 }
 
 /* usuarios y leads se cargan desde Supabase */
@@ -2774,7 +2783,16 @@ async function updateLeadDB(id, field, value, key){
   /* Auto-cerrado: si la nueva etapa es 100%, marcar categoría=cerrado en el mismo PATCH */
   if(field==='estado' && mapEstado(value)==='cerrado'){ body.categoria = 'cerrado'; }
 
-  await sbPatch('leads', id, body);
+  const l = LEADS.find(x => String(x.id) === String(id));
+
+  try {
+    await sbPatch('leads', id, body);
+  } catch(e){
+    showToast('❌ '+e.message, 'error');
+    renderTab(curTab); /* revertir el control visual al valor real */
+    return;
+  }
+
   /* Save to historial */
   await saveHistorial(id, field, value);
   if(field==='estado' && mapEstado(value)==='cerrado'){
@@ -2784,9 +2802,12 @@ async function updateLeadDB(id, field, value, key){
   /* ── Releer el lead directamente de Supabase para garantizar que la fila
      refleje exactamente la última modificación guardada (sin depender de
      mutaciones locales que podían desincronizarse) ── */
-  const fresh = await sbGet('leads', `id=eq.${id}&select=*&limit=1`);
-  const row = fresh && fresh[0];
-  const l = LEADS.find(x => String(x.id) === String(id));
+  let row = null;
+  try {
+    const fresh = await sbGet('leads', `id=eq.${id}&select=*&limit=1`);
+    row = fresh && fresh[0];
+  } catch(e){ /* si falla la relectura, seguimos con actualización local */ }
+
   if(l && row){
     l.name = row.razon_social || row.nombre || '(Sin nombre)';
     l.ruc = row.ruc || '';
@@ -2816,6 +2837,18 @@ async function updateLeadDB(id, field, value, key){
     l.modified_today = row.fecha_modif ? new Date(row.fecha_modif).toDateString()===new Date().toDateString() : false;
     l.fecha_cierre_raw = row.fecha_cierre ? row.fecha_cierre.slice(0,10) : '';
     l.fecha_cierre_dt = row.fecha_cierre ? new Date(row.fecha_cierre).toLocaleDateString('es-PE') : '—';
+  } else if(l){
+    /* Refetch falló: aplicar el cambio localmente como fallback (la BD ya tiene el PATCH guardado) */
+    if(field==='valor') l.value = Number(value);
+    else if(field==='banco') l.banco = value;
+    else if(field==='estado') l.status = mapEstado(value);
+    else if(field==='mes_cierre') l.close = value;
+    else if(field==='comentario') l.note = value;
+    else if(field==='fecha_ingreso'){ l.fecha_ingreso_raw=value; l.fecha_ingreso = value?new Date(value).toLocaleDateString('es-PE'):'—'; }
+    else if(field==='fecha_modif'){ l.fecha_modif_raw=value; l.fecha_modif = value?new Date(value).toLocaleDateString('es-PE'):'—';
+      l.modified_today = value?new Date(value).toDateString()===new Date().toDateString():false; }
+    if(field!=='fecha_modif'){ l.fecha_modif_raw=hoy; l.fecha_modif=new Date(hoy).toLocaleDateString('es-PE'); l.modified_today=true; l.fecha_mod_late=false; }
+    if(field==='estado' && l.status==='cerrado') l.categoria='cerrado';
   }
 
   /* Mostrar confirmación de guardado */
