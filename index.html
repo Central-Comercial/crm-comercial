@@ -572,6 +572,52 @@ function mapEstado(e){
 }
 
 /* ─── AUTH ─── */
+/* ── BLOQUEO DE LOGIN: 3 intentos fallidos = 5 min de espera ── */
+const LOGIN_MAX_ATTEMPTS = 3;
+const LOGIN_LOCK_MS = 5 * 60 * 1000; // 5 minutos
+
+function getLoginLockKey(username){ return 'login_lock_'+username; }
+
+function checkLoginLock(username){
+  try {
+    const raw = localStorage.getItem(getLoginLockKey(username));
+    if(!raw) return null;
+    const data = JSON.parse(raw);
+    if(data.lockedUntil && Date.now() < data.lockedUntil){
+      return Math.ceil((data.lockedUntil - Date.now())/1000); // segundos restantes
+    }
+    if(data.lockedUntil && Date.now() >= data.lockedUntil){
+      localStorage.removeItem(getLoginLockKey(username)); // expiró el bloqueo
+    }
+    return null;
+  } catch(e){ return null; }
+}
+
+function registerFailedAttempt(username){
+  try {
+    const key = getLoginLockKey(username);
+    const raw = localStorage.getItem(key);
+    let data = raw ? JSON.parse(raw) : {attempts:0};
+    data.attempts = (data.attempts||0) + 1;
+    if(data.attempts >= LOGIN_MAX_ATTEMPTS){
+      data.lockedUntil = Date.now() + LOGIN_LOCK_MS;
+      data.attempts = 0;
+    }
+    localStorage.setItem(key, JSON.stringify(data));
+    return data;
+  } catch(e){ return {}; }
+}
+
+function clearLoginAttempts(username){
+  try { localStorage.removeItem(getLoginLockKey(username)); } catch(e){}
+}
+
+function formatLockTime(seconds){
+  const m = Math.floor(seconds/60);
+  const s = seconds%60;
+  return m>0 ? `${m} min ${s}s` : `${s}s`;
+}
+
 async function doLogin(){
   const username = document.getElementById('lu').value.trim().toLowerCase();
   const password = document.getElementById('lp').value;
@@ -579,15 +625,31 @@ async function doLogin(){
   const errEl = document.getElementById('lerr');
   errEl.textContent = '';
   if(!username || !password){ errEl.textContent='Ingresa usuario y contraseña.'; return; }
+
+  /* Verificar si el usuario está bloqueado */
+  const lockSeconds = checkLoginLock(username);
+  if(lockSeconds){
+    errEl.textContent = `🔒 Usuario bloqueado. Espera ${formatLockTime(lockSeconds)} para volver a intentar.`;
+    return;
+  }
+
   btn.textContent = 'Verificando...'; btn.disabled = true;
   try {
     const rows = await sbGet('usuarios',
       `username=eq.${encodeURIComponent(username)}&password=eq.${encodeURIComponent(password)}&activo=eq.true&select=*`
     );
     if(!rows || rows.length === 0){
-      errEl.textContent = 'Usuario o contraseña incorrectos.';
+      const data = registerFailedAttempt(username);
+      if(data.lockedUntil){
+        errEl.textContent = '🔒 Usuario bloqueado por 3 intentos fallidos. Espera 5 minutos.';
+      } else {
+        const remaining = LOGIN_MAX_ATTEMPTS - (data.attempts||0);
+        errEl.textContent = `Usuario o contraseña incorrectos. Te quedan ${remaining} intento(s).`;
+      }
       btn.textContent='Ingresar'; btn.disabled=false; return;
     }
+    /* Login exitoso - limpiar contador de intentos */
+    clearLoginAttempts(username);
     const u = rows[0];
     curUser = {
       username: u.username,
