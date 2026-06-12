@@ -284,6 +284,8 @@ tr:hover td{background:#fafbff;}
       <div class="mf" style="grid-column:1/-1;"><label>Razón Social / Empresa</label><input id="m-name" placeholder="Ej: Empresa S.A.C."></div>
       <div class="mf"><label>RUC</label><input id="m-ruc" placeholder="20xxxxxxxxx" maxlength="11"></div>
       <div class="mf"><label>Hunter (Responsable)</label><select id="m-owner"></select></div>
+      <div class="mf"><label>Representante Legal</label><input id="m-rep-legal" placeholder="Nombre completo"></div>
+      <div class="mf"><label>Teléfono</label><input id="m-telefono" placeholder="9XXXXXXXX" maxlength="9"></div>
       <div class="mf"><label>Giros</label>
         <select id="m-giros">
           <option value="">Seleccionar...</option>
@@ -299,13 +301,10 @@ tr:hover td{background:#fafbff;}
       <div class="mf"><label>Origen</label>
         <select id="m-source">
           <option value="">Seleccionar...</option>
-          <option>LEAD IZIPAY (W...)</option>
           <option>LEAD PROPIO</option>
-          <option>REFERIDO</option>
-          <option>Google Ads</option>
-          <option>Directo</option>
-          <option>LinkedIn</option>
-          <option>Evento</option>
+          <option>LEAD IBK</option>
+          <option>LEAD IZIPAY (WINBACK)</option>
+          <option>LEAD CENTRAL</option>
         </select>
       </div>
       <div class="mf"><label>Tipo de Producto</label>
@@ -330,12 +329,11 @@ tr:hover td{background:#fafbff;}
       <div class="mf"><label>Banco</label>
         <select id="m-banco">
           <option value="">Seleccionar...</option>
-          <option>BCP</option>
           <option>BBVA</option>
+          <option>BCP</option>
           <option>IBK</option>
           <option>SCOTIABANK</option>
-          <option>INTERBANK</option>
-          <option>OTRO</option>
+          <option>OTROS</option>
         </select>
       </div>
       <div class="mf"><label>Potencial (S/)</label><input id="m-value" type="number" placeholder="0"></div>
@@ -374,9 +372,8 @@ tr:hover td{background:#fafbff;}
     <button class="close-modal" onclick="closeSVAModal()">&#x2715;</button>
     <h3 id="modal-sva-title">Nuevo lead SVA</h3>
     <div class="mgrid" style="grid-template-columns:1fr 1fr 1fr;">
-      <div class="mf"><label>Head</label><input id="sva-head" readonly style="background:#f5f6fa;color:#888;"></div>
       <div class="mf"><label>Hunter</label><select id="sva-hunter"></select></div>
-      <div class="mf"><label>Teléfono</label><input id="sva-telefono" placeholder="9XXXXXXXX" maxlength="9"></div>
+      <div class="mf" style="grid-column:span 2;"><label>Teléfono</label><input id="sva-telefono" placeholder="9XXXXXXXX" maxlength="9"></div>
 
       <div class="mf" style="grid-column:1/-1;"><label>Razón Social / Empresa</label><input id="sva-razon" placeholder="Ej: Empresa S.A.C."></div>
       <div class="mf"><label>RUC</label><input id="sva-ruc" placeholder="20xxxxxxxxx" maxlength="11"></div>
@@ -397,11 +394,10 @@ tr:hover td{background:#fafbff;}
       <div class="mf"><label>Origen</label>
         <select id="sva-source">
           <option value="">Seleccionar...</option>
-          <option>LEAD IZIPAY (WINBACK)</option>
           <option>LEAD PROPIO</option>
-          <option>LEAD CENTRAL</option>
           <option>LEAD IBK</option>
-          <option>REFERIDO</option>
+          <option>LEAD IZIPAY (WINBACK)</option>
+          <option>LEAD CENTRAL</option>
         </select>
       </div>
       <div class="mf"><label>Tipo SVA</label>
@@ -1095,7 +1091,7 @@ function initApp(){
   const isDAH = ['director','analista','head'].includes(curUser.role);
   const el = id => document.getElementById(id);
   const nalg = el('nav-allleads-group');
-  if(nalg) nalg.style.display = isDA ? 'flex' : 'none';
+  if(nalg) nalg.style.display = 'flex'; /* Todos los roles ven Lead Central */
   if(el('nav-delete-all')) el('nav-delete-all').style.display = isDA ? '' : 'none';
   if(el('nav-reimport'))   el('nav-reimport').style.display   = isDA ? '' : 'none';
   /* Show team groups */
@@ -1263,11 +1259,17 @@ function renderSVA2(){
     return true;
   }));
 
-  const totalCap = svaLeads.reduce((s,l)=>s+(l.value||0),0);
-  const cerrados = svaLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
-  const perdidos = svaLeads.filter(l=>l.categoria==='caido').length;
-  const activos  = svaLeads.filter(l=>l.categoria!=='caido').length;
-  const conv     = activos>0?Math.round(cerrados/activos*100):0;
+  const activosArrSva = svaLeads.filter(isActiveLead);
+  const totalCap = activosArrSva.reduce((s,l)=>s+(l.value||0),0);
+  const cerradosArr = svaLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado');
+  const perdidosArr = svaLeads.filter(l=>l.categoria==='caido');
+  const cerrados = cerradosArr.length;
+  const perdidos = perdidosArr.length;
+  const cerradosVal = cerradosArr.reduce((s,l)=>s+(l.value||0),0);
+  const perdidosVal = perdidosArr.reduce((s,l)=>s+(l.value||0),0);
+  const activos  = activosArrSva.length;
+  const totalConvSva = activos + cerrados;
+  const conv     = totalConvSva>0?Math.round(cerrados/totalConvSva*100):0;
   const convColor= conv>=30?'#1D9E75':conv>=15?'#F5A623':'#E24B4A';
 
   document.getElementById('content').innerHTML = `
@@ -1292,11 +1294,11 @@ function renderSVA2(){
   <!-- Tarjetas -->
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:.5px;">General SVA</div>
   <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px;">
-    ${kpiCard('Captura Total','S/ '+totalCap.toLocaleString(),'potencial SVA','neutral')}
-    ${kpiCard('Leads Total',activos,perdidos+' caídos aparte','neutral')}
-    ${kpiCard('SVA Cerrado',cerrados,'100% Cierre','up','#1D9E75')}
-    ${kpiCard('SVA Perdido',perdidos,'sin oportunidad','down','#E24B4A')}
-    ${kpiCard('% Conversión',conv+'%','cerrados / total',conv>=30?'up':conv>=15?'neutral':'down',convColor)}
+    ${kpiCard('RUC Total','S/ '+totalCap.toLocaleString(),'potencial SVA','neutral')}
+    ${kpiFunnelCard('RUC Funnel', activosArrSva)}
+    ${kpiCard('RUC Cerrado','S/ '+cerradosVal.toLocaleString(),'100% Cierre','up','#1D9E75')}
+    ${kpiCard('RUC Perdido','S/ '+perdidosVal.toLocaleString(),'sin oportunidad','down','#E24B4A')}
+    ${kpiCard('% Conversión RUC',conv+'%','cerrados / ruc total',conv>=30?'up':conv>=15?'neutral':'down',convColor)}
   </div>
 
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#3DB8E8;text-transform:uppercase;letter-spacing:.5px;">QR</div>
@@ -1415,7 +1417,13 @@ async function markLeadAs(leadId, categoria, key){
 /* ── TODOS LOS LEADS (Director / Analista) ── */
 function renderAllLeads(){
   const key = 'allleads';
-  const allLeads = applyOrigenFilter(LEADS || []);
+  let allLeads = applyOrigenFilter(LEADS || []);
+  /* Filtrar por rol: head->su equipo, hunter->solo los suyos */
+  if(curUser.role==='head'){
+    allLeads = allLeads.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; });
+  } else if(curUser.role==='hunter'){
+    allLeads = allLeads.filter(l=>l.hunter===curUser.username);
+  }
 
   /* Stats row */
   const total = allLeads.length;
@@ -1512,6 +1520,11 @@ function exportAllLeads(){
   XLSX.writeFile(wb, `leads_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
+/* ── ACTIVE LEAD (excludes cerrado AND caido) - used for "Total" / "Leads Total" cards ── */
+function isActiveLead(l){
+  return l.categoria!=='caido' && l.categoria!=='cerrado' && l.status!=='cerrado';
+}
+
 /* ── KPI SINGLE CARD ── */
 function kpiCard(label, val, sub, trend, color){
   const subCls = trend==='up'?'up':trend==='down'?'down':'neutral';
@@ -1525,25 +1538,25 @@ function kpiCard(label, val, sub, trend, color){
 
 /* ── KPI FUNNEL MINI CARD (50% / 75%) ── */
 function kpiFunnelCard(label, leads){
-  const total = leads.length;
-  const neg50 = leads.filter(l=>l.status==='negociacion').length;
-  const pre75 = leads.filter(l=>l.status==='precierre').length;
+  const total   = leads.reduce((s,l)=>s+(l.value||0),0);
+  const neg50V  = leads.filter(l=>l.status==='negociacion').reduce((s,l)=>s+(l.value||0),0);
+  const pre75V  = leads.filter(l=>l.status==='precierre').reduce((s,l)=>s+(l.value||0),0);
   return `<div class="kpi">
     <div class="kpi-label">${label}</div>
     <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <span style="font-size:10px;color:#E8721C;font-weight:500;">50% Negociación</span>
-        <span style="font-size:16px;font-weight:600;color:#E8721C;">${neg50}</span>
+        <span style="font-size:16px;font-weight:600;color:#E8721C;">S/ ${neg50V.toLocaleString()}</span>
       </div>
       <div style="height:3px;background:#f0f0f0;border-radius:2px;overflow:hidden;">
-        <div style="width:${total>0?Math.round(neg50/total*100):0}%;height:100%;background:#E8721C;border-radius:2px;"></div>
+        <div style="width:${total>0?Math.round(neg50V/total*100):0}%;height:100%;background:#E8721C;border-radius:2px;"></div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
         <span style="font-size:10px;color:#C0392B;font-weight:500;">75% Pre-cierre</span>
-        <span style="font-size:16px;font-weight:600;color:#C0392B;">${pre75}</span>
+        <span style="font-size:16px;font-weight:600;color:#C0392B;">S/ ${pre75V.toLocaleString()}</span>
       </div>
       <div style="height:3px;background:#f0f0f0;border-radius:2px;overflow:hidden;">
-        <div style="width:${total>0?Math.round(pre75/total*100):0}%;height:100%;background:#C0392B;border-radius:2px;"></div>
+        <div style="width:${total>0?Math.round(pre75V/total*100):0}%;height:100%;background:#C0392B;border-radius:2px;"></div>
       </div>
     </div>
   </div>`;
@@ -1552,20 +1565,19 @@ function kpiFunnelCard(label, leads){
 /* ── KPI RUC ROW ── */
 function kpiRucRow(leads){
   const rucLeads  = leads.filter(l=>l.ruc && l.ruc.length>5); /* leads con RUC válido */
-  const total     = rucLeads.length;
-  const neg50     = rucLeads.filter(l=>l.status==='negociacion').length;
-  const pre75     = rucLeads.filter(l=>l.status==='precierre').length;
+  const activosArr= rucLeads.filter(isActiveLead);
+  const total     = activosArr.length;
   const cerrado   = rucLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
   const perdido   = rucLeads.filter(l=>l.categoria==='caido').length;
-  const activos   = rucLeads.filter(l=>l.categoria!=='caido').length;
-  const conv      = activos>0?Math.round(cerrado/activos*100):0;
+  const totalConv = total + cerrado;
+  const conv      = totalConv>0?Math.round(cerrado/totalConv*100):0;
   const convColor = conv>=30?'#1D9E75':conv>=15?'#F5A623':'#E24B4A';
 
   return `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
     ${kpiCard('RUC Total',total,'leads con RUC','neutral')}
-    ${kpiFunnelCard('RUC Funnel', rucLeads.filter(l=>l.categoria!=='caido'))}
-    ${kpiCard('RUC Cerrado',cerrado,'100% Cierre','up','#1D9E75')}
-    ${kpiCard('RUC Perdido',perdido,'sin oportunidad','down','#E24B4A')}
+    ${kpiFunnelCard('RUC Funnel', activosArr)}
+    ${kpiCard('RUC Cerrado','S/ '+rucLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'100% Cierre','up','#1D9E75')}
+    ${kpiCard('RUC Perdido','S/ '+rucLeads.filter(l=>l.categoria==='caido').reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'sin oportunidad','down','#E24B4A')}
     ${kpiCard('% Conversión RUC',conv+'%','cerrados / ruc total',conv>=30?'up':conv>=15?'neutral':'down',convColor)}
   </div>`;
 }
@@ -1575,16 +1587,16 @@ function kpiRowFlat(label, leads, tipoProd){
   const filtered = leads.filter(l=>(l.tipo_producto||'').toUpperCase()===tipoProd.toUpperCase());
   const cerrados = filtered.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
   const perdidos = filtered.filter(l=>l.categoria==='caido').length;
-  const activosArr = filtered.filter(l=>l.categoria!=='caido');
-  const total    = filtered.length;
-  const captura  = filtered.reduce((s,l)=>s+(l.value||0),0);
-  const conv     = (total-perdidos)>0 ? Math.round(cerrados/(total-perdidos)*100) : 0;
+  const activosArr = filtered.filter(isActiveLead);
+  const captura  = activosArr.reduce((s,l)=>s+(l.value||0),0);
+  const totalCaptura = activosArr.length + cerrados;
+  const conv     = totalCaptura>0 ? Math.round(cerrados/totalCaptura*100) : 0;
   const convColor= conv>=30?'#1D9E75':conv>=15?'#F5A623':'#E24B4A';
   return `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
     ${kpiCard(label+' Total','S/ '+captura.toLocaleString(),'captura potencial','neutral')}
     ${kpiFunnelCard(label+' Leads Total', activosArr)}
-    ${kpiCard(label+' Cerrado',cerrados,'100% Cierre','up','#1D9E75')}
-    ${kpiCard(label+' Perdido',perdidos,'caídos','down','#E24B4A')}
+    ${kpiCard(label+' Cerrado','S/ '+filtered.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'100% Cierre','up','#1D9E75')}
+    ${kpiCard(label+' Perdido','S/ '+filtered.filter(l=>l.categoria==='caido').reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'caídos','down','#E24B4A')}
     ${kpiCard('% Conversión '+label,conv+'%','cerrados / '+label.toLowerCase()+' total',conv>=30?'up':conv>=15?'neutral':'down',convColor)}
   </div>`;
 }
@@ -1639,12 +1651,13 @@ function kpiRowHTML(label, leads, tipoProd){
 function renderGeneral(){
   const allLeads = applyOrigenFilter(LEADS || []);
   const hunters = Object.values(HUNTERS);
-  const totalReal = allLeads.reduce((s,l)=>s+(l.value||0),0);
+  const activeLeads = allLeads.filter(isActiveLead);
+  const totalReal = activeLeads.reduce((s,l)=>s+(l.value||0),0);
   const totalMeta = hunters.reduce((s,h)=>s+(h.meta||0),0);
   const pct = totalMeta>0?Math.round(totalReal/totalMeta*100):0;
   const cerrados = allLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
   const perdidos = allLeads.filter(l=>l.categoria==='caido').length;
-  const totalCaptura = allLeads.filter(l=>l.categoria!=='caido').length;
+  const totalCaptura = activeLeads.length + cerrados;
   const conv = totalCaptura>0 ? Math.round(cerrados/totalCaptura*100) : 0;
 
   if(hunters.length===0){
@@ -1662,9 +1675,9 @@ function renderGeneral(){
   <div style="margin-bottom:8px;font-size:10px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:.5px;">General</div>
   <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
     ${kpiCard('1. Captura Total','S/ '+totalReal.toLocaleString(),'potencial pipeline','neutral')}
-    ${kpiFunnelCard('2. Leads Total',allLeads.filter(l=>l.categoria!=='caido'))}
-    ${kpiCard('3. Leads Cerrado',allLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length,'100% Cierre','up','#1D9E75')}
-    ${kpiCard('4. Leads Perdido',allLeads.filter(l=>l.categoria==='caido').length,'sin oportunidad','down','#E24B4A')}
+    ${kpiFunnelCard('2. Leads Total',activeLeads)}
+    ${kpiCard('3. Leads Cerrado','S/ '+allLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'100% Cierre','up','#1D9E75')}
+    ${kpiCard('4. Leads Perdido','S/ '+allLeads.filter(l=>l.categoria==='caido').reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'sin oportunidad','down','#E24B4A')}
     ${kpiCard('5. % Conversión',conv+'%','cerrados / captura',conv>=30?'up':conv>=15?'neutral':'down',conv>=30?'#1D9E75':conv>=15?'#F5A623':'#E24B4A')}
   </div>
 
@@ -1736,16 +1749,20 @@ function renderTeam(team){
   <!-- ══ TARJETAS EQUIPO ══ -->
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:.5px;">General</div>
   <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
-    ${(()=>{const c=teamLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
-      const p=teamLeads.filter(l=>l.categoria==='caido').length;
-      const cap=teamLeads.reduce((s,l)=>s+(l.value||0),0);
-      const activosArr=teamLeads.filter(l=>l.categoria!=='caido');
+    ${(()=>{const cArr=teamLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado');
+      const pArr=teamLeads.filter(l=>l.categoria==='caido');
+      const c=cArr.length, p=pArr.length;
+      const cVal=cArr.reduce((s,l)=>s+(l.value||0),0);
+      const pVal=pArr.reduce((s,l)=>s+(l.value||0),0);
+      const activosArr=teamLeads.filter(isActiveLead);
+      const cap=activosArr.reduce((s,l)=>s+(l.value||0),0);
       const tot=activosArr.length;
-      const cv=tot>0?Math.round(c/tot*100):0;
+      const totConv=tot+c;
+      const cv=totConv>0?Math.round(c/totConv*100):0;
       return kpiCard('1. Captura Total','S/ '+cap.toLocaleString(),'potencial','neutral')
         +kpiFunnelCard('2. Leads Total',activosArr)
-        +kpiCard('3. Leads Cerrado',c,'100% Cierre','up','#1D9E75')
-        +kpiCard('4. Leads Perdido',p,'sin oportunidad','down','#E24B4A')
+        +kpiCard('3. Leads Cerrado','S/ '+cVal.toLocaleString(),'100% Cierre','up','#1D9E75')
+        +kpiCard('4. Leads Perdido','S/ '+pVal.toLocaleString(),'sin oportunidad','down','#E24B4A')
         +kpiCard('5. % Conversión',cv+'%','cerrados / captura',cv>=30?'up':cv>=15?'neutral':'down',cv>=30?'#1D9E75':cv>=15?'#F5A623':'#E24B4A');
     })()}
   </div>
@@ -1821,16 +1838,20 @@ function renderHunter(hid){
   <!-- ══ TARJETAS HUNTER ══ -->
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:.5px;">General</div>
   <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
-    ${(()=>{const c=leads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
-      const p=leads.filter(l=>l.categoria==='caido').length;
-      const cap=leads.reduce((s,l)=>s+(l.value||0),0);
-      const activosArr=leads.filter(l=>l.categoria!=='caido');
+    ${(()=>{const cArr=leads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado');
+      const pArr=leads.filter(l=>l.categoria==='caido');
+      const c=cArr.length, p=pArr.length;
+      const cVal=cArr.reduce((s,l)=>s+(l.value||0),0);
+      const pVal=pArr.reduce((s,l)=>s+(l.value||0),0);
+      const activosArr=leads.filter(isActiveLead);
+      const cap=activosArr.reduce((s,l)=>s+(l.value||0),0);
       const tot=activosArr.length;
-      const cv=tot>0?Math.round(c/tot*100):0;
+      const totConv=tot+c;
+      const cv=totConv>0?Math.round(c/totConv*100):0;
       return kpiCard('1. Captura Total','S/ '+cap.toLocaleString(),'potencial','neutral')
         +kpiFunnelCard('2. Leads Total',activosArr)
-        +kpiCard('3. Leads Cerrado',c,'100% Cierre','up','#1D9E75')
-        +kpiCard('4. Leads Perdido',p,'sin oportunidad','down','#E24B4A')
+        +kpiCard('3. Leads Cerrado','S/ '+cVal.toLocaleString(),'100% Cierre','up','#1D9E75')
+        +kpiCard('4. Leads Perdido','S/ '+pVal.toLocaleString(),'sin oportunidad','down','#E24B4A')
         +kpiCard('5. % Conversión',cv+'%','cerrados / captura',cv>=30?'up':cv>=15?'neutral':'down',cv>=30?'#1D9E75':cv>=15?'#F5A623':'#E24B4A');
     })()}
   </div>
@@ -2046,6 +2067,9 @@ function hunterCardHTML(h,showBtn=false){
     else stagesCount.prospecto++;
   });
   const tabId=h.username;
+  const factCerrado = leads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').reduce((s,l)=>s+(l.value||0),0);
+  const factPrecierre = leads.filter(l=>l.status==='precierre').reduce((s,l)=>s+(l.value||0),0);
+  const fmtS = v => 'S/'+v.toLocaleString();
   return `<div class="hunter-card">
     <div class="hunter-header">
       <div class="hunter-avatar" style="background:${h.color}18;color:${h.color};">${h.initials}</div>
@@ -2065,16 +2089,28 @@ function hunterCardHTML(h,showBtn=false){
       <div class="hstat"><div class="hstat-val">${stagesCount.precierre||0}</div><div class="hstat-lbl">Pre-cierre</div></div>
       <div class="hstat"><div class="hstat-val">${stagesCount.cerrado}</div><div class="hstat-lbl">Cerrados</div></div>
     </div>
+    <div class="hunter-stats" style="grid-template-columns:1fr 1fr;margin-top:6px;">
+      <div class="hstat" style="background:#D1FAE522;border:1px solid #D1FAE5;">
+        <div class="hstat-val" style="color:#1D9E75;font-size:13px;">${fmtS(factCerrado)}</div>
+        <div class="hstat-lbl">Facturación Cerrado</div>
+      </div>
+      <div class="hstat" style="background:#FFEDD522;border:1px solid #FFEDD5;">
+        <div class="hstat-val" style="color:#C0392B;font-size:13px;">${fmtS(factPrecierre)}</div>
+        <div class="hstat-lbl">Facturación Pre-cierre</div>
+      </div>
+    </div>
     ${showBtn&&curUser.role!=='hunter'?`<button style="width:100%;margin-top:10px;font-size:11px;padding:5px;border-radius:7px;border:1px solid #dde1e7;background:#fff;cursor:pointer;color:#534AB7;font-weight:600;" onclick="window.gotoHunter('${tabId}')">Ver detalle <i class="ti ti-arrow-right" style="font-size:11px;"></i></button>`:''}
   </div>`;
 }
 
 function filterBarHTML(leads, key, showNew=true){
   showNew = canAddLead(); // todos pueden agregar
+  /* "100% Cierre" no aplica en tablas activas - esos leads están en Leads Cerrados */
+  const stageKeys = key==='sva2' ? Object.keys(SC) : Object.keys(SC).filter(s=>s!=='cerrado');
   return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
     <div class="filter-tabs">
       <button class="ftab active" onclick="setFilter('all','${key}')">Todos <span style="background:rgba(255,255,255,.3);padding:0 5px;border-radius:8px;font-size:10px;">${leads.length}</span></button>
-      ${Object.keys(SC).map(s=>`<button class="ftab" onclick="setFilter('${s}','${key}')">${SC[s].l}</button>`).join('')}
+      ${stageKeys.map(s=>`<button class="ftab" onclick="setFilter('${s}','${key}')">${SC[s].l}</button>`).join('')}
     </div>
     <input class="search-box" id="srch-${key}" data-key="${key}" placeholder="Buscar por RUC o Razón Social..." 
       value="${window['search_'+key]||''}" autocomplete="off">
@@ -2225,7 +2261,11 @@ function leadsTableHTML(leads, canEdit, key){
     ? leads.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; })
     : leads;
 
+  /* Los leads Cerrados (100%) y Caídos tienen sus propias pestañas - no se muestran en las tablas activas */
+  const hideClosed = !['sva2','cerrado','caido'].includes(key);
+
   const filtered=visibleLeads.filter(l=>{
+    if(hideClosed && (l.categoria==='cerrado' || l.categoria==='caido' || l.status==='cerrado')) return false;
     const fs=window['filter_'+key]||'all';
     const ss=window['search_'+key]||'';
     if(fs!=='all'&&(SC[l.status]?l.status:mapEstado(l.status))!==fs) return false;
@@ -2300,6 +2340,10 @@ function leadsTableHTML(leads, canEdit, key){
             💾 Guardar
            </button>`
         : '';
+      /* Save icon for director/analista/head - confirma guardado y actualiza fecha de modificación */
+      const fullSaveBtn = full
+        ? `<span style="cursor:pointer;font-size:13px;margin-left:4px;" title="Guardar / marcar como revisado hoy" onclick="guardarFilaCompleta('${safeId}','${key}')">💾</span>`
+        : '';
       const canMark = ['director','analista','head'].includes(curUser.role) && canFullEdit(l);
       const deleteBtn = canDelete(l)
         ? `<span class="alink" style="color:#E24B4A;margin-left:4px;cursor:pointer;" data-id="${safeId}" data-key="${key}" data-action="delete" onclick="handleTblAction(this)" title="Eliminar">🗑</span>`
@@ -2316,7 +2360,7 @@ function leadsTableHTML(leads, canEdit, key){
       const restoreBtn = (canMark && (l.categoria==='cerrado'||l.categoria==='caido'))
         ? `<span style="cursor:pointer;font-size:11px;margin-left:4px;color:#888;" title="Restaurar a activo" onclick="markLeadAs('${safeId}','activo','${key}')">↩</span>`
         : '';
-      const actionBtn = `<span style="white-space:nowrap;">${hunterSaveBtn}${editBtn}${cerrarBtn}${caidoBtn}${restoreBtn}${deleteBtn}</span>`;
+      const actionBtn = `<span style="white-space:nowrap;">${editBtn}${fullSaveBtn}${cerrarBtn}${caidoBtn}${restoreBtn}${deleteBtn}${hunterSaveBtn}</span>`;
 
       return `<tr id="row-${l.id}">
         <td><span class="dot" style="background:${dc};"></span></td>
@@ -2763,8 +2807,36 @@ async function updateLeadDB(id, field, value, key){
       l.modified_today  = value ? new Date(value).toDateString()===new Date().toDateString() : false; }
     else if(field==='fecha_cierre') { l.fecha_cierre_raw  = value; l.fecha_cierre_dt = value ? new Date(value).toLocaleDateString('es-PE') : '—'; }
   }
+  /* Mostrar confirmación de guardado */
+  showToast('✅ Guardado', 'success');
+
   /* Only re-render if status changed (affects funnel) */
   if(field==='estado') renderTab(curTab);
+}
+
+/* Guardar fila completa - para director/analista/head: marca fecha_modif=hoy y confirma guardado */
+async function guardarFilaCompleta(leadId, key){
+  const hoy = new Date().toISOString().slice(0,10);
+  try {
+    await sbPatch('leads', leadId, {
+      fecha_modif: hoy,
+      updated_at: new Date().toISOString()
+    });
+    await saveHistorial(leadId, 'fecha_modif', hoy);
+
+    const l = LEADS.find(x=>String(x.id)===String(leadId));
+    if(l){
+      l.fecha_modif_raw = hoy;
+      l.fecha_modif = new Date(hoy).toLocaleDateString('es-PE');
+      l.modified_today = true;
+      l.fecha_mod_late = false;
+    }
+
+    showToast('✅ Lead guardado correctamente', 'success');
+    renderTab(curTab);
+  } catch(e){
+    showToast('❌ Error al guardar: '+e.message, 'error');
+  }
 }
 
 async function deleteLead(id, key){
@@ -2786,7 +2858,7 @@ async function openModal(id,key){
   document.getElementById('modal-title').textContent=id?'Editar lead':'Nuevo lead';
 
   /* Bloquear campos según rol */
-  const lockFields = ['m-name','m-ruc','m-status','m-source','m-giros','m-tipo-producto','m-tipo-cuenta','m-banco','m-value','m-close','m-fecha-ingreso'];
+  const lockFields = ['m-name','m-ruc','m-status','m-source','m-giros','m-tipo-producto','m-tipo-cuenta','m-banco','m-value','m-close','m-fecha-ingreso','m-rep-legal','m-telefono'];
   lockFields.forEach(f=>{
     const el=document.getElementById(f);
     if(el) el.disabled = isHunter && !!id; // hunter no puede editar esos campos en leads existentes
@@ -2807,6 +2879,8 @@ async function openModal(id,key){
     if(l){
       document.getElementById('m-name').value=l.name||'';
       document.getElementById('m-ruc').value=l.ruc||'';
+      document.getElementById('m-rep-legal').value=l.representante_legal||'';
+      document.getElementById('m-telefono').value=l.telefono||'';
       sel.value=l.owner||'';
       document.getElementById('m-giros').value=l.giros||'';
       document.getElementById('m-source').value=l.source||'';
@@ -2821,11 +2895,18 @@ async function openModal(id,key){
       document.getElementById('m-note').value=l.note||'';
     }
   } else {
-    ['m-name','m-ruc','m-value','m-note'].forEach(x=>document.getElementById(x).value='');
+    ['m-name','m-ruc','m-value','m-note','m-rep-legal','m-telefono'].forEach(x=>document.getElementById(x).value='');
     ['m-giros','m-source','m-tipo-producto','m-tipo-cuenta','m-banco','m-close','m-fecha-modif'].forEach(x=>document.getElementById(x).value='');
     document.getElementById('m-fecha-ingreso').value=new Date().toISOString().slice(0,10);
     document.getElementById('m-fecha-modif').value=new Date().toISOString().slice(0,10);
     document.getElementById('m-status').value='prospecto';
+
+    /* Hunter creando lead nuevo: Etapa fija en 10% Prospección, fechas fijas en hoy */
+    if(isHunter){
+      document.getElementById('m-status').disabled=true;
+      document.getElementById('m-fecha-ingreso').disabled=true;
+      document.getElementById('m-fecha-modif').disabled=true;
+    }
   }
   document.getElementById('modal-bg').classList.add('open');
 }
@@ -2858,17 +2939,6 @@ async function openSVAModal(id){
     (data||[]).forEach(u=>{const o=document.createElement('option');o.value=u.nombre;o.textContent=u.nombre;sel.appendChild(o);});
   }
 
-  /* Head field - auto from current user or hunter's head */
-  const headEl = document.getElementById('sva-head');
-  if(curUser.role==='head'){
-    headEl.value = curUser.equipo==='A'?'Carlos Portal':'Ana Carrera';
-  } else if(curUser.role==='hunter'){
-    const myHead = HUNTERS[curUser.username]?.team==='A'?'Carlos Portal':'Ana Carrera';
-    headEl.value = myHead;
-  } else {
-    headEl.value = '';
-  }
-
   if(id){
     const l=LEADS.find(x=>String(x.id)===String(id));
     if(l){
@@ -2890,9 +2960,6 @@ async function openSVAModal(id){
       document.getElementById('sva-fecha-ingreso').value = l.fecha_ingreso_raw||'';
       document.getElementById('sva-fecha-modif').value = l.fecha_modif_raw||new Date().toISOString().slice(0,10);
       document.getElementById('sva-note').value = l.note||'';
-      /* Update head field based on the lead's hunter */
-      const h = HUNTERS[l.hunter];
-      if(h) headEl.value = h.team==='A'?'Carlos Portal':'Ana Carrera';
     }
   } else {
     ['sva-razon','sva-ruc','sva-telefono','sva-rep-legal','sva-parlantes','sva-arisale-valor','sva-arisale-licencias','sva-planillas','sva-note']
@@ -2901,12 +2968,13 @@ async function openSVAModal(id){
     document.getElementById('sva-status').value='prospecto';
     document.getElementById('sva-fecha-ingreso').value=new Date().toISOString().slice(0,10);
     document.getElementById('sva-fecha-modif').value=new Date().toISOString().slice(0,10);
-    /* Update head field on hunter selection change */
-    sel.onchange = ()=>{
-      const hu = SB_USUARIOS.find(u=>u.nombre===sel.value);
-      if(hu) headEl.value = hu.equipo==='A'?'Carlos Portal':'Ana Carrera';
-    };
-    sel.onchange();
+
+    /* Hunter creando lead nuevo: Etapa fija en 10% Prospección, fechas fijas en hoy */
+    if(isHunter){
+      document.getElementById('sva-status').disabled=true;
+      document.getElementById('sva-fecha-ingreso').disabled=true;
+      document.getElementById('sva-fecha-modif').disabled=true;
+    }
   }
 
   document.getElementById('modal-sva-bg').classList.add('open');
@@ -3072,6 +3140,8 @@ async function saveLead(){
         nombre:          document.getElementById('m-name').value||'Nuevo lead',
         razon_social:    document.getElementById('m-name').value||null,
         ruc:             rucVal||null,
+        representante_legal: document.getElementById('m-rep-legal').value||null,
+        telefono:        document.getElementById('m-telefono').value||null,
         hunter_id, equipo,
         giros:           document.getElementById('m-giros').value||null,
         fuente:          document.getElementById('m-source').value||null,
