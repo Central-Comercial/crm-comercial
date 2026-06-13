@@ -472,7 +472,15 @@ async function sbPost(table, body){
     headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation'},
     body: JSON.stringify(body)
   });
-  return r.json();
+  const data = await r.json();
+  if(!r.ok){
+    const msg = (data && data.message) ? data.message : `HTTP ${r.status}`;
+    throw new Error(msg);
+  }
+  if(Array.isArray(data) && data.length===0){
+    throw new Error('No se pudo insertar (0 filas). Verifica el permiso INSERT (RLS) de la tabla "'+table+'" en Supabase.');
+  }
+  return data;
 }
 async function sbInsert(table, body){
   const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
@@ -3681,6 +3689,7 @@ async function handleImportWithLinea(file, linea){
     else if(name) existingByName[name]=l.id;
   });
   let inserted=0,updated=0,skipped=0;
+  const importErrors=[];
 
   for(let i=1;i<rows.length;i++){
     const row=rows[i];
@@ -3768,7 +3777,10 @@ async function handleImportWithLinea(file, linea){
         inserted++;
       }
     }
-    catch(e){ skipped++; }
+    catch(e){
+      skipped++;
+      if(!importErrors.length) importErrors.push('Fila '+(i+1)+' ('+razon+'): '+e.message);
+    }
   }
 
   /* Reload leads */
@@ -3801,7 +3813,9 @@ async function handleImportWithLinea(file, linea){
   HUNTERS_DEF.forEach(h=>{h.real=0;});
   LEADS.forEach(l=>{if(HUNTERS[l.hunter])HUNTERS[l.hunter].real+=(l.value||0);});
   renderTab(curTab);
-  alert('✅ Importación '+linea.toUpperCase()+':\n• '+inserted+' leads nuevos\n• '+updated+' leads actualizados\n• '+skipped+' omitidos');
+  let msg='✅ Importación '+linea.toUpperCase()+':\n• '+inserted+' leads nuevos\n• '+updated+' leads actualizados\n• '+skipped+' omitidos';
+  if(importErrors.length) msg += '\n\n⚠️ Error: '+importErrors[0];
+  alert(msg);
 }
 
 function mapEstadoImport(e){
