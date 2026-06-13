@@ -1142,6 +1142,7 @@ function buildKpiCharts(){
 }
 function doLogout(){
   curUser=null;
+  if(_autoSyncTimer){ clearInterval(_autoSyncTimer); _autoSyncTimer=null; }
   document.getElementById('lp').value='';
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
@@ -1187,6 +1188,25 @@ function initApp(){
   buildTabNav(tabs);
   curTab=tabs[0].id;
   renderTab(curTab);
+
+  /* ── Auto-sincronización: refleja a Head/Analista/Director (y entre todos)
+     los cambios y leads nuevos que registren los hunters, sin recargar ── */
+  startAutoSync();
+}
+
+let _autoSyncTimer = null;
+function startAutoSync(){
+  if(_autoSyncTimer) clearInterval(_autoSyncTimer);
+  _autoSyncTimer = setInterval(async ()=>{
+    if(!curUser) return;
+    /* No interrumpir si hay un modal abierto (evita pisar lo que se está editando) */
+    if(document.getElementById('modal-bg')?.classList.contains('open')) return;
+    if(document.getElementById('modal-sva-bg')?.classList.contains('open')) return;
+    try {
+      LEADS = await fetchLeads();
+      renderTab(curTab);
+    } catch(e){ /* silencioso */ }
+  }, 30000); /* cada 30 segundos */
 }
 
 /* ─── TABS POR ROL ─── */
