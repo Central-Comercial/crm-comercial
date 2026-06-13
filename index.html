@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;height:100vh;overflow:hidden;}
@@ -458,6 +459,10 @@ tr:hover td{background:#fafbff;}
 /* ─── SUPABASE CONFIG ─── */
 const SB_URL = 'https://lvnjawvgbvlghaodyurv.supabase.co';
 const SB_KEY = 'sb_publishable_2zwQO3oeLN1Ed9sZBJ1IsQ_REV5Fa1f';
+
+/* Cliente oficial de Supabase, usado solo para Realtime (websockets) */
+const sbClient = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null;
+let _realtimeChannel = null;
 
 async function sbGet(table, params=''){
   const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, {
@@ -1152,6 +1157,7 @@ function buildKpiCharts(){
 function doLogout(){
   curUser=null;
   if(_autoSyncTimer){ clearInterval(_autoSyncTimer); _autoSyncTimer=null; }
+  stopRealtimeSync();
   document.getElementById('lp').value='';
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
@@ -1198,8 +1204,8 @@ function initApp(){
   curTab=tabs[0].id;
   renderTab(curTab);
 
-  /* ── Auto-sincronización: refleja a Head/Analista/Director (y entre todos)
-     los cambios y leads nuevos que registren los hunters, sin recargar ── */
+  /* ── Sincronización en tiempo real (Supabase Realtime) + respaldo por polling ── */
+  startRealtimeSync();
   startAutoSync();
 }
 
@@ -1215,7 +1221,41 @@ function startAutoSync(){
       LEADS = await fetchLeads();
       renderTab(curTab);
     } catch(e){ /* silencioso */ }
-  }, 30000); /* cada 30 segundos */
+  }, 30000); /* respaldo cada 30 segundos por si Realtime se desconecta */
+}
+
+/* Sincronización instantánea: escucha cambios en la tabla "leads" vía websocket.
+   Cuando cualquier usuario inserta/edita/borra un lead, todos los demás lo ven
+   al instante sin esperar el polling de 30s. */
+let _syncDebounce = null;
+function startRealtimeSync(){
+  if(!sbClient) return; /* si la librería no cargó, queda solo el polling */
+  if(_realtimeChannel) sbClient.removeChannel(_realtimeChannel);
+
+  _realtimeChannel = sbClient
+    .channel('leads-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+      if(!curUser) return;
+      /* No interrumpir si hay un modal abierto */
+      if(document.getElementById('modal-bg')?.classList.contains('open')) return;
+      if(document.getElementById('modal-sva-bg')?.classList.contains('open')) return;
+      /* Debounce: si llegan varios cambios casi juntos (ej. import masivo), recarga una sola vez */
+      clearTimeout(_syncDebounce);
+      _syncDebounce = setTimeout(async ()=>{
+        try {
+          LEADS = await fetchLeads();
+          renderTab(curTab);
+        } catch(e){ /* silencioso */ }
+      }, 500);
+    })
+    .subscribe();
+}
+
+function stopRealtimeSync(){
+  if(_realtimeChannel && sbClient){
+    sbClient.removeChannel(_realtimeChannel);
+    _realtimeChannel = null;
+  }
 }
 
 /* ─── TABS POR ROL ─── */
