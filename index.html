@@ -669,6 +669,7 @@ async function doLogin(){
       hunter:   u.username
     };
     /* cargar todos los usuarios para el dashboard */
+    btn.textContent = 'Cargando datos...';
     SB_USUARIOS = await sbGet('usuarios','select=*&activo=eq.true');
     /* cargar leads */
     const rawLeads = await sbGet('leads','select=*&order=created_at.desc');
