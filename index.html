@@ -1874,15 +1874,18 @@ function kpiRowHTML(label, leads, tipoProd){
 
 /* GENERAL */
 function renderGeneral(){
-  let allLeads = applyOrigenFilter(LEADS || []);
+  let allLeadsRaw = applyOrigenFilter(LEADS || []);
   let hunters = Object.values(HUNTERS);
 
-  /* Excluir leads SVA de la vista General y tarjetas de hunters (SVA tiene su propia pestaña) */
-  allLeads = allLeads.filter(l=>(l.linea||'central')==='central');
+  /* Separar Central y SVA correctamente */
+  let allLeads = allLeadsRaw.filter(l=>(l.linea||'central')==='central');
+  let svaLeadsGeneral = allLeadsRaw.filter(l=>(l.linea||'central')==='sva');
+
   /* Head solo ve información de su propio equipo - nada del equipo contrario */
   if(curUser.role==='head'){
     hunters = hunters.filter(h=>h.team===curUser.equipo);
     allLeads = allLeads.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; });
+    svaLeadsGeneral = svaLeadsGeneral.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; });
   }
   const activeLeads = allLeads.filter(isActiveLead);
   const totalReal = activeLeads.reduce((s,l)=>s+(l.value||0),0);
@@ -1925,11 +1928,11 @@ function renderGeneral(){
   ${kpiRucRow(allLeads)}
 
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#3DB8E8;text-transform:uppercase;letter-spacing:.5px;">QR</div>
-  ${kpiRowFlat('QR', allLeads, 'QR')}
+  ${kpiRowFlat('QR', svaLeadsGeneral, 'QR')}
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#7F77DD;text-transform:uppercase;letter-spacing:.5px;">Arisale</div>
-  ${kpiRowFlat('Arisale', allLeads, 'ARISALE')}
+  ${kpiRowFlat('Arisale', svaLeadsGeneral, 'ARISALE')}
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#F5A623;text-transform:uppercase;letter-spacing:.5px;">Planillas</div>
-  ${kpiRowFlat('Planillas', allLeads, 'PLANILLAS')}
+  ${kpiRowFlat('Planillas', svaLeadsGeneral, 'PLANILLAS')}
 
   <!-- ══ GRÁFICOS ══ -->
   ${chartsSectionHTML(allLeads, curUser.role!=='head')}
