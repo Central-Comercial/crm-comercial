@@ -1600,6 +1600,8 @@ async function markLeadAs(leadId, categoria, key){
 function renderAllLeads(){
   const key = 'allleads';
   let allLeads = applyOrigenFilter(LEADS || []);
+  /* Solo leads de línea Central — SVA va en su propia pestaña */
+  allLeads = allLeads.filter(l=>(l.linea||'central')==='central');
   /* Filtrar por rol: head->su equipo, hunter->solo los suyos */
   if(curUser.role==='head'){
     allLeads = allLeads.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; });
@@ -1875,6 +1877,8 @@ function renderGeneral(){
   let allLeads = applyOrigenFilter(LEADS || []);
   let hunters = Object.values(HUNTERS);
 
+  /* Excluir leads SVA de la vista General y tarjetas de hunters (SVA tiene su propia pestaña) */
+  allLeads = allLeads.filter(l=>(l.linea||'central')==='central');
   /* Head solo ve información de su propio equipo - nada del equipo contrario */
   if(curUser.role==='head'){
     hunters = hunters.filter(h=>h.team===curUser.equipo);
@@ -1965,7 +1969,7 @@ function renderTeam(team){
   const t=TEAMS[team];
   /* Store current view for back nav */
   window._lastTeam = team;
-  const teamLeads=applyOrigenFilter(leadsForTeam(team));
+  const teamLeads=applyOrigenFilter(leadsForTeam(team).filter(l=>(l.linea||'central')==='central'));
   /* Verify head is only viewing their team */
   if(curUser.role==='head' && curUser.equipo!==team){
     document.getElementById('content').innerHTML='<div style="padding:40px;text-align:center;color:#E24B4A;">No tienes acceso al Equipo '+team+'</div>';
@@ -2044,7 +2048,7 @@ function renderHunter(hid){
     document.getElementById('content').innerHTML='<div style="padding:40px;text-align:center;color:#E24B4A;">No tienes acceso a este hunter.</div>';
     return;
   }
-  const leads=applyOrigenFilter(leadsForHunter(hid));
+  const leads=applyOrigenFilter(leadsForHunter(hid).filter(l=>(l.linea||'central')==='central'));
   const pct=h.meta?Math.round((h.real||0)/h.meta*100):0;
   const canEdit=curUser.role!=='director'||true; // director y heads siempre pueden editar; hunter solo el suyo
   const isOwn=curUser.hunter===hid;
