@@ -1218,8 +1218,11 @@ function startAutoSync(){
     if(document.getElementById('modal-bg')?.classList.contains('open')) return;
     if(document.getElementById('modal-sva-bg')?.classList.contains('open')) return;
     try {
+      /* No re-renderizar si el usuario está escribiendo en algún campo */
+      const active = document.activeElement;
+      const isTyping = active && (active.tagName==='INPUT' || active.tagName==='TEXTAREA' || active.tagName==='SELECT');
       LEADS = await fetchLeads();
-      renderTab(curTab);
+      if(!isTyping) renderTab(curTab);
     } catch(e){ /* silencioso */ }
   }, 30000); /* respaldo cada 30 segundos por si Realtime se desconecta */
 }
@@ -1228,6 +1231,8 @@ function startAutoSync(){
    Cuando cualquier usuario inserta/edita/borra un lead, todos los demás lo ven
    al instante sin esperar el polling de 30s. */
 let _syncDebounce = null;
+let _isSavingLocally = false; /* flag: evita que realtime re-renderice cuando el mismo usuario guarda */
+
 function startRealtimeSync(){
   if(!sbClient) return; /* si la librería no cargó, queda solo el polling */
   if(_realtimeChannel) sbClient.removeChannel(_realtimeChannel);
@@ -1239,12 +1244,17 @@ function startRealtimeSync(){
       /* No interrumpir si hay un modal abierto */
       if(document.getElementById('modal-bg')?.classList.contains('open')) return;
       if(document.getElementById('modal-sva-bg')?.classList.contains('open')) return;
+      /* Si el propio usuario acaba de guardar, ignorar el evento realtime (ya actualizó localmente) */
+      if(_isSavingLocally) return;
       /* Debounce: si llegan varios cambios casi juntos (ej. import masivo), recarga una sola vez */
       clearTimeout(_syncDebounce);
       _syncDebounce = setTimeout(async ()=>{
         try {
+          /* No re-renderizar si el usuario está escribiendo en algún campo */
+          const active = document.activeElement;
+          const isTyping = active && (active.tagName==='INPUT' || active.tagName==='TEXTAREA' || active.tagName==='SELECT');
           LEADS = await fetchLeads();
-          renderTab(curTab);
+          if(!isTyping) renderTab(curTab);
         } catch(e){ /* silencioso */ }
       }, 500);
     })
@@ -1523,11 +1533,35 @@ function renderCerradosCaidos(tipo){
     </div>
     <span style="margin-left:auto;background:${color}22;color:${color};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${leads.length} leads</span>
   </div>
-  <div style="margin-bottom:10px;">
+  <div style="margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
     <input class="search-box" id="srch-${tipo}" data-key="${tipo}" placeholder="Buscar por RUC o Razón Social..." value="${window['search_'+tipo]||''}" autocomplete="off" style="width:260px;">
+    <select id="filter-hunter-${tipo}" onchange="filterCerradosByHunter('${tipo}')" style="font-size:12px;padding:6px 10px;border:1px solid #dde1e7;border-radius:8px;background:#fff;color:#333;cursor:pointer;">
+      <option value="">Todos los hunters</option>
+      ${Object.values(HUNTERS).filter(h=>curUser.role==='head'?h.team===curUser.equipo:true).map(h=>`<option value="${h.username}">${h.name}</option>`).join('')}
+    </select>
   </div>
-  <div class="tbl-wrap">${leads.length ? leadsTableHTML(leads, false, tipo) :
+  <div class="tbl-wrap" id="tbl-${tipo}">${leads.length ? leadsTableHTML(leads, false, tipo) :
     '<div style="padding:40px;text-align:center;color:#aaa;font-style:italic;">Sin leads '+tipo+'s aún.</div>'}</div>`;
+}
+
+/* Filtrar Cerrados/Caídos por hunter */
+function filterCerradosByHunter(tipo){
+  const hunterVal = document.getElementById('filter-hunter-'+tipo)?.value || '';
+  const searchVal = (document.getElementById('srch-'+tipo)?.value || '').toLowerCase().trim();
+  const rows = document.querySelectorAll(`#tbl-${tipo} tbody tr.lead-row`);
+  rows.forEach(tr=>{
+    const ruc = (tr.dataset.ruc||'').toLowerCase();
+    const name = (tr.dataset.name||'').toLowerCase();
+    const hunter = (tr.dataset.hunter||'').toLowerCase();
+    const matchSearch = !searchVal || ruc.includes(searchVal) || name.includes(searchVal);
+    const matchHunter = !hunterVal || hunter===hunterVal.toLowerCase();
+    tr.style.display = (matchSearch && matchHunter) ? '' : 'none';
+    /* también ocultar fila de historial si existe */
+    const next = tr.nextElementSibling;
+    if(next && next.classList.contains('historial-row')){
+      next.style.display = (matchSearch && matchHunter) ? '' : 'none';
+    }
+  });
 }
 
 /* Mark a lead as cerrado or caido */
@@ -2439,8 +2473,10 @@ function canPartialEdit(lead){
   return canFullEdit(lead);
 }
 function canEditComment(lead){
-  // Hunter edita comentario y fecha modif de sus propios leads
-  return curUser.role === 'hunter' && lead?.hunter === curUser.username;
+  // Hunter: sus propios leads; Head: leads de su equipo; Director/Analista: todos (ya tienen full=true)
+  if(curUser.role === 'hunter') return lead?.hunter === curUser.username;
+  if(curUser.role === 'head') return isMyTeamLead(lead);
+  return false; // director/analista usan full edit en su lugar
 }
 function canAddLead(){
   return true; // todos pueden agregar leads
@@ -2522,13 +2558,17 @@ function leadsTableHTML(leads, canEdit, key){
            </select>`
         : `${l.close||'—'}`;
 
-      const comentarioCell = (canPartial || commentOnly)
+      /* Comentario editable para hunter (propios leads), head (equipo) y director/analista (full) */
+      const canComment2 = canPartial || commentOnly || full;
+      const comentarioCell = canComment2
         ? `<input class="ecell" id="comentario-${l.id}" value="${(l.note||'').replace(/"/g,'&quot;')}" placeholder="Escribe tu comentario..." style="color:#444;font-size:11px;border:1px solid #c5d0e0;border-radius:5px;padding:3px 6px;">`
         : `<span style="font-size:11px;color:#aaa;">${l.note||'—'}</span>`;
 
       const safeId = l.id; regLead(l);
       /* Hunter daily save button */
-      const hunterSaveBtn = (commentOnly && !full)
+      /* Todos los roles pueden guardar comentario con el botón 💾 Guardar */
+      const canComment = commentOnly || full || (curUser.role==='head' && canFullEdit(l));
+      const hunterSaveBtn = canComment
         ? `<button onclick="hunterGuardar('${safeId}','${key}')"
             style="font-size:10px;padding:4px 10px;border-radius:6px;background:#7F77DD;color:#fff;border:none;cursor:pointer;font-weight:600;white-space:nowrap;">
             💾 Guardar
@@ -2556,7 +2596,7 @@ function leadsTableHTML(leads, canEdit, key){
         : '';
       const actionBtn = `<span style="white-space:nowrap;">${editBtn}${fullSaveBtn}${cerrarBtn}${caidoBtn}${restoreBtn}${deleteBtn}${hunterSaveBtn}</span>`;
 
-      return `<tr id="row-${l.id}">
+      return `<tr id="row-${l.id}" class="lead-row" data-ruc="${(l.ruc||'').toLowerCase()}" data-name="${(l.name||'').toLowerCase()}" data-hunter="${(l.hunter||'').toLowerCase()}">
         <td><span class="dot" style="background:${dc};"></span></td>
         <td style="text-align:center;cursor:pointer;" title="Ver historial" onclick="toggleHistorial('${l.id}',this)">
           <span style="font-size:13px;" id="exp-${l.id}">▶</span>
@@ -2877,8 +2917,9 @@ async function hunterGuardar(leadId, key){
   const comentario = comentarioEl ? comentarioEl.value : '';
   const hoy = new Date().toISOString().slice(0,10);
 
-  if(!comentario.trim()){
-    alert('Por favor escribe un comentario antes de guardar.');
+  /* Hunters deben escribir un comentario; Head/Director/Analista pueden guardar sin comentario */
+  if(!comentario.trim() && curUser.role === 'hunter'){
+    showToast('Por favor escribe un comentario antes de guardar.', 'warning');
     return;
   }
 
@@ -2886,6 +2927,7 @@ async function hunterGuardar(leadId, key){
   if(btn){ btn.textContent='Guardando...'; btn.disabled=true; }
 
   try {
+    _isSavingLocally = true; /* evitar que realtime interrumpa */
     /* Save comentario and fecha_modif */
     await sbPatch('leads', leadId, {
       comentario: comentario,
@@ -2897,7 +2939,7 @@ async function hunterGuardar(leadId, key){
     await saveHistorial(leadId, 'comentario', comentario);
     await saveHistorial(leadId, 'fecha_modif', hoy);
 
-    /* Update local LEADS */
+    /* Actualizar solo la celda de fecha_modif en el DOM sin re-renderizar toda la tabla */
     const l = LEADS.find(x=>String(x.id)===String(leadId));
     if(l){
       l.note = comentario;
@@ -2906,14 +2948,20 @@ async function hunterGuardar(leadId, key){
       l.modified_today = true;
       l.fecha_mod_late = false;
     }
+    /* Actualizar celda F. Modificación directamente en el DOM (sin re-render) */
+    const fmodCell = document.getElementById('fmod-'+leadId);
+    if(fmodCell) fmodCell.textContent = new Date(hoy).toLocaleDateString('es-PE');
 
+    showToast('✅ Comentario guardado', 'success');
     if(btn){ btn.textContent='✅ Guardado'; btn.style.background='#1D9E75'; }
     setTimeout(()=>{
       if(btn){ btn.textContent='💾 Guardar'; btn.style.background='#7F77DD'; btn.disabled=false; }
-    }, 2000);
+      _isSavingLocally = false; /* volver a escuchar realtime después de 3s */
+    }, 3000);
 
   } catch(e){
-    alert('Error al guardar: '+e.message);
+    _isSavingLocally = false;
+    showToast('❌ Error al guardar: '+e.message, 'error');
     if(btn){ btn.textContent='💾 Guardar'; btn.disabled=false; }
   }
 }
@@ -3306,7 +3354,7 @@ async function saveSVALead(){
 
     let savedId = editingId;
     if(editingId){
-      await sbPatch('leads',`id=eq.${editingId}`,payload);
+      await sbPatch('leads', editingId, payload);
       const editedFields = Object.keys(payload).filter(k=>k!=='updated_at');
       for(const campo of editedFields){
         await saveHistorial(editingId, campo, payload[campo]);
@@ -3406,7 +3454,7 @@ async function saveLead(){
 
     let savedId = editingId;
     if(editingId){
-      await sbPatch('leads',`id=eq.${editingId}`,payload);
+      await sbPatch('leads', editingId, payload);
       const editedFields = Object.keys(payload).filter(k=>k!=='updated_at');
       for(const campo of editedFields){
         await saveHistorial(editingId, campo, payload[campo]);
