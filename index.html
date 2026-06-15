@@ -2493,10 +2493,13 @@ function getLead(id){ return LEADS.find(l=>l.id===id) || LEAD_REG[id]; }
 
 function leadsTableHTML(leads, canEdit, key){
   const isSVA = (key==='sva2');
+  /* Separar estrictamente: Lead Central no muestra SVA, Leads SVA no muestra Central */
+  const lineaFilter = isSVA ? 'sva' : 'central';
+  const byLinea = leads.filter(l=>(l.linea||'central')===lineaFilter);
   /* Head only sees their team's leads */
   const visibleLeads = curUser.role==='head'
-    ? leads.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; })
-    : leads;
+    ? byLinea.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; })
+    : byLinea;
 
   /* Los leads Cerrados (100%) y Caídos tienen sus propias pestañas - no se muestran en las tablas activas */
   const hideClosed = !['sva2','cerrado','caido'].includes(key);
