@@ -3825,7 +3825,8 @@ async function handleImportWithLinea(file, linea){
   for(let i=1;i<rows.length;i++){
     const row=rows[i];
     if(row.every(c=>!c||!c.toString().trim())) continue;
-    const razon=g(row,iRazon); if(!razon){skipped++;continue;}
+    /* Razón Social opcional — si está vacía usar "Sin nombre" como placeholder */
+    const razon=g(row,iRazon) || g(row,iHunter) && 'Sin nombre' || 'Sin nombre';
     const rucVal=g(row,iRuc).trim();
     let existingId=null;
     if(rucVal && existingByRuc[rucVal]) existingId=existingByRuc[rucVal];
