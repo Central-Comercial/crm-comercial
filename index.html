@@ -1887,12 +1887,14 @@ function renderGeneral(){
     allLeads = allLeads.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; });
     svaLeadsGeneral = svaLeadsGeneral.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; });
   }
-  const activeLeads = allLeads.filter(isActiveLead);
+  /* Captura = solo leads CON RUC (de linea central), para que coincida con la sección RUC */
+  const leadsConRuc = allLeads.filter(l=>l.ruc && l.ruc.trim()!=='');
+  const activeLeads = leadsConRuc.filter(isActiveLead);
   const totalReal = activeLeads.reduce((s,l)=>s+(l.value||0),0);
   const totalMeta = hunters.reduce((s,h)=>s+(h.meta||0),0);
   const pct = totalMeta>0?Math.round(totalReal/totalMeta*100):0;
-  const cerrados = allLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
-  const perdidos = allLeads.filter(l=>l.categoria==='caido').length;
+  const cerrados = leadsConRuc.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
+  const perdidos = leadsConRuc.filter(l=>l.categoria==='caido').length;
   const totalCaptura = activeLeads.length + cerrados;
   const conv = totalCaptura>0 ? Math.round(cerrados/totalCaptura*100) : 0;
 
@@ -2945,9 +2947,13 @@ async function hunterGuardar(leadId, key){
       updated_at: new Date().toISOString()
     });
 
-    /* Save to historial */
-    await saveHistorial(leadId, 'comentario', comentario);
-    await saveHistorial(leadId, 'fecha_modif', hoy);
+    /* Guardar en historial solo el comentario (fecha_modif se actualiza automáticamente) */
+    if(comentario.trim()){
+      const leadActual = LEADS.find(x=>String(x.id)===String(leadId));
+      if(!leadActual || comentario !== (leadActual.note||'')){
+        await saveHistorial(leadId, 'comentario', comentario);
+      }
+    }
 
     /* Actualizar solo la celda de fecha_modif en el DOM sin re-renderizar toda la tabla */
     const l = LEADS.find(x=>String(x.id)===String(leadId));
@@ -3464,10 +3470,36 @@ async function saveLead(){
 
     let savedId = editingId;
     if(editingId){
+      /* Solo guardar en historial los campos que realmente cambiaron */
+      const leadActual = LEADS.find(x=>String(x.id)===String(editingId));
+      const campoMap = {
+        nombre:              leadActual?.name,
+        razon_social:        leadActual?.name,
+        ruc:                 leadActual?.ruc,
+        representante_legal: leadActual?.representante_legal,
+        telefono:            leadActual?.telefono,
+        giros:               leadActual?.giros,
+        fuente:              leadActual?.source,
+        tipo_producto:       leadActual?.tipo_producto,
+        tipo_cuenta:         leadActual?.tipo_cuenta,
+        banco:               leadActual?.banco,
+        valor:               String(leadActual?.value||0),
+        estado:              leadActual?.status,
+        mes_cierre:          leadActual?.close,
+        comentario:          leadActual?.note,
+        fecha_ingreso:       leadActual?.fecha_ingreso_raw,
+        fecha_modif:         leadActual?.fecha_modif_raw,
+      };
       await sbPatch('leads', editingId, payload);
-      const editedFields = Object.keys(payload).filter(k=>k!=='updated_at');
-      for(const campo of editedFields){
-        await saveHistorial(editingId, campo, payload[campo]);
+      /* Solo registrar en historial los campos que cambiaron de valor */
+      for(const [campo, nuevoValor] of Object.entries(payload)){
+        if(campo==='updated_at' || campo==='hunter_id' || campo==='equipo' || campo==='linea') continue;
+        const valorAnterior = campoMap[campo];
+        const nuevo = nuevoValor===null?'':String(nuevoValor);
+        const anterior = valorAnterior===null||valorAnterior===undefined?'':String(valorAnterior);
+        if(nuevo !== anterior){
+          await saveHistorial(editingId, campo, nuevo);
+        }
       }
       showToast('✅ Lead actualizado correctamente', 'success');
     } else {
