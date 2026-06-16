@@ -3829,8 +3829,14 @@ async function handleImportWithLinea(file, linea){
     const razon=g(row,iRazon) || g(row,iHunter) && 'Sin nombre' || 'Sin nombre';
     const rucVal=g(row,iRuc).trim();
     let existingId=null;
-    if(rucVal && existingByRuc[rucVal]) existingId=existingByRuc[rucVal];
-    else if(!rucVal && existingByName[razon.trim().toLowerCase()]) existingId=existingByName[razon.trim().toLowerCase()];
+    if(rucVal && existingByRuc[rucVal]){
+      /* Upsert por RUC (identificador único confiable) */
+      existingId=existingByRuc[rucVal];
+    } else if(rucVal==='' && razon && razon!=='Sin nombre' && existingByName[razon.trim().toLowerCase()]){
+      /* Upsert por nombre solo si tiene nombre real (no "Sin nombre") */
+      existingId=existingByName[razon.trim().toLowerCase()];
+    }
+    /* Si no hay RUC ni Razón Social real → siempre insertar como nuevo lead */
 
     const hunterName=g(row,iHunter).toUpperCase();
     let hunter_id=null,equipo=null;
