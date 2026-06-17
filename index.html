@@ -219,7 +219,7 @@ tr:hover td{background:#fafbff;}
     </select>
     <select id="kpi-prod" onchange="renderKPI()" style="font-size:11px;padding:5px 10px;border:1px solid #dde1e7;border-radius:7px;background:#fff;color:#333;cursor:pointer;">
       <option value="">Todos los productos</option>
-      <option>FISICO</option><option>QR</option><option>ARISALE</option><option>PLANILLAS</option><option>LINK DE PAGO</option>
+      <option>FISICO</option><option>LINK DE PAGO</option><option>ECOMMERCE</option>
     </select>
     <span id="kpi-updated" style="margin-left:auto;font-size:10px;color:#aaa;"></span>
   </div>
@@ -313,10 +313,7 @@ tr:hover td{background:#fafbff;}
           <option value="">Seleccionar...</option>
           <option>FISICO</option>
           <option>LINK DE PAGO</option>
-          <option>QR</option>
           <option>ECOMMERCE</option>
-          <option>ARISALE</option>
-          <option>PLANILLAS</option>
         </select>
       </div>
       <div class="mf"><label>Tipo de Cuenta</label>
@@ -1639,13 +1636,25 @@ function renderAllLeads(){
   const meses = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
   const mesOpts = meses.map(m=>`<option value="${m}"${m===fMes?' selected':''}>${m}</option>`).join('');
 
+  /* KPIs igual que Vista General — usando solo leads con RUC */
+  const leadsConRucAL = allLeads.filter(l=>l.ruc&&l.ruc.trim()!=='');
+  const activeLeadsAL = leadsConRucAL.filter(isActiveLead);
+  const capturaAL     = activeLeadsAL.reduce((s,l)=>s+(l.value||0),0);
+  const cerradosAL    = leadsConRucAL.filter(l=>l.categoria==='cerrado'||l.status==='cerrado');
+  const perdidosAL    = leadsConRucAL.filter(l=>l.categoria==='caido');
+  const totalCapAL    = activeLeadsAL.length + cerradosAL.length;
+  const convAL        = totalCapAL>0?Math.round(cerradosAL.length/totalCapAL*100):0;
+  const convColorAL   = convAL>=30?'#1D9E75':convAL>=15?'#F5A623':'#E24B4A';
+  const cerradoValAL  = cerradosAL.reduce((s,l)=>s+(l.value||0),0);
+  const perdidoValAL  = perdidosAL.reduce((s,l)=>s+(l.value||0),0);
+
   document.getElementById('content').innerHTML = `
-  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);">
-    <div class="kpi"><div class="kpi-label">1. Captura Total</div><div class="kpi-val">S/ ${totalVal.toLocaleString()}</div><div class="kpi-sub neutral">potencial pipeline</div></div>
-    <div class="kpi"><div class="kpi-label">2. Leads Total</div><div class="kpi-val">${total}</div><div class="kpi-sub neutral">registrados</div></div>
-    <div class="kpi"><div class="kpi-label">3. Leads Cerrado</div><div class="kpi-val" style="color:#1D9E75;">${cerrados}</div><div class="kpi-sub up">100% Cierre</div></div>
-    <div class="kpi"><div class="kpi-label">4. Leads Perdido</div><div class="kpi-val" style="color:#E24B4A;">${allLeads.filter(l=>l.categoria==='caido').length}</div><div class="kpi-sub down">caídos</div></div>
-    <div class="kpi"><div class="kpi-label">5. % Conversión</div><div class="kpi-val" style="color:${total>0&&Math.round(cerrados/total*100)>=30?'#1D9E75':'#F5A623'};">${total>0?Math.round(cerrados/total*100):0}%</div><div class="kpi-sub neutral">cerrados / total</div></div>
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:8px;">
+    ${kpiCard('1. Captura Total','S/ '+capturaAL.toLocaleString(),'potencial pipeline','neutral')}
+    ${kpiFunnelCard('2. Leads Total', activeLeadsAL)}
+    ${kpiCard('3. Leads Cerrado','S/ '+cerradoValAL.toLocaleString(),'100% Cierre','up','#1D9E75')}
+    ${kpiCard('4. Leads Perdido','S/ '+perdidoValAL.toLocaleString(),'caídos','down','#E24B4A')}
+    ${kpiCard('5. % Conversión',convAL+'%','cerrados / captura',convAL>=30?'up':convAL>=15?'neutral':'down',convColorAL)}
   </div>
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 0;">
@@ -1664,6 +1673,10 @@ function renderAllLeads(){
     <button onclick="exportAllLeads()" style="padding:5px 12px;border-radius:7px;border:1px solid #1D9E75;background:#e8f5e9;color:#1D9E75;font-size:11px;cursor:pointer;font-weight:600;">
       ⬇ Exportar Excel
     </button>
+    ${['director','analista','head','hunter'].includes(curUser.role) ? `
+    <button onclick="openModal(null,'allleads')" style="padding:5px 14px;border-radius:7px;border:none;background:#534AB7;color:#fff;font-size:11px;cursor:pointer;font-weight:600;">
+      + Nuevo lead
+    </button>` : ''}
   </div>
 
   <div class="tbl-wrap">${leadsTableHTML(filtered, true, key)}</div>`;
