@@ -1221,7 +1221,7 @@ function startAutoSync(){
       LEADS = await fetchLeads();
       if(!isTyping) renderTab(curTab);
     } catch(e){ /* silencioso */ }
-  }, 30000); /* respaldo cada 30 segundos por si Realtime se desconecta */
+  }, curUser?.role==='hunter' ? 10000 : 30000); /* hunters: 10s, otros: 30s */
 }
 
 /* Sincronización instantánea: escucha cambios en la tabla "leads" vía websocket.
@@ -2985,8 +2985,8 @@ async function hunterGuardar(leadId, key){
     if(btn){ btn.textContent='✅ Guardado'; btn.style.background='#1D9E75'; }
     setTimeout(()=>{
       if(btn){ btn.textContent='💾 Guardar'; btn.style.background='#7F77DD'; btn.disabled=false; }
-      _isSavingLocally = false; /* volver a escuchar realtime después de 3s */
-    }, 3000);
+    }, 2000);
+    setTimeout(()=>{ _isSavingLocally = false; }, 1500); /* volver a escuchar realtime después de 1.5s */
 
   } catch(e){
     _isSavingLocally = false;
