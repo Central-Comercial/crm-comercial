@@ -2384,6 +2384,10 @@ function filterBarHTML(leads, key, showNew=true){
 /* ── FETCH LEADS HELPER ── */
 async function fetchLeads(){
   const rawLeads = await sbGet('leads','select=*&order=created_at.desc');
+  /* Asegurar que SB_USUARIOS esté cargado para mapear hunter_id → username */
+  if(!SB_USUARIOS || SB_USUARIOS.length===0){
+    SB_USUARIOS = await sbGet('usuarios','select=*&activo=eq.true');
+  }
   const hm={};
   SB_USUARIOS.forEach(u=>{hm[u.id]=u.username;});
   const mapped = rawLeads.map(l=>({
