@@ -3657,12 +3657,17 @@ async function handleImport(input){
       /* 1) Try exact match */
       hunter_id = hunterNameMap[hunterName];
 
-      /* 2) Substring match (covers "OLIVER LOPEZ" vs "LOPEZ SUMALAVIA, OLIVER ENRIQUE") */
+      /* 2) Substring match: "Alicia" matches "Alicia Quinones", "OLIVER" matches "Oliver Lopez" */
       if(!hunter_id){
+        const hn = hunterName.toUpperCase().trim();
         const match = SB_USUARIOS.find(u =>
           (u.rol==='hunter'||u.rol==='head') && (
-            u.nombre.toUpperCase().includes(hunterName) ||
-            hunterName.includes(u.nombre.toUpperCase())
+            u.nombre.toUpperCase().includes(hn) ||
+            hn.includes(u.nombre.toUpperCase()) ||
+            /* primer nombre coincide exactamente */
+            u.nombre.toUpperCase().split(' ')[0] === hn ||
+            u.nombre.toUpperCase().split(' ')[0].startsWith(hn) ||
+            hn.startsWith(u.nombre.toUpperCase().split(' ')[0])
           )
         );
         if(match) hunter_id = match.id;
@@ -3693,10 +3698,18 @@ async function handleImport(input){
       }
     }
 
-    /* If head is importing and no hunter found, assign to head themselves */
-    if(!hunter_id && curUser.role === 'head'){
-      const meAsUser = SB_USUARIOS.find(u => u.username === curUser.username);
-      if(meAsUser){ hunter_id = meAsUser.id; equipo = meAsUser.equipo; }
+    /* Si no encontró hunter: head se lo asigna a sí mismo, analista/director deja aviso */
+    if(!hunter_id){
+      if(curUser.role === 'head'){
+        const meAsUser = SB_USUARIOS.find(u => u.username === curUser.username);
+        if(meAsUser){ hunter_id = meAsUser.id; equipo = meAsUser.equipo; }
+      } else if(hunterName){
+        /* Guardar en importErrors para avisar al analista qué nombre no se encontró */
+        if(!importErrors.find(e=>e.includes(hunterName))){
+          importErrors.push('Hunter no encontrado: "'+hunterName+'" — lead omitido');
+        }
+        skipped++; continue;
+      }
     }
 
     const potStr = g(row, iPotenc).replace(/[^0-9.]/g,'');
