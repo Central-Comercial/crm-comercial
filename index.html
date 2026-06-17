@@ -457,6 +457,11 @@ tr:hover td{background:#fafbff;}
 const SB_URL = 'https://lvnjawvgbvlghaodyurv.supabase.co';
 const SB_KEY = 'sb_publishable_2zwQO3oeLN1Ed9sZBJ1IsQ_REV5Fa1f';
 
+/* Normaliza texto: quita tildes y caracteres especiales para comparaciones de nombres */
+function normalizeName(str){
+  return (str||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+}
+
 /* Cliente oficial de Supabase, usado solo para Realtime (websockets) */
 const sbClient = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null;
 let _realtimeChannel = null;
@@ -3654,32 +3659,31 @@ async function handleImport(input){
     /* Find hunter_id by name - exact match, then word-overlap fuzzy match */
     let hunter_id = null, equipo = null;
     if(hunterName){
-      /* 1) Try exact match */
-      hunter_id = hunterNameMap[hunterName];
+      /* 1) Try exact match (original y normalizado) */
+      hunter_id = hunterNameMap[hunterName] || hunterNameMap[hunterNameNorm.toUpperCase()];
 
-      /* 2) Substring match: "Alicia" matches "Alicia Quinones", "OLIVER" matches "Oliver Lopez" */
+      /* 2) Substring match con normalización (ignora tildes, mayúsculas, ñ) */
       if(!hunter_id){
-        const hn = hunterName.toUpperCase().trim();
+        const hn = normalizeName(hunterName);
         const match = SB_USUARIOS.find(u =>
           (u.rol==='hunter'||u.rol==='head') && (
-            u.nombre.toUpperCase().includes(hn) ||
-            hn.includes(u.nombre.toUpperCase()) ||
-            /* primer nombre coincide exactamente */
-            u.nombre.toUpperCase().split(' ')[0] === hn ||
-            u.nombre.toUpperCase().split(' ')[0].startsWith(hn) ||
-            hn.startsWith(u.nombre.toUpperCase().split(' ')[0])
+            normalizeName(u.nombre).includes(hn) ||
+            hn.includes(normalizeName(u.nombre)) ||
+            normalizeName(u.nombre).split(' ')[0] === hn ||
+            hn.startsWith(normalizeName(u.nombre).split(' ')[0]) ||
+            normalizeName(u.nombre).split(' ')[0].startsWith(hn)
           )
         );
         if(match) hunter_id = match.id;
       }
 
-      /* 3) Word-overlap fuzzy match - tolerates spelling diffs (Melissa/Melisa) by matching surnames */
+      /* 3) Word-overlap fuzzy match - ignora tildes y tolera diferencias (Quiñones/Quinones) */
       if(!hunter_id){
-        const importWords = hunterName.split(/[\s,]+/).filter(w=>w.length>=3);
+        const importWords = normalizeName(hunterName).split(/[\s,]+/).filter(w=>w.length>=3);
         let best = null, bestScore = 0;
         SB_USUARIOS.forEach(u=>{
           if(u.rol!=='hunter' && u.rol!=='head') return;
-          const dbWords = u.nombre.toUpperCase().split(/[\s,]+/).filter(w=>w.length>=3);
+          const dbWords = normalizeName(u.nombre).split(/[\s,]+/).filter(w=>w.length>=3);
           let score = 0;
           importWords.forEach(iw=>{
             dbWords.forEach(dw=>{
