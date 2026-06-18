@@ -3868,7 +3868,8 @@ async function handleImportWithLinea(file, linea){
     const row=rows[i];
     if(row.every(c=>!c||!c.toString().trim())) continue;
     /* Razón Social opcional — si está vacía usar "Sin nombre" como placeholder */
-    const razon=g(row,iRazon) || g(row,iHunter) && 'Sin nombre' || 'Sin nombre';
+    /* Si RAZON SOCIAL está vacía, usar REPRESENTANTE LEGAL como nombre del lead */
+    const razon=g(row,iRazon) || g(row,iRepLegal) || 'Sin nombre';
     const rucVal=g(row,iRuc).trim();
     let existingId=null;
     if(rucVal && existingByRuc[rucVal]){
