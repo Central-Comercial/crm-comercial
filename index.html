@@ -3840,10 +3840,17 @@ async function handleImportWithLinea(file, linea){
   const iPlanillasColab=col('PLANILLAS','COLABORADORES');
   const iEtapaImpl=col('ETAPA IMPLEMENTACION','ETAPA IMPLEMENTACIÓN','IMPLEMENTACION');
 
+  /* ── hunterNameMap: SOLO hunters y heads (nunca directores/analistas) ── */
   const hunterNameMap={};
-  SB_USUARIOS.forEach(u=>{
-    hunterNameMap[u.nombre.toUpperCase().trim()]=u.id;
-    u.nombre.toUpperCase().split(' ').forEach(w=>{ if(!hunterNameMap[w]) hunterNameMap[w]=u.id; });
+  const hunterOnlyUsers = SB_USUARIOS.filter(u=>u.rol==='hunter'||u.rol==='head');
+  hunterOnlyUsers.forEach(u=>{
+    /* Nombre completo exacto (con y sin tildes) */
+    hunterNameMap[u.nombre.toUpperCase().trim()] = u.id;
+    hunterNameMap[normalizeName(u.nombre).toUpperCase().trim()] = u.id;
+    /* Palabras individuales solo si tienen 4+ letras (evita colisiones con "ANA", "ROL", etc.) */
+    normalizeName(u.nombre).toUpperCase().split(' ').forEach(w=>{
+      if(w.length>=4 && !hunterNameMap[w]) hunterNameMap[w]=u.id;
+    });
   });
 
   const existingByRuc={}, existingByName={};
@@ -3855,6 +3862,7 @@ async function handleImportWithLinea(file, linea){
   });
   let inserted=0,updated=0,skipped=0;
   const importErrors=[];
+  const hunterNotFound=new Set(); /* hunters del Excel que no matchearon → para el aviso final */
 
   for(let i=1;i<rows.length;i++){
     const row=rows[i];
@@ -3872,30 +3880,45 @@ async function handleImportWithLinea(file, linea){
     }
     /* Si no hay RUC ni Razón Social real → siempre insertar como nuevo lead */
 
-    const hunterName=g(row,iHunter).toUpperCase();
+    const hunterName=g(row,iHunter).toUpperCase().trim();
+    const hunterNameNorm=normalizeName(hunterName).toUpperCase().trim();
     let hunter_id=null,equipo=null;
     if(hunterName){
-      hunter_id=hunterNameMap[hunterName]||null;
+      /* 1) Exacto (con tildes y sin tildes) */
+      hunter_id = hunterNameMap[hunterName] || hunterNameMap[hunterNameNorm] || null;
+
+      /* 2) Substring bidireccional con normalización (solo hunters/heads) */
       if(!hunter_id){
-        const m=SB_USUARIOS.find(u=>(u.rol==='hunter'||u.rol==='head')&&(u.nombre.toUpperCase().includes(hunterName)||hunterName.includes(u.nombre.toUpperCase())));
-        if(m){hunter_id=m.id;}
+        const m=hunterOnlyUsers.find(u=>{
+          const dbNorm=normalizeName(u.nombre).toUpperCase();
+          return dbNorm.includes(hunterNameNorm) || hunterNameNorm.includes(dbNorm);
+        });
+        if(m) hunter_id=m.id;
       }
+
+      /* 3) Fuzzy por palabras con normalización (solo hunters/heads) */
       if(!hunter_id){
-        const importWords=hunterName.split(/[\s,]+/).filter(w=>w.length>=3);
+        const importWords=hunterNameNorm.split(/[\s,]+/).filter(w=>w.length>=3);
         let best=null,bestScore=0;
-        SB_USUARIOS.forEach(u=>{
-          if(u.rol!=='hunter'&&u.rol!=='head')return;
-          const dbWords=u.nombre.toUpperCase().split(/[\s,]+/).filter(w=>w.length>=3);
+        hunterOnlyUsers.forEach(u=>{
+          const dbWords=normalizeName(u.nombre).toUpperCase().split(/[\s,]+/).filter(w=>w.length>=3);
           let score=0;
           importWords.forEach(iw=>dbWords.forEach(dw=>{
-            if(iw===dw)score+=2;
-            else if(iw.length>=5&&dw.length>=5&&(iw.includes(dw)||dw.includes(iw)))score+=1;
+            if(iw===dw) score+=2;
+            else if(iw.length>=5&&dw.length>=5&&(iw.includes(dw)||dw.includes(iw))) score+=1;
           }));
           if(score>bestScore){bestScore=score;best=u;}
         });
-        if(best&&bestScore>=1)hunter_id=best.id;
+        if(best&&bestScore>=2) hunter_id=best.id; /* score mínimo 2 = al menos un apellido exacto */
       }
-      if(hunter_id){const hu=SB_USUARIOS.find(u=>u.id===hunter_id);if(hu)equipo=hu.equipo;}
+
+      if(hunter_id){
+        const hu=SB_USUARIOS.find(u=>u.id===hunter_id);
+        if(hu) equipo=hu.equipo;
+      } else {
+        /* Registrar para el aviso final */
+        hunterNotFound.add(hunterName);
+      }
     }
     const potStr=g(row,iPotenc).replace(/[^0-9.]/g,'');
     const estadoMapped=mapEstadoImport(g(row,iEtapa));
@@ -3986,12 +4009,19 @@ async function handleImportWithLinea(file, linea){
   LEADS.forEach(l=>{if(HUNTERS[l.hunter])HUNTERS[l.hunter].real+=(l.value||0);});
   renderTab(curTab);
   let msg='✅ Importación '+linea.toUpperCase()+':\n• '+inserted+' leads nuevos\n• '+updated+' leads actualizados\n• '+skipped+' omitidos';
-  if(importErrors.length) msg += '\n\n⚠️ Error: '+importErrors[0];
+  if(hunterNotFound.size){
+    msg += '\n\n⚠️ Hunters no encontrados (esos leads quedaron sin asignar):\n'+[...hunterNotFound].map(n=>'  · "'+n+'"').join('\n');
+    msg += '\n\nRevisa que el nombre en el Excel coincida exactamente con el registrado en el sistema.';
+  }
+  if(importErrors.length) msg += '\n\n❌ Error técnico: '+importErrors[0];
   alert(msg);
 }
 
 function mapEstadoImport(e){
-  const raw = (e||'').toLowerCase().trim();
+  const raw = (e||'').toLowerCase().trim()
+    .replace('propecto','prospecto')   /* typo común */
+    .replace('prospeccion','prospecto')
+    .replace('precierre','precierre');
 
   /* Códigos internos ya correctos */
   if(['prospecto','oportunidad','negociacion','precierre','cerrado'].includes(raw)) return raw;
