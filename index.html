@@ -1443,6 +1443,14 @@ function renderSVA2(){
       <option value="cerrado"${window.sva2_cat==='cerrado'?' selected':''}>Cerrados</option>
       <option value="caido"${window.sva2_cat==='caido'?' selected':''}>Caídos</option>
     </select>
+    <select class="filter-sel" onchange="window.sva2_etapa=this.value;renderSVA2()">
+      <option value="">Todas las etapas</option>
+      <option value="10% Prospección"${window.sva2_etapa==='10% Prospección'?' selected':''}>10% Prospección</option>
+      <option value="25% Oportunidad"${window.sva2_etapa==='25% Oportunidad'?' selected':''}>25% Oportunidad</option>
+      <option value="50% Negociación"${window.sva2_etapa==='50% Negociación'?' selected':''}>50% Negociación</option>
+      <option value="75% Pre-cierre"${window.sva2_etapa==='75% Pre-cierre'?' selected':''}>75% Pre-cierre</option>
+      <option value="100% Cierre"${window.sva2_etapa==='100% Cierre'?' selected':''}>100% Cierre</option>
+    </select>
     <button class="btn-new" onclick="openModal(null,'sva2')"><i class="ti ti-plus"></i> Nuevo lead</button>
     <span style="font-size:11px;color:#999;margin-left:auto;">${svaLeads.length} leads SVA</span>
   </div>
@@ -1451,6 +1459,7 @@ function renderSVA2(){
       svaLeads.filter(l=>{
         if(window.sva2_tipo&&(l.tipo_producto||'').toUpperCase()!==window.sva2_tipo) return false;
         if(window.sva2_cat&&l.categoria!==window.sva2_cat) return false;
+        if(window.sva2_etapa&&(l.status||'')!==window.sva2_etapa) return false;
         return true;
       }), true, 'sva2'
     )}
@@ -1953,6 +1962,9 @@ function renderTeam(team){
   /* Store current view for back nav */
   window._lastTeam = team;
   const teamLeads=applyOrigenFilter(leadsForTeam(team).filter(l=>(l.linea||'central')==='central'));
+  /* Leads SVA del equipo (para KPIs de QR, Arisale, Planillas) */
+  const teamSvaLeads=applyOrigenFilter(leadsForTeam(team).filter(l=>l.linea==='sva'));
+  const teamAllLeads=[...teamLeads,...teamSvaLeads]; /* central + SVA combinados para los KPI SVA */
   /* Verify head is only viewing their team */
   if(curUser.role==='head' && curUser.equipo!==team){
     document.getElementById('content').innerHTML='<div style="padding:40px;text-align:center;color:#E24B4A;">No tienes acceso al Equipo '+team+'</div>';
@@ -1987,11 +1999,11 @@ function renderTeam(team){
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:.5px;">RUC</div>
   ${kpiRucRow(teamLeads)}
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#3DB8E8;text-transform:uppercase;letter-spacing:.5px;">QR</div>
-  ${kpiRowFlat('QR', teamLeads, 'QR')}
+  ${kpiRowFlat('QR', teamAllLeads, 'QR')}
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#7F77DD;text-transform:uppercase;letter-spacing:.5px;">Arisale</div>
-  ${kpiRowFlat('Arisale', teamLeads, 'ARISALE')}
+  ${kpiRowFlat('Arisale', teamAllLeads, 'ARISALE')}
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#F5A623;text-transform:uppercase;letter-spacing:.5px;">Planillas</div>
-  ${kpiRowFlat('Planillas', teamLeads, 'PLANILLAS')}
+  ${kpiRowFlat('Planillas', teamAllLeads, 'PLANILLAS')}
 
   <div class="cards-row">
     <div class="card">
@@ -2032,6 +2044,9 @@ function renderHunter(hid){
     return;
   }
   const leads=applyOrigenFilter(leadsForHunter(hid).filter(l=>(l.linea||'central')==='central'));
+  /* SVA del hunter para KPIs de QR, Arisale, Planillas */
+  const svaLeadsH=applyOrigenFilter(leadsForHunter(hid).filter(l=>l.linea==='sva'));
+  const allLeadsH=[...leads,...svaLeadsH];
   const pct=h.meta?Math.round((h.real||0)/h.meta*100):0;
   const canEdit=curUser.role!=='director'||true; // director y heads siempre pueden editar; hunter solo el suyo
   const isOwn=curUser.hunter===hid;
@@ -2076,11 +2091,11 @@ function renderHunter(hid){
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:.5px;">RUC</div>
   ${kpiRucRow(leads)}
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#3DB8E8;text-transform:uppercase;letter-spacing:.5px;">QR</div>
-  ${kpiRowFlat('QR', leads, 'QR')}
+  ${kpiRowFlat('QR', allLeadsH, 'QR')}
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#7F77DD;text-transform:uppercase;letter-spacing:.5px;">Arisale</div>
-  ${kpiRowFlat('Arisale', leads, 'ARISALE')}
+  ${kpiRowFlat('Arisale', allLeadsH, 'ARISALE')}
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#F5A623;text-transform:uppercase;letter-spacing:.5px;">Planillas</div>
-  ${kpiRowFlat('Planillas', leads, 'PLANILLAS')}
+  ${kpiRowFlat('Planillas', allLeadsH, 'PLANILLAS')}
 
   <div class="cards-row" style="margin-bottom:18px;">
     <div class="card"><div class="card-title">Mi funnel</div>${funnelHTML(leads)}</div>
