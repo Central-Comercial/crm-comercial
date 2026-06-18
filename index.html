@@ -3873,13 +3873,10 @@ async function handleImportWithLinea(file, linea){
     const rucVal=g(row,iRuc).trim();
     let existingId=null;
     if(rucVal && existingByRuc[rucVal]){
-      /* Upsert por RUC (identificador único confiable) */
+      /* Upsert solo por RUC (identificador único confiable) — sin RUC siempre inserta nuevo */
       existingId=existingByRuc[rucVal];
-    } else if(rucVal==='' && razon && razon!=='Sin nombre' && existingByName[razon.trim().toLowerCase()]){
-      /* Upsert por nombre solo si tiene nombre real (no "Sin nombre") */
-      existingId=existingByName[razon.trim().toLowerCase()];
     }
-    /* Si no hay RUC ni Razón Social real → siempre insertar como nuevo lead */
+    /* Sin RUC → siempre insertar como nuevo lead (un cliente puede tener múltiples leads SVA) */
 
     const hunterName=g(row,iHunter).toUpperCase().trim();
     const hunterNameNorm=normalizeName(hunterName).toUpperCase().trim();
