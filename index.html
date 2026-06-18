@@ -1226,7 +1226,7 @@ function startAutoSync(){
       LEADS = await fetchLeads();
       if(!isTyping) renderTab(curTab);
     } catch(e){ /* silencioso */ }
-  }, curUser?.role==='hunter' ? 10000 : 30000); /* hunters: 10s, otros: 30s */
+  }, curUser?.role==='hunter' ? 60000 : 30000); /* hunters: 60s (realtime cubre cambios al instante), otros: 30s */
 }
 
 /* Sincronización instantánea: escucha cambios en la tabla "leads" vía websocket.
