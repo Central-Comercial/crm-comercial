@@ -572,6 +572,28 @@ let curUser=null, curTab='', curFilter='all', curSearch='', editingId=null;
 let chartObj=null;
 
 /* ─── HELPERS ─── */
+/* ── Formatear fecha en zona horaria Perú (UTC-5) ── */
+function fmtDatePE(dateStr){
+  if(!dateStr) return '—';
+  /* Si es solo fecha (YYYY-MM-DD) sin hora, parsear directo sin conversión UTC */
+  if(/^\d{4}-\d{2}-\d{2}$/.test(dateStr)){
+    const [y,m,d]=dateStr.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  /* Si tiene hora (timestamp), convertir a hora Perú */
+  return new Date(dateStr).toLocaleDateString('es-PE',{timeZone:'America/Lima'});
+}
+function fmtDateTimePE(dateStr){
+  if(!dateStr) return '—';
+  return new Date(dateStr).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit'});
+}
+function isDateTodayPE(dateStr){
+  if(!dateStr) return false;
+  const d = new Date(dateStr).toLocaleDateString('es-PE',{timeZone:'America/Lima'});
+  const t = new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima'});
+  return d===t;
+}
+
 function mapEstado(e){
   const s = (e||'').toLowerCase().trim();
   /* New stage names */
@@ -1049,9 +1071,9 @@ function renderKPI(){
           /* Último login real desde SB_USUARIOS */
           const sbUser = SB_USUARIOS.find(u=>u.nombre===h.name);
           const lastLogin = sbUser?.last_login || null;
-          const lastLoginDate = lastLogin ? new Date(lastLogin).toLocaleDateString('es-PE') : '—';
-          const lastLoginTime = lastLogin ? new Date(lastLogin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}) : '';
-          const connToday = lastLogin && new Date(lastLogin).toDateString()===new Date().toDateString();
+          const lastLoginDate = lastLogin ? fmtDatePE(lastLogin) : '—';
+          const lastLoginTime = lastLogin ? fmtDateTimePE(lastLogin) : '';
+          const connToday = lastLogin && isDateTodayPE(lastLogin);
           const connYest  = lastLogin && !connToday && (new Date()-new Date(lastLogin))<172800000;
           const dotColor  = connToday?'#1D9E75':connYest?'#F5A623':'#E24B4A';
           const dotTitle  = connToday?'Conectado hoy':connYest?'Conectado ayer':'Sin conexión reciente';
@@ -2399,15 +2421,15 @@ async function fetchLeads(){
     arisale_valor:l.arisale_valor||0, arisale_licencias:l.arisale_licencias||0,
     planillas_colaboradores:l.planillas_colaboradores||0,
     etapa_implementacion:l.etapa_implementacion||'',
-    created:l.created_at?new Date(l.created_at).toLocaleDateString('es-PE'):'',
-    fecha_ingreso:l.fecha_ingreso?new Date(l.fecha_ingreso).toLocaleDateString('es-PE'):'—',
+    created:fmtDatePE(l.created_at),
+    fecha_ingreso:fmtDatePE(l.fecha_ingreso),
     fecha_ingreso_raw:l.fecha_ingreso||'',
-    fecha_modif:l.fecha_modif?new Date(l.fecha_modif).toLocaleDateString('es-PE'):'—',
+    fecha_modif:fmtDatePE(l.fecha_modif),
     fecha_modif_raw:l.fecha_modif||'',
-    fecha_cierre_dt:l.fecha_cierre?new Date(l.fecha_cierre).toLocaleDateString('es-PE'):'—',
+    fecha_cierre_dt:fmtDatePE(l.fecha_cierre),
     fecha_cierre_raw:l.fecha_cierre?l.fecha_cierre.slice(0,10):'',
     fecha_mod_late:l.fecha_modif?(Date.now()-new Date(l.fecha_modif).getTime())>86400000:false,
-    modified_today:l.fecha_modif?new Date(l.fecha_modif).toDateString()===new Date().toDateString():false,
+    modified_today:isDateTodayPE(l.fecha_modif),
   }));
   mapped.forEach(l=>{l.status=mapEstado(l.status);});
   HUNTERS_DEF.forEach(h=>{h.real=0;});
