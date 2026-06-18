@@ -702,8 +702,6 @@ async function doLogin(){
     /* Rebuild HUNTERS map */
     Object.keys(HUNTERS).forEach(k => delete HUNTERS[k]);
     HUNTERS_DEF.forEach(h => { HUNTERS[h.username] = h; });
-    console.log('HUNTERS loaded:', Object.keys(HUNTERS).length, 'hunters');
-    console.log('LEADS loaded:', LEADS.length, 'leads');
     HUNTERS_A.length = 0; HUNTERS_B.length = 0;
     HUNTERS_DEF.filter(h=>h.team==='A').forEach(h=>HUNTERS_A.push(h));
     HUNTERS_DEF.filter(h=>h.team==='B').forEach(h=>HUNTERS_B.push(h));
@@ -716,48 +714,10 @@ async function doLogin(){
     if(headA){ TEAMS.A.head = headA.nombre; TEAMS.A.headColor = headA.color||'#F59E0B'; }
     if(headB){ TEAMS.B.head = headB.nombre; TEAMS.B.headColor = headB.color||'#A855F7'; }
 
-    /* ── Transformar leads de Supabase al formato interno ── */
-    const hunterMap = {};
-    SB_USUARIOS.forEach(u => { hunterMap[u.id] = u.username; });
-
-    LEADS = rawLeads.map((l,i) => ({
-      id:            l.id || i+1,
-      hunter:        hunterMap[l.hunter_id] || '',
-      name:          l.razon_social || l.nombre || '(Sin nombre)',
-      ruc:           l.ruc || '',
-      razon:         l.razon_social || '',
-      owner:         (SB_USUARIOS.find(u=>u.id===l.hunter_id)||{}).nombre || '',
-      giros:         l.giros || '',
-      source:        l.fuente || '',
-      tipo_producto: l.tipo_producto || '',
-      tipo_cuenta:   l.tipo_cuenta || '',
-      banco:         l.banco || '',
-      status:        mapEstado(l.estado || 'prospecto'),
-      categoria:     l.categoria || 'activo',
-      value:         l.valor || 0,
-      close:         l.mes_cierre || '',
-      note:          l.comentario || '',
-      prob:          l.probabilidad || 10,
-      conflict:      l.conflicto || false,
-      created:       l.created_at ? new Date(l.created_at).toLocaleDateString('es-PE') : '',
-      fecha_ingreso: l.fecha_ingreso ? new Date(l.fecha_ingreso).toLocaleDateString('es-PE') : (l.created_at ? new Date(l.created_at).toLocaleDateString('es-PE') : '—'),
-      fecha_ingreso_raw: l.fecha_ingreso || (l.created_at ? l.created_at.slice(0,10) : ''),
-      fecha_cierre_dt: l.fecha_cierre ? new Date(l.fecha_cierre).toLocaleDateString('es-PE') : '—',
-      fecha_cierre_raw: l.fecha_cierre ? l.fecha_cierre.slice(0,10) : '',
-      fecha_modif:   l.fecha_modif ? new Date(l.fecha_modif).toLocaleDateString('es-PE') : (l.updated_at ? new Date(l.updated_at).toLocaleDateString('es-PE') : '—'),
-      fecha_modif_raw: l.fecha_modif || (l.updated_at ? l.updated_at.slice(0,10) : ''),
-      fecha_mod_late: l.fecha_modif ? (Date.now()-new Date(l.fecha_modif).getTime())>86400000 : (l.updated_at ? (Date.now()-new Date(l.updated_at).getTime())>86400000 : false),
-      modified_today: l.fecha_modif ? new Date(l.fecha_modif).toDateString()===new Date().toDateString() : (l.updated_at ? new Date(l.updated_at).toDateString()===new Date().toDateString() : false),
-    }));
-
-    /* Re-map any old status values to new ones */
-    LEADS.forEach(l => { l.status = mapEstado(l.status); });
-
-    /* Actualizar real en HUNTERS */
-    HUNTERS_DEF.forEach(h => { h.real = 0; }); // reset
-    LEADS.forEach(l => {
-      if(HUNTERS[l.hunter]) HUNTERS[l.hunter].real += (l.value||0);
-    });
+    /* ── Transformar leads con fetchLeads() para garantizar mapa completo (incluye linea, tipo_sva, SVA fields) ── */
+    LEADS = await fetchLeads();
+    console.log('HUNTERS loaded:', Object.keys(HUNTERS).length, 'hunters');
+    console.log('LEADS loaded:', LEADS.length, 'leads (SVA:', LEADS.filter(l=>l.linea==='sva').length, ')');
 
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
