@@ -719,6 +719,9 @@ async function doLogin(){
     console.log('HUNTERS loaded:', Object.keys(HUNTERS).length, 'hunters');
     console.log('LEADS loaded:', LEADS.length, 'leads (SVA:', LEADS.filter(l=>l.linea==='sva').length, ')');
 
+    /* ── Registrar last_login del usuario (fire & forget, no bloquea el login) ── */
+    sbPatch('usuarios', curUser.id, { last_login: new Date().toISOString() }).catch(()=>{});
+
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
     initApp();
@@ -1043,11 +1046,15 @@ function renderKPI(){
           const caid = leads.filter(l=>l.owner===h.name&&l.categoria==='caido').length;
           const conv = h.total>0?Math.round(h.cerrados/h.total*100):0;
           const convColor = conv>=50?'#1D9E75':conv>=30?'#F5A623':'#E24B4A';
-          /* Last activity date */
-          const myLeads = leads.filter(l=>l.owner===h.name);
-          const lastMod = myLeads.map(l=>l.fecha_modif_raw).filter(Boolean).sort().reverse()[0]||'—';
-          const lastDate = lastMod!=='—'?new Date(lastMod).toLocaleDateString('es-PE'):'—';
-          const isToday = lastMod!=='—'&&new Date(lastMod).toDateString()===new Date().toDateString();
+          /* Último login real desde SB_USUARIOS */
+          const sbUser = SB_USUARIOS.find(u=>u.nombre===h.name);
+          const lastLogin = sbUser?.last_login || null;
+          const lastLoginDate = lastLogin ? new Date(lastLogin).toLocaleDateString('es-PE') : '—';
+          const lastLoginTime = lastLogin ? new Date(lastLogin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}) : '';
+          const connToday = lastLogin && new Date(lastLogin).toDateString()===new Date().toDateString();
+          const connYest  = lastLogin && !connToday && (new Date()-new Date(lastLogin))<172800000;
+          const dotColor  = connToday?'#1D9E75':connYest?'#F5A623':'#E24B4A';
+          const dotTitle  = connToday?'Conectado hoy':connYest?'Conectado ayer':'Sin conexión reciente';
           return `<tr style="border-bottom:1px solid #f5f5f5;background:${i%2===0?'#fff':'#fafbfc'};">
             <td style="padding:8px 10px;font-weight:500;color:#1a1f2e;">${h.name}</td>
             <td style="padding:8px 10px;text-align:center;">${h.total}</td>
@@ -1056,7 +1063,11 @@ function renderKPI(){
             <td style="padding:8px 10px;text-align:center;color:#E24B4A;">${caid}</td>
             <td style="padding:8px 10px;text-align:right;font-weight:600;">${fmt(h.value)}</td>
             <td style="padding:8px 10px;text-align:center;font-weight:700;color:${convColor};">${conv}%</td>
-            <td style="padding:8px 10px;text-align:center;font-size:10px;color:${isToday?'#1D9E75':'#aaa'};">${lastDate}${isToday?' ✓':''}</td>
+            <td style="padding:8px 10px;text-align:center;font-size:10px;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-right:5px;vertical-align:middle;" title="${dotTitle}"></span>
+              <span style="color:${connToday?'#1D9E75':'#888'};">${lastLoginDate}${connToday?' '+lastLoginTime:''}</span>
+              ${connToday?'<span style="color:#1D9E75;font-weight:600;"> ✓</span>':''}
+            </td>
           </tr>`;
         }).join('') || '<tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa;">Sin datos</td></tr>'}
       </tbody>
@@ -1451,6 +1462,11 @@ function renderSVA2(){
       <option value="75% Pre-cierre"${window.sva2_etapa==='75% Pre-cierre'?' selected':''}>75% Pre-cierre</option>
       <option value="100% Cierre"${window.sva2_etapa==='100% Cierre'?' selected':''}>100% Cierre</option>
     </select>
+    ${['director','analista'].includes(curUser.role)?`
+    <select class="filter-sel" onchange="window.sva2_hunter=this.value;renderSVA2()">
+      <option value="">Todos los hunters</option>
+      ${HUNTERS_DEF.map(h=>`<option value="${h.username}"${window.sva2_hunter===h.username?' selected':''}>${h.name}</option>`).join('')}
+    </select>`:''}
     <button class="btn-new" onclick="openModal(null,'sva2')"><i class="ti ti-plus"></i> Nuevo lead</button>
     <span style="font-size:11px;color:#999;margin-left:auto;">${svaLeads.length} leads SVA</span>
   </div>
@@ -1460,6 +1476,7 @@ function renderSVA2(){
         if(window.sva2_tipo&&(l.tipo_producto||'').toUpperCase()!==window.sva2_tipo) return false;
         if(window.sva2_cat&&l.categoria!==window.sva2_cat) return false;
         if(window.sva2_etapa&&(l.status||'')!==window.sva2_etapa) return false;
+        if(window.sva2_hunter&&l.hunter!==window.sva2_hunter) return false;
         return true;
       }), true, 'sva2'
     )}
