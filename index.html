@@ -1774,7 +1774,9 @@ function kpiFunnelCard(label, leads){
 
 /* ── KPI RUC ROW ── */
 function kpiRucRow(leads){
-  const rucLeads  = leads.filter(l=>l.ruc && l.ruc.length>5); /* leads con RUC válido */
+  /* RUC = solo leads de captura principal (IZIPAY o sin tipo), excluye QR/ARISALE/PLANILLAS */
+  const SVA_TIPOS = ['QR','ARISALE','PLANILLAS'];
+  const rucLeads  = leads.filter(l=>l.ruc && l.ruc.length>5 && !SVA_TIPOS.includes((l.tipo_producto||'').toUpperCase()));
   const activosArr= rucLeads.filter(isActiveLead);
   const total     = activosArr.length;
   const cerrado   = rucLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
@@ -2411,7 +2413,7 @@ async function fetchLeads(){
     ruc:l.ruc||'',
     owner:(SB_USUARIOS.find(u=>u.id===l.hunter_id)||{}).nombre||'',
     giros:l.giros||'', source:l.fuente||'',
-    tipo_producto:l.tipo_producto||'', tipo_cuenta:l.tipo_cuenta||'',
+    tipo_producto:l.tipo_producto||l.tipo_sva||'', tipo_cuenta:l.tipo_cuenta||'',
     banco:l.banco||'', status:mapEstado(l.estado||'prospecto'),
     value:l.valor||0, close:l.mes_cierre||'',
     note:l.comentario||'', prob:l.probabilidad||10,
