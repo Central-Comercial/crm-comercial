@@ -2652,12 +2652,12 @@ function leadsTableHTML(leads, canEdit, key){
         <td style="font-weight:600;font-size:11px;" title="${l.name}">${l.name}</td>
         <td style="font-size:11px;color:#666;">${l.ruc||'—'}</td>
         <td style="padding:4px 8px;">
-          ${full
+          ${full || commentOnly
             ? `<input class="ecell" value="${l.representante_legal||''}" placeholder="—" onchange="updateLeadDB('${safeId}','representante_legal',this.value,'${key}')" style="font-size:11px;">`
             : `<span style="font-size:11px;color:#666;">${l.representante_legal||'—'}</span>`}
         </td>
         <td style="padding:4px 8px;">
-          ${full
+          ${full || commentOnly
             ? `<input class="ecell" value="${l.telefono||''}" placeholder="—" maxlength="9" onchange="updateLeadDB('${safeId}','telefono',this.value,'${key}')" style="font-size:11px;">`
             : `<span style="font-size:11px;color:#666;">${l.telefono||'—'}</span>`}
         </td>
@@ -2974,14 +2974,19 @@ async function hunterGuardar(leadId, key){
   const btn = event.target.closest('button');
   if(btn){ btn.textContent='Guardando...'; btn.disabled=true; }
 
+  /* Leer representante_legal y telefono del DOM (si el hunter los editó) */
+  const repLegalEl = document.querySelector(`#row-${leadId} input.ecell[onchange*="representante_legal"]`);
+  const telefonoEl = document.querySelector(`#row-${leadId} input.ecell[onchange*="telefono"]`);
+  const repLegal = repLegalEl ? repLegalEl.value : null;
+  const telefono = telefonoEl ? telefonoEl.value : null;
+
   try {
     _isSavingLocally = true; /* evitar que realtime interrumpa */
-    /* Save comentario and fecha_modif */
-    await sbPatch('leads', leadId, {
-      comentario: comentario,
-      fecha_modif: hoy,
-      updated_at: new Date().toISOString()
-    });
+    /* Guardar comentario + fecha_modif + representante_legal + telefono */
+    const patch = { comentario: comentario, fecha_modif: hoy, updated_at: new Date().toISOString() };
+    if(repLegal !== null) patch.representante_legal = repLegal;
+    if(telefono !== null) patch.telefono = telefono;
+    await sbPatch('leads', leadId, patch);
 
     /* Guardar en historial solo el comentario (fecha_modif se actualiza automáticamente) */
     if(comentario.trim()){
@@ -2996,9 +3001,11 @@ async function hunterGuardar(leadId, key){
     if(l){
       l.note = comentario;
       l.fecha_modif_raw = hoy;
-      l.fecha_modif = new Date(hoy).toLocaleDateString('es-PE');
+      l.fecha_modif = fmtDatePE(hoy);
       l.modified_today = true;
       l.fecha_mod_late = false;
+      if(repLegal !== null) l.representante_legal = repLegal;
+      if(telefono !== null) l.telefono = telefono;
     }
     /* Actualizar celda F. Modificación directamente en el DOM (sin re-render) */
     const fmodCell = document.getElementById('fmod-'+leadId);
