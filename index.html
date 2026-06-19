@@ -1905,7 +1905,8 @@ function renderGeneral(){
 
   /* Separar Central y SVA correctamente */
   let allLeads = allLeadsRaw.filter(l=>(l.linea||'central')==='central');
-  let svaLeadsGeneral = allLeadsRaw.filter(l=>(l.linea||'central')==='sva');
+  /* QR/Arisale/Planillas pueden venir de linea=sva O linea=central (tipo_producto determina la tarjeta) */
+  let svaLeadsGeneral = allLeadsRaw.filter(l=>l.linea==='sva' || ['QR','ARISALE','PLANILLAS'].includes((l.tipo_producto||'').toUpperCase()));
 
   /* Head solo ve información de su propio equipo - nada del equipo contrario */
   if(curUser.role==='head'){
@@ -2001,9 +2002,9 @@ function renderTeam(team){
   /* Store current view for back nav */
   window._lastTeam = team;
   const teamLeads=applyOrigenFilter(leadsForTeam(team).filter(l=>(l.linea||'central')==='central'));
-  /* Leads SVA del equipo (para KPIs de QR, Arisale, Planillas) */
-  const teamSvaLeads=applyOrigenFilter(leadsForTeam(team).filter(l=>l.linea==='sva'));
-  const teamAllLeads=[...teamLeads,...teamSvaLeads]; /* central + SVA combinados para los KPI SVA */
+  /* Leads SVA + leads Central con tipo_producto QR/ARISALE/PLANILLAS para KPIs */
+  const teamSvaLeads=applyOrigenFilter(leadsForTeam(team).filter(l=>l.linea==='sva' || ['QR','ARISALE','PLANILLAS'].includes((l.tipo_producto||'').toUpperCase())));
+  const teamAllLeads=[...new Map([...teamLeads,...teamSvaLeads].map(l=>[l.id,l])).values()];
   /* Verify head is only viewing their team */
   if(curUser.role==='head' && curUser.equipo!==team){
     document.getElementById('content').innerHTML='<div style="padding:40px;text-align:center;color:#E24B4A;">No tienes acceso al Equipo '+team+'</div>';
@@ -2083,9 +2084,9 @@ function renderHunter(hid){
     return;
   }
   const leads=applyOrigenFilter(leadsForHunter(hid).filter(l=>(l.linea||'central')==='central'));
-  /* SVA del hunter para KPIs de QR, Arisale, Planillas */
-  const svaLeadsH=applyOrigenFilter(leadsForHunter(hid).filter(l=>l.linea==='sva'));
-  const allLeadsH=[...leads,...svaLeadsH];
+  /* SVA + Central con tipo_producto QR/ARISALE/PLANILLAS para KPIs */
+  const svaLeadsH=applyOrigenFilter(leadsForHunter(hid).filter(l=>l.linea==='sva' || ['QR','ARISALE','PLANILLAS'].includes((l.tipo_producto||'').toUpperCase())));
+  const allLeadsH=[...new Map([...leads,...svaLeadsH].map(l=>[l.id,l])).values()];
   const pct=h.meta?Math.round((h.real||0)/h.meta*100):0;
   const canEdit=curUser.role!=='director'||true; // director y heads siempre pueden editar; hunter solo el suyo
   const isOwn=curUser.hunter===hid;
