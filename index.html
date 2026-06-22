@@ -1492,6 +1492,95 @@ function renderSVA2(){
     <button class="btn-new" onclick="openModal(null,'sva2')"><i class="ti ti-plus"></i> Nuevo lead</button>
     <span style="font-size:11px;color:#999;margin-left:auto;">${svaLeads.length} leads SVA</span>
   </div>
+
+  <!-- Resumen por hunter / métricas SVA según rol -->
+  ${(()=>{
+    const isDirector = ['director','analista'].includes(curUser.role);
+    const isHead     = curUser.role==='head';
+    const isHunter   = curUser.role==='hunter';
+
+    /* Hunter: solo sus propios números */
+    if(isHunter){
+      const myLeads = svaLeads.filter(l=>l.hunter===curUser.username);
+      const qr  = myLeads.filter(l=>(l.tipo_producto||l.tipo_sva||'').toUpperCase()==='QR').length;
+      const ars = myLeads.filter(l=>(l.tipo_producto||l.tipo_sva||'').toUpperCase()==='ARISALE').length;
+      const pla = myLeads.filter(l=>(l.tipo_producto||l.tipo_sva||'').toUpperCase()==='PLANILLAS').length;
+      return `<div style="margin-bottom:12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:10px 16px;display:flex;gap:20px;align-items:center;">
+        <div style="font-size:11px;font-weight:600;color:#555;">Mis SVA:</div>
+        <span style="color:#3DB8E8;font-weight:700;font-size:13px;">🔵 QR: ${qr}</span>
+        <span style="color:#7F77DD;font-weight:700;font-size:13px;">🟣 Arisale: ${ars}</span>
+        <span style="color:#F5A623;font-weight:700;font-size:13px;">🟡 Planillas: ${pla}</span>
+        <span style="color:#888;font-size:11px;margin-left:auto;">Total: ${qr+ars+pla}</span>
+      </div>`;
+    }
+
+    /* Head y Director/Analista: resumen por hunter */
+    const hunterSummary = {};
+    svaLeads.forEach(l=>{
+      const sbU = SB_USUARIOS.find(u=>u.username===l.hunter);
+      if(!sbU) return;
+      /* Head: solo su equipo */
+      if(isHead && sbU.equipo !== curUser.equipo) return;
+      const hname = sbU.nombre || l.hunter;
+      if(!hunterSummary[hname]) hunterSummary[hname]={qr:0,arisale:0,planillas:0,total:0,team:sbU.equipo||''};
+      const tipo = (l.tipo_producto||l.tipo_sva||'').toUpperCase();
+      if(tipo==='QR') hunterSummary[hname].qr++;
+      else if(tipo==='ARISALE') hunterSummary[hname].arisale++;
+      else if(tipo==='PLANILLAS') hunterSummary[hname].planillas++;
+      hunterSummary[hname].total++;
+    });
+
+    const rows = Object.entries(hunterSummary).sort((a,b)=>b[1].total-a[1].total);
+    if(!rows.length) return '';
+
+    /* Si director, agrupar por equipo */
+    const teamARows = isDirector ? rows.filter(([,c])=>c.team==='A') : rows;
+    const teamBRows = isDirector ? rows.filter(([,c])=>c.team==='B') : [];
+
+    const renderCards = (list) => list.map(([name,c])=>`
+      <div style="background:#fff;border:1px solid #e8eaed;border-radius:8px;padding:6px 10px;font-size:11px;min-width:140px;">
+        <div style="font-weight:600;color:#1a1f2e;margin-bottom:4px;">${name}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${!window.sva2_tipo||window.sva2_tipo==='QR'?`<span style="color:#3DB8E8;font-weight:600;">QR: ${c.qr}</span>`:''}
+          ${!window.sva2_tipo||window.sva2_tipo==='ARISALE'?`<span style="color:#7F77DD;font-weight:600;">ARS: ${c.arisale}</span>`:''}
+          ${!window.sva2_tipo||window.sva2_tipo==='PLANILLAS'?`<span style="color:#F5A623;font-weight:600;">PLA: ${c.planillas}</span>`:''}
+          ${window.sva2_tipo?'':`<span style="color:#aaa;font-size:10px;">T: ${c.total}</span>`}
+        </div>
+      </div>`).join('');
+
+    if(isDirector){
+      const totA = teamARows.reduce((s,[,c])=>({qr:s.qr+c.qr,ars:s.ars+c.arisale,pla:s.pla+c.planillas}),{qr:0,ars:0,pla:0});
+      const totB = teamBRows.reduce((s,[,c])=>({qr:s.qr+c.qr,ars:s.ars+c.arisale,pla:s.pla+c.planillas}),{qr:0,ars:0,pla:0});
+      return `<div style="margin-bottom:12px;background:#f8f9fb;border-radius:10px;padding:10px 14px;">
+        <div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">
+          Distribución por Hunter ${window.sva2_tipo?'— '+window.sva2_tipo:'— Todos los tipos'}
+        </div>
+        <div style="margin-bottom:6px;">
+          <div style="font-size:10px;font-weight:700;color:#F59E0B;margin-bottom:5px;">
+            ⚡ Equipo Carlos — QR: ${totA.qr} | ARS: ${totA.ars} | PLA: ${totA.pla}
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;">${renderCards(teamARows)}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#A855F7;margin-bottom:5px;">
+            ⚡ Equipo Ana — QR: ${totB.qr} | ARS: ${totB.ars} | PLA: ${totB.pla}
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;">${renderCards(teamBRows)}</div>
+        </div>
+      </div>`;
+    }
+
+    /* Head: solo su equipo */
+    const teamName = curUser.equipo==='A'?'Carlos':'Ana';
+    const tot = rows.reduce((s,[,c])=>({qr:s.qr+c.qr,ars:s.ars+c.arisale,pla:s.pla+c.planillas}),{qr:0,ars:0,pla:0});
+    return `<div style="margin-bottom:12px;background:#f8f9fb;border-radius:10px;padding:10px 14px;">
+      <div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">
+        Mi Equipo (${teamName}) — QR: ${tot.qr} | ARS: ${tot.ars} | PLA: ${tot.pla}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">${renderCards(rows)}</div>
+    </div>`;
+  })()}
+
   <div class="tbl-wrap">
     ${leadsTableHTML(
       svaLeads.filter(l=>{
