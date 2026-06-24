@@ -2656,7 +2656,7 @@ function regLead(l){ LEAD_REG[l.id] = l; return l.id; }
 function getLead(id){ return LEADS.find(l=>l.id===id) || LEAD_REG[id]; }
 
 function leadsTableHTML(leads, canEdit, key){
-  const isSVA = (key==='sva2');
+  const isSVA = (key==='sva2'||key==='sva_cerrados'||key==='sva_caidos');
   /* Separar estrictamente: Lead Central no muestra SVA, Leads SVA no muestra Central */
   const lineaFilter = isSVA ? 'sva' : 'central';
   const byLinea = leads.filter(l=>(l.linea||'central')===lineaFilter);
@@ -2666,7 +2666,7 @@ function leadsTableHTML(leads, canEdit, key){
     : byLinea;
 
   /* Los leads Cerrados (100%) y Caídos tienen sus propias pestañas - no se muestran en las tablas activas */
-  const hideClosed = !['sva2','cerrado','caido'].includes(key);
+  const hideClosed = !['sva2','cerrado','caido','sva_cerrados','sva_caidos'].includes(key);
 
   const filtered=visibleLeads.filter(l=>{
     if(hideClosed && (l.categoria==='cerrado' || l.categoria==='caido' || l.status==='cerrado')) return false;
