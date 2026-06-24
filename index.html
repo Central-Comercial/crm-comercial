@@ -195,6 +195,14 @@ tr:hover td{background:#fafbff;}
       <div style="font-size:8px;color:#E24B4A;text-align:center;line-height:1.2;">Leads<br>Caídos</div>
       <div class="sb-icon" style="pointer-events:none;background:rgba(226,75,74,.15);"><i class="ti ti-trending-down" style="color:#E24B4A;"></i></div>
     </div>
+    <div id="nav-sva-cerrados" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goSvaCerrados()">
+      <div style="font-size:8px;color:#3DB8E8;text-align:center;line-height:1.2;">SVA<br>Cerrado</div>
+      <div class="sb-icon" style="pointer-events:none;background:rgba(61,184,232,.15);"><i class="ti ti-rosette" style="color:#3DB8E8;"></i></div>
+    </div>
+    <div id="nav-sva-caidos" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goSvaCaidos()">
+      <div style="font-size:8px;color:#F5A623;text-align:center;line-height:1.2;">SVA<br>Perdido</div>
+      <div class="sb-icon" style="pointer-events:none;background:rgba(245,166,35,.15);"><i class="ti ti-mood-sad" style="color:#F5A623;"></i></div>
+    </div>
     <div class="sb-sep" style="width:32px;height:1px;background:rgba(255,255,255,.08);margin:4px 0;"></div>
 
     <div class="sb-spacer"></div>
@@ -1211,6 +1219,11 @@ function initApp(){
   if(nc)    nc.style.display    = isDAH ? 'flex' : 'none';
   if(nca)   nca.style.display   = isDAH ? 'flex' : 'none';
   if(nsva2) nsva2.style.display = 'flex'; /* Todos los roles ven SVA */
+  /* SVA Cerrados / SVA Perdidos - solo director, analista y head */
+  const nsc = el('nav-sva-cerrados');
+  const nsp = el('nav-sva-caidos');
+  if(nsc) nsc.style.display = isDAH ? 'flex' : 'none';
+  if(nsp) nsp.style.display = isDAH ? 'flex' : 'none';
 
   const tabs=getTabs();
   buildTabNav(tabs);
@@ -2678,7 +2691,7 @@ function leadsTableHTML(leads, canEdit, key){
     </colgroup>
     <thead><tr>
       <th></th><th></th><th>Razón Social</th><th>RUC</th>
-      <th>Representante Legal</th><th>Teléfono</th>
+      <th>Representante Legal</th><th style="min-width:110px;">Teléfono</th>
       <th>F. Ingreso</th><th>F. Cierre</th><th>F. Modificación</th><th>Hunter</th>
       <th>Giros</th><th>Origen</th><th>Tipo Producto</th><th>Tipo Cuenta</th>
       <th>Banco</th><th>Potencial</th><th>Etapa</th><th>Mes Cierre</th><th>Comentarios</th>
@@ -2770,7 +2783,7 @@ function leadsTableHTML(leads, canEdit, key){
         </td>
         <td style="padding:4px 8px;">
           ${full || commentOnly
-            ? `<input class="ecell" value="${l.telefono||''}" placeholder="—" maxlength="9" onchange="updateLeadDB('${safeId}','telefono',this.value,'${key}')" style="font-size:11px;">`
+            ? `<input class="ecell" value="${l.telefono||''}" placeholder="—" maxlength="12" onchange="updateLeadDB('${safeId}','telefono',this.value,'${key}')" style="font-size:11px;width:100px;">`
             : `<span style="font-size:11px;color:#666;">${l.telefono||'—'}</span>`}
         </td>
         <td style="padding:4px 8px;">
@@ -3004,6 +3017,81 @@ window.goCaidos = function goCaidos(){
   curTab='caidos';
   document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
   renderCerradosCaidos('caido');
+}
+
+window.goSvaCerrados = function goSvaCerrados(){
+  const kpiEl=document.getElementById('view-kpi');
+  const huntersEl=document.getElementById('view-hunters');
+  if(kpiEl) kpiEl.style.display='none';
+  if(huntersEl) huntersEl.style.display='none';
+  ['.topbar','.tab-nav','#content'].forEach(s=>{
+    const el=document.querySelector('.main '+s);
+    if(el) el.style.display='';
+  });
+  const navCrm=document.getElementById('nav-crm');
+  if(navCrm) navCrm.classList.add('active');
+  curTab='sva_cerrados';
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  renderSvaCerradosCaidos('cerrado');
+}
+
+window.goSvaCaidos = function goSvaCaidos(){
+  const kpiEl=document.getElementById('view-kpi');
+  const huntersEl=document.getElementById('view-hunters');
+  if(kpiEl) kpiEl.style.display='none';
+  if(huntersEl) huntersEl.style.display='none';
+  ['.topbar','.tab-nav','#content'].forEach(s=>{
+    const el=document.querySelector('.main '+s);
+    if(el) el.style.display='';
+  });
+  const navCrm=document.getElementById('nav-crm');
+  if(navCrm) navCrm.classList.add('active');
+  curTab='sva_caidos';
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  renderSvaCerradosCaidos('caido');
+}
+
+function renderSvaCerradosCaidos(tipo){
+  const SVA_TIPOS = ['QR','ARISALE','PLANILLAS'];
+  let leads = LEADS.filter(l=>{
+    const tp = (l.tipo_producto||l.tipo_sva||'').toUpperCase();
+    if(!SVA_TIPOS.includes(tp)) return false;
+    if(tipo==='cerrado') return l.categoria==='cerrado'||l.status==='100% Cierre';
+    if(tipo==='caido')   return l.categoria==='caido';
+    return false;
+  });
+
+  /* Filtrar por equipo si es head */
+  if(curUser.role==='head'){
+    leads = leads.filter(l=>{ const h=HUNTERS[l.hunter]; return h&&h.team===curUser.equipo; });
+  } else if(curUser.role==='hunter'){
+    leads = leads.filter(l=>l.hunter===curUser.username);
+  }
+
+  const color  = tipo==='cerrado'?'#3DB8E8':'#F5A623';
+  const titulo = tipo==='cerrado'?'SVA Cerrados':'SVA Perdidos';
+  const icono  = tipo==='cerrado'?'ti-rosette':'ti-mood-sad';
+
+  /* Agrupar por tipo SVA */
+  const byTipo = {QR:0, ARISALE:0, PLANILLAS:0};
+  leads.forEach(l=>{ const tp=(l.tipo_producto||l.tipo_sva||'').toUpperCase(); if(byTipo[tp]!==undefined) byTipo[tp]++; });
+
+  document.getElementById('content').innerHTML = `
+    <div style="padding:20px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <i class="ti ${icono}" style="font-size:20px;color:${color};"></i>
+        <div style="font-size:16px;font-weight:700;color:#1a1f2e;">${titulo}</div>
+        <span style="font-size:12px;color:#888;margin-left:4px;">${leads.length} leads</span>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <span style="background:rgba(61,184,232,.12);color:#3DB8E8;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">QR: ${byTipo.QR}</span>
+          <span style="background:rgba(127,119,221,.12);color:#7F77DD;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">Arisale: ${byTipo.ARISALE}</span>
+          <span style="background:rgba(245,166,35,.12);color:#F5A623;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">Planillas: ${byTipo.PLANILLAS}</span>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        ${leadsTableHTML(leads, false, tipo==='cerrado'?'sva_cerrados':'sva_caidos')}
+      </div>
+    </div>`;
 }
 
 window.goAllLeads = function goAllLeads(){
