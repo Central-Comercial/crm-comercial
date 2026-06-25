@@ -2539,7 +2539,7 @@ async function fetchLeads(){
     note:l.comentario||'', prob:l.probabilidad||10,
     conflict:l.conflicto||false, categoria:l.categoria||'activo',
     linea:l.linea||'central',
-    telefono:l.telefono||'', representante_legal:l.representante_legal||'',
+    telefono:l.telefono||'', correo:l.correo||'', representante_legal:l.representante_legal||'',
     tipo_sva:l.tipo_sva||'', parlantes:l.parlantes||0,
     arisale_valor:l.arisale_valor||0, arisale_licencias:l.arisale_licencias||0,
     planillas_colaboradores:l.planillas_colaboradores||0,
@@ -2587,7 +2587,7 @@ const FIELD_LABELS = {
   comentario:'Comentario', fecha_ingreso:'F. Ingreso', fecha_modif:'F. Modificación',
   fecha_cierre:'F. Cierre', nombre:'Razón Social', ruc:'RUC', fuente:'Origen',
   giros:'Giros', tipo_producto:'Tipo Producto', tipo_cuenta:'Tipo Cuenta',
-  telefono:'Teléfono', representante_legal:'Representante Legal', tipo_sva:'Tipo SVA',
+  telefono:'Teléfono', correo:'Correo', representante_legal:'Representante Legal', tipo_sva:'Tipo SVA',
   parlantes:'Parlantes', arisale_valor:'Valor Licencias Arisale', arisale_licencias:'Licencias Arisale',
   planillas_colaboradores:'Colaboradores Planillas', etapa_implementacion:'Etapa Implementación',
   categoria:'Categoría', razon_social:'Razón Social', nuevo_lead:'Nuevo Lead'
@@ -2691,8 +2691,8 @@ function leadsTableHTML(leads, canEdit, key){
     </colgroup>
     <thead><tr>
       <th></th><th></th><th>Razón Social</th><th>RUC</th>
-      <th>Representante Legal</th><th style="min-width:110px;">Teléfono</th>
-      <th>F. Ingreso</th><th>F. Cierre</th><th>F. Modificación</th><th>Hunter</th>
+      <th>Representante Legal</th><th style="min-width:110px;">Teléfono</th><th style="min-width:160px;">Correo</th>
+      <th>Hunter</th>
       <th>Giros</th><th>Origen</th><th>Tipo Producto</th><th>Tipo Cuenta</th>
       <th>Banco</th><th>Potencial</th><th>Etapa</th><th>Mes Cierre</th><th>Comentarios</th>
       ${isSVA?'<th>Tipo SVA</th><th>Cantidad/Valor</th><th>Etapa Implement.</th>':''}
@@ -2787,32 +2787,9 @@ function leadsTableHTML(leads, canEdit, key){
             : `<span style="font-size:11px;color:#666;">${l.telefono||'—'}</span>`}
         </td>
         <td style="padding:4px 8px;">
-          ${canPartial
-            ? `<input type="date" value="${l.fecha_ingreso_raw||''}" data-id="${l.id}" data-field="fecha_ingreso" data-key="${key}"
-                onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)"
-                style="font-size:10px;border:1px solid #dde1e7;border-radius:5px;padding:2px 4px;width:110px;color:#555;">`
-            : `<span style="font-size:10px;color:#999;">${l.fecha_ingreso||'—'}</span>`
-          }
-        </td>
-        <td style="padding:4px 8px;">
-          ${canPartial
-            ? `<input type="date" value="${l.fecha_cierre_raw||''}" data-id="${l.id}" data-field="fecha_cierre" data-key="${key}"
-                onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)"
-                style="font-size:10px;border:1px solid #dde1e7;border-radius:5px;padding:2px 4px;width:110px;color:#555;">`
-            : `<span style="font-size:10px;color:#999;">${l.fecha_cierre_dt||'—'}</span>`
-          }
-        </td>
-        <td style="padding:4px 8px;">
-          ${canPartial
-            ? `<input type="date" value="${l.fecha_modif_raw||''}" data-id="${l.id}" data-field="fecha_modif" data-key="${key}"
-                onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)"
-                style="font-size:10px;border:1px solid #dde1e7;border-radius:5px;padding:2px 4px;width:110px;color:${l.fecha_mod_late?'#E24B4A':'#555'};">`
-            : commentOnly
-              ? `<span style="font-size:10px;color:${l.modified_today?'#1D9E75':l.fecha_mod_late?'#E24B4A':'#999'};">
-                  ${l.fecha_modif||'—'}${l.fecha_mod_late?' ⚠':''}${l.modified_today?' ✓':''}
-                 </span>`
-              : `<span style="font-size:10px;color:#999;">${l.fecha_modif||'—'}</span>`
-          }
+          <input class="ecell" value="${l.correo||''}" placeholder="correo@ejemplo.com"
+            onchange="updateLeadDB('${safeId}','correo',this.value,'${key}')"
+            style="font-size:11px;width:150px;">
         </td>
         <td style="font-size:11px;color:#666;">${l.owner}</td>
         <td style="font-size:11px;color:#666;">${l.giros||'—'}</td>
@@ -4209,7 +4186,7 @@ async function handleImportWithLinea(file, linea){
     status:mapEstado(l.estado||'prospecto'),value:l.valor||0,
     close:l.mes_cierre||'',note:l.comentario||'',prob:l.probabilidad||10,
     conflict:l.conflicto||false,categoria:l.categoria||'activo',linea:l.linea||'central',
-    telefono:l.telefono||'', representante_legal:l.representante_legal||'',
+    telefono:l.telefono||'', correo:l.correo||'', representante_legal:l.representante_legal||'',
     tipo_sva:l.tipo_sva||'', parlantes:l.parlantes||0,
     arisale_valor:l.arisale_valor||0, arisale_licencias:l.arisale_licencias||0,
     planillas_colaboradores:l.planillas_colaboradores||0,
