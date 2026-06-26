@@ -195,6 +195,14 @@ tr:hover td{background:#fafbff;}
       <div style="font-size:8px;color:#E24B4A;text-align:center;line-height:1.2;">Leads<br>Caídos</div>
       <div class="sb-icon" style="pointer-events:none;background:rgba(226,75,74,.15);"><i class="ti ti-trending-down" style="color:#E24B4A;"></i></div>
     </div>
+    <div id="nav-sva-cerrados" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goSvaCerrados()">
+      <div style="font-size:8px;color:#3DB8E8;text-align:center;line-height:1.2;">SVA<br>Cerrado</div>
+      <div class="sb-icon" style="pointer-events:none;background:rgba(61,184,232,.15);"><i class="ti ti-rosette" style="color:#3DB8E8;"></i></div>
+    </div>
+    <div id="nav-sva-caidos" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goSvaCaidos()">
+      <div style="font-size:8px;color:#F5A623;text-align:center;line-height:1.2;">SVA<br>Perdido</div>
+      <div class="sb-icon" style="pointer-events:none;background:rgba(245,166,35,.15);"><i class="ti ti-mood-sad" style="color:#F5A623;"></i></div>
+    </div>
     <div class="sb-sep" style="width:32px;height:1px;background:rgba(255,255,255,.08);margin:4px 0;"></div>
 
     <div class="sb-spacer"></div>
@@ -1211,6 +1219,11 @@ function initApp(){
   if(nc)    nc.style.display    = isDAH ? 'flex' : 'none';
   if(nca)   nca.style.display   = isDAH ? 'flex' : 'none';
   if(nsva2) nsva2.style.display = 'flex'; /* Todos los roles ven SVA */
+  /* SVA Cerrados / SVA Perdidos - solo director, analista y head */
+  const nsc = el('nav-sva-cerrados');
+  const nsp = el('nav-sva-caidos');
+  if(nsc) nsc.style.display = isDAH ? 'flex' : 'none';
+  if(nsp) nsp.style.display = isDAH ? 'flex' : 'none';
 
   const tabs=getTabs();
   buildTabNav(tabs);
@@ -1404,11 +1417,13 @@ function switchTab(id){
 
 /* ─── RENDER TABS ─── */
 function renderTab(id){
-  if(id==='general')    renderGeneral();
-  else if(id==='allleads')  renderAllLeads();
-  else if(id==='cerrados')  renderCerradosCaidos('cerrado');
-  else if(id==='caidos')    renderCerradosCaidos('caido');
-  else if(id==='sva2')      renderSVA2();
+  if(id==='general')         renderGeneral();
+  else if(id==='allleads')   renderAllLeads();
+  else if(id==='cerrados')   renderCerradosCaidos('cerrado');
+  else if(id==='caidos')     renderCerradosCaidos('caido');
+  else if(id==='sva2')       renderSVA2();
+  else if(id==='sva_cerrados') renderSvaCerradosCaidos('cerrado');
+  else if(id==='sva_caidos')   renderSvaCerradosCaidos('caido');
   else if(id==='teamA'||id==='teamB') renderTeam(id==='teamA'?'A':'B');
   else renderHunter(id);
 }
@@ -1602,9 +1617,27 @@ function renderSVA2(){
   <div class="tbl-wrap">
     ${leadsTableHTML(
       svaLeads.filter(l=>{
-        if(window.sva2_tipo&&(l.tipo_producto||'').toUpperCase()!==window.sva2_tipo) return false;
+        /* Tipo: buscar en tipo_producto Y tipo_sva */
+        if(window.sva2_tipo){
+          const tp=(l.tipo_producto||l.tipo_sva||'').toUpperCase();
+          if(tp!==window.sva2_tipo) return false;
+        }
+        /* Categoría */
         if(window.sva2_cat&&l.categoria!==window.sva2_cat) return false;
-        if(window.sva2_etapa&&(l.status||'')!==window.sva2_etapa) return false;
+        /* Etapa: convertir label visible al valor interno que usa mapEstado */
+        if(window.sva2_etapa){
+          const etapaMap = {
+            '10% Prospección':'prospecto',
+            '25% Oportunidad':'oportunidad',
+            '50% Negociación':'negociacion',
+            '75% Pre-cierre':'precierre',
+            '100% Cierre':'cerrado'
+          };
+          const internalVal = etapaMap[window.sva2_etapa] || window.sva2_etapa;
+          const st = l.status||'';
+          if(st!==internalVal && st!==window.sva2_etapa) return false;
+        }
+        /* Hunter */
         if(window.sva2_hunter&&l.hunter!==window.sva2_hunter) return false;
         return true;
       }), true, 'sva2'
@@ -2526,7 +2559,7 @@ async function fetchLeads(){
     note:l.comentario||'', prob:l.probabilidad||10,
     conflict:l.conflicto||false, categoria:l.categoria||'activo',
     linea:l.linea||'central',
-    telefono:l.telefono||'', representante_legal:l.representante_legal||'',
+    telefono:l.telefono||'', correo:l.correo||'', representante_legal:l.representante_legal||'',
     tipo_sva:l.tipo_sva||'', parlantes:l.parlantes||0,
     arisale_valor:l.arisale_valor||0, arisale_licencias:l.arisale_licencias||0,
     planillas_colaboradores:l.planillas_colaboradores||0,
@@ -2574,7 +2607,7 @@ const FIELD_LABELS = {
   comentario:'Comentario', fecha_ingreso:'F. Ingreso', fecha_modif:'F. Modificación',
   fecha_cierre:'F. Cierre', nombre:'Razón Social', ruc:'RUC', fuente:'Origen',
   giros:'Giros', tipo_producto:'Tipo Producto', tipo_cuenta:'Tipo Cuenta',
-  telefono:'Teléfono', representante_legal:'Representante Legal', tipo_sva:'Tipo SVA',
+  telefono:'Teléfono', correo:'Correo', representante_legal:'Representante Legal', tipo_sva:'Tipo SVA',
   parlantes:'Parlantes', arisale_valor:'Valor Licencias Arisale', arisale_licencias:'Licencias Arisale',
   planillas_colaboradores:'Colaboradores Planillas', etapa_implementacion:'Etapa Implementación',
   categoria:'Categoría', razon_social:'Razón Social', nuevo_lead:'Nuevo Lead'
@@ -2643,7 +2676,7 @@ function regLead(l){ LEAD_REG[l.id] = l; return l.id; }
 function getLead(id){ return LEADS.find(l=>l.id===id) || LEAD_REG[id]; }
 
 function leadsTableHTML(leads, canEdit, key){
-  const isSVA = (key==='sva2');
+  const isSVA = (key==='sva2'||key==='sva_cerrados'||key==='sva_caidos');
   /* Separar estrictamente: Lead Central no muestra SVA, Leads SVA no muestra Central */
   const lineaFilter = isSVA ? 'sva' : 'central';
   const byLinea = leads.filter(l=>(l.linea||'central')===lineaFilter);
@@ -2653,7 +2686,7 @@ function leadsTableHTML(leads, canEdit, key){
     : byLinea;
 
   /* Los leads Cerrados (100%) y Caídos tienen sus propias pestañas - no se muestran en las tablas activas */
-  const hideClosed = !['sva2','cerrado','caido'].includes(key);
+  const hideClosed = !['sva2','cerrado','caido','sva_cerrados','sva_caidos'].includes(key);
 
   const filtered=visibleLeads.filter(l=>{
     if(hideClosed && (l.categoria==='cerrado' || l.categoria==='caido' || l.status==='cerrado')) return false;
@@ -2678,8 +2711,8 @@ function leadsTableHTML(leads, canEdit, key){
     </colgroup>
     <thead><tr>
       <th></th><th></th><th>Razón Social</th><th>RUC</th>
-      <th>Representante Legal</th><th>Teléfono</th>
-      <th>F. Ingreso</th><th>F. Cierre</th><th>F. Modificación</th><th>Hunter</th>
+      <th>Representante Legal</th><th style="min-width:110px;">Teléfono</th><th style="min-width:160px;">Correo</th>
+      <th>Hunter</th>
       <th>Giros</th><th>Origen</th><th>Tipo Producto</th><th>Tipo Cuenta</th>
       <th>Banco</th><th>Potencial</th><th>Etapa</th><th>Mes Cierre</th><th>Comentarios</th>
       ${isSVA?'<th>Tipo SVA</th><th>Cantidad/Valor</th><th>Etapa Implement.</th>':''}
@@ -2770,36 +2803,13 @@ function leadsTableHTML(leads, canEdit, key){
         </td>
         <td style="padding:4px 8px;">
           ${full || commentOnly
-            ? `<input class="ecell" value="${l.telefono||''}" placeholder="—" maxlength="9" onchange="updateLeadDB('${safeId}','telefono',this.value,'${key}')" style="font-size:11px;">`
+            ? `<input class="ecell" value="${l.telefono||''}" placeholder="—" maxlength="12" onchange="updateLeadDB('${safeId}','telefono',this.value,'${key}')" style="font-size:11px;width:100px;">`
             : `<span style="font-size:11px;color:#666;">${l.telefono||'—'}</span>`}
         </td>
         <td style="padding:4px 8px;">
-          ${canPartial
-            ? `<input type="date" value="${l.fecha_ingreso_raw||''}" data-id="${l.id}" data-field="fecha_ingreso" data-key="${key}"
-                onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)"
-                style="font-size:10px;border:1px solid #dde1e7;border-radius:5px;padding:2px 4px;width:110px;color:#555;">`
-            : `<span style="font-size:10px;color:#999;">${l.fecha_ingreso||'—'}</span>`
-          }
-        </td>
-        <td style="padding:4px 8px;">
-          ${canPartial
-            ? `<input type="date" value="${l.fecha_cierre_raw||''}" data-id="${l.id}" data-field="fecha_cierre" data-key="${key}"
-                onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)"
-                style="font-size:10px;border:1px solid #dde1e7;border-radius:5px;padding:2px 4px;width:110px;color:#555;">`
-            : `<span style="font-size:10px;color:#999;">${l.fecha_cierre_dt||'—'}</span>`
-          }
-        </td>
-        <td style="padding:4px 8px;">
-          ${canPartial
-            ? `<input type="date" value="${l.fecha_modif_raw||''}" data-id="${l.id}" data-field="fecha_modif" data-key="${key}"
-                onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)"
-                style="font-size:10px;border:1px solid #dde1e7;border-radius:5px;padding:2px 4px;width:110px;color:${l.fecha_mod_late?'#E24B4A':'#555'};">`
-            : commentOnly
-              ? `<span style="font-size:10px;color:${l.modified_today?'#1D9E75':l.fecha_mod_late?'#E24B4A':'#999'};">
-                  ${l.fecha_modif||'—'}${l.fecha_mod_late?' ⚠':''}${l.modified_today?' ✓':''}
-                 </span>`
-              : `<span style="font-size:10px;color:#999;">${l.fecha_modif||'—'}</span>`
-          }
+          <input class="ecell" value="${l.correo||''}" placeholder="correo@ejemplo.com"
+            onchange="updateLeadDB('${safeId}','correo',this.value,'${key}')"
+            style="font-size:11px;width:150px;">
         </td>
         <td style="font-size:11px;color:#666;">${l.owner}</td>
         <td style="font-size:11px;color:#666;">${l.giros||'—'}</td>
@@ -3004,6 +3014,81 @@ window.goCaidos = function goCaidos(){
   curTab='caidos';
   document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
   renderCerradosCaidos('caido');
+}
+
+window.goSvaCerrados = function goSvaCerrados(){
+  const kpiEl=document.getElementById('view-kpi');
+  const huntersEl=document.getElementById('view-hunters');
+  if(kpiEl) kpiEl.style.display='none';
+  if(huntersEl) huntersEl.style.display='none';
+  ['.topbar','.tab-nav','#content'].forEach(s=>{
+    const el=document.querySelector('.main '+s);
+    if(el) el.style.display='';
+  });
+  const navCrm=document.getElementById('nav-crm');
+  if(navCrm) navCrm.classList.add('active');
+  curTab='sva_cerrados';
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  renderSvaCerradosCaidos('cerrado');
+}
+
+window.goSvaCaidos = function goSvaCaidos(){
+  const kpiEl=document.getElementById('view-kpi');
+  const huntersEl=document.getElementById('view-hunters');
+  if(kpiEl) kpiEl.style.display='none';
+  if(huntersEl) huntersEl.style.display='none';
+  ['.topbar','.tab-nav','#content'].forEach(s=>{
+    const el=document.querySelector('.main '+s);
+    if(el) el.style.display='';
+  });
+  const navCrm=document.getElementById('nav-crm');
+  if(navCrm) navCrm.classList.add('active');
+  curTab='sva_caidos';
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  renderSvaCerradosCaidos('caido');
+}
+
+function renderSvaCerradosCaidos(tipo){
+  const SVA_TIPOS = ['QR','ARISALE','PLANILLAS'];
+  let leads = LEADS.filter(l=>{
+    const tp = (l.tipo_producto||l.tipo_sva||'').toUpperCase();
+    if(!SVA_TIPOS.includes(tp)) return false;
+    if(tipo==='cerrado') return l.categoria==='cerrado'||l.status==='100% Cierre';
+    if(tipo==='caido')   return l.categoria==='caido';
+    return false;
+  });
+
+  /* Filtrar por equipo si es head */
+  if(curUser.role==='head'){
+    leads = leads.filter(l=>{ const h=HUNTERS[l.hunter]; return h&&h.team===curUser.equipo; });
+  } else if(curUser.role==='hunter'){
+    leads = leads.filter(l=>l.hunter===curUser.username);
+  }
+
+  const color  = tipo==='cerrado'?'#3DB8E8':'#F5A623';
+  const titulo = tipo==='cerrado'?'SVA Cerrados':'SVA Perdidos';
+  const icono  = tipo==='cerrado'?'ti-rosette':'ti-mood-sad';
+
+  /* Agrupar por tipo SVA */
+  const byTipo = {QR:0, ARISALE:0, PLANILLAS:0};
+  leads.forEach(l=>{ const tp=(l.tipo_producto||l.tipo_sva||'').toUpperCase(); if(byTipo[tp]!==undefined) byTipo[tp]++; });
+
+  document.getElementById('content').innerHTML = `
+    <div style="padding:20px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <i class="ti ${icono}" style="font-size:20px;color:${color};"></i>
+        <div style="font-size:16px;font-weight:700;color:#1a1f2e;">${titulo}</div>
+        <span style="font-size:12px;color:#888;margin-left:4px;">${leads.length} leads</span>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <span style="background:rgba(61,184,232,.12);color:#3DB8E8;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">QR: ${byTipo.QR}</span>
+          <span style="background:rgba(127,119,221,.12);color:#7F77DD;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">Arisale: ${byTipo.ARISALE}</span>
+          <span style="background:rgba(245,166,35,.12);color:#F5A623;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">Planillas: ${byTipo.PLANILLAS}</span>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        ${leadsTableHTML(leads, false, tipo==='cerrado'?'sva_cerrados':'sva_caidos')}
+      </div>
+    </div>`;
 }
 
 window.goAllLeads = function goAllLeads(){
@@ -4121,7 +4206,7 @@ async function handleImportWithLinea(file, linea){
     status:mapEstado(l.estado||'prospecto'),value:l.valor||0,
     close:l.mes_cierre||'',note:l.comentario||'',prob:l.probabilidad||10,
     conflict:l.conflicto||false,categoria:l.categoria||'activo',linea:l.linea||'central',
-    telefono:l.telefono||'', representante_legal:l.representante_legal||'',
+    telefono:l.telefono||'', correo:l.correo||'', representante_legal:l.representante_legal||'',
     tipo_sva:l.tipo_sva||'', parlantes:l.parlantes||0,
     arisale_valor:l.arisale_valor||0, arisale_licencias:l.arisale_licencias||0,
     planillas_colaboradores:l.planillas_colaboradores||0,
