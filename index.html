@@ -462,8 +462,8 @@ tr:hover td{background:#fafbff;}
 
 <script>
 /* ─── SUPABASE CONFIG ─── */
-const SB_URL = 'https://lvnjawvgbvlghaodyurv.supabase.co';
-const SB_KEY = 'sb_publishable_2zwQO3oeLN1Ed9sZBJ1IsQ_REV5Fa1f';
+const SB_URL = 'https://tcsvglqdebbrtiqunzey.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjc3ZnbHFkZWJicnRpcXVuemV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5OTYyMDMsImV4cCI6MjA5ODU3MjIwM30.Z4qFltMxKElwD1IVjZ47DJxcUbPrEDPSDFuvqTX2Iuc';
 
 /* Normaliza texto: quita tildes y caracteres especiales para comparaciones de nombres */
 function normalizeName(str){
@@ -819,7 +819,12 @@ function renderKPI(){
 
   /* ── Core metrics ── */
   const total     = leads.length;
-  const cerrados  = leads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado');
+  const MESES_PE = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const _hoyPE = new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'numeric',year:'numeric'}).split('/');
+  const _diaPE = parseInt(_hoyPE[0]), _mesIdx = parseInt(_hoyPE[1])-1;
+  const mesActual = _diaPE<=2 ? MESES_PE[(_mesIdx-1+12)%12] : MESES_PE[_mesIdx];
+  const todosLosLead = leads;
+  const cerrados  = leads.filter(l=>(l.categoria==='cerrado'||l.status==='cerrado')&&(l.close||'').toUpperCase()===mesActual);
   const caidos    = leads.filter(l=>l.categoria==='caido');
   const activos   = leads.filter(l=>l.categoria==='activo'&&l.status!=='cerrado');
   const wonRev    = cerrados.reduce((s,l)=>s+(l.value||0),0);
@@ -1196,7 +1201,7 @@ function initApp(){
 
   /* Show sidebar team/leads icons */
   const isDA = ['director','analista'].includes(curUser.role);
-  const isDAH = ['director','analista','head'].includes(curUser.role);
+  const isDAH = ['director','analista','head','viewer'].includes(curUser.role);
   const el = id => document.getElementById(id);
   const nalg = el('nav-allleads-group');
   if(nalg) nalg.style.display = 'flex'; /* Todos los roles ven Lead Central */
@@ -1304,7 +1309,7 @@ function getTabs(){
     return {id: h.username, label, icon:'ti-user', dot: h.color};
   };
 
-  if(r==='director' || r==='analista') {
+  if(r==='director' || r==='analista' || r==='viewer') {
     const tabs = [
       {id:'general', label:'Vista general', icon:'ti-home', dot:'#534AB7'},
     ];
@@ -1333,6 +1338,7 @@ function getAccess(){
   const r = curUser.role;
   if(r==='director')  return {label:'Director',             badgeBg:'#EDE9FE', badgeColor:'#5B21B6'};
   if(r==='analista')  return {label:'Analista Comercial',   badgeBg:'#FEF3C7', badgeColor:'#92400E'};
+  if(r==='viewer')    return {label:'Visualizador',          badgeBg:'#F3F4F6', badgeColor:'#6B7280'};
   if(r==='head')      return {label:'Head · Equipo '+curUser.equipo, badgeBg:'#D1FAE5', badgeColor:'#065F46'};
   return {label:'Hunter', badgeBg:'#DBEAFE', badgeColor:'#1E40AF'};
 }
@@ -1522,7 +1528,7 @@ function renderSVA2(){
       <option value="">Todos los hunters</option>
       ${HUNTERS_DEF.map(h=>`<option value="${h.username}"${window.sva2_hunter===h.username?' selected':''}>${h.name}</option>`).join('')}
     </select>`:''}
-    <button class="btn-new" onclick="openModal(null,'sva2')"><i class="ti ti-plus"></i> Nuevo lead</button>
+    ${curUser.role!=='viewer'?`<button class="btn-new" onclick="openModal(null,'sva2')"><i class="ti ti-plus"></i> Nuevo lead</button>`:''}
     <span style="font-size:11px;color:#999;margin-left:auto;">${svaLeads.length} leads SVA</span>
   </div>
 
@@ -1823,9 +1829,9 @@ function renderAllLeads(){
       <option value="">Todos los meses</option>${mesOpts}
     </select>
     <span style="margin-left:auto;font-size:11px;color:#999;">${filtered.length} de ${total} leads</span>
-    <button onclick="exportAllLeads()" style="padding:5px 12px;border-radius:7px;border:1px solid #1D9E75;background:#e8f5e9;color:#1D9E75;font-size:11px;cursor:pointer;font-weight:600;">
+    ${curUser.role!=='viewer'?`<button onclick="exportAllLeads()" style="padding:5px 12px;border-radius:7px;border:1px solid #1D9E75;background:#e8f5e9;color:#1D9E75;font-size:11px;cursor:pointer;font-weight:600;">
       ⬇ Exportar Excel
-    </button>
+    </button>`:''}
     ${['director','analista','head','hunter'].includes(curUser.role) ? `
     <button onclick="openModal(null,'allleads')" style="padding:5px 14px;border-radius:7px;border:none;background:#534AB7;color:#fff;font-size:11px;cursor:pointer;font-weight:600;">
       + Nuevo lead
@@ -1914,12 +1920,21 @@ function kpiFunnelCard(label, leads){
 
 /* ── KPI RUC ROW ── */
 function kpiRucRow(leads){
+  /* Mes actual en Perú para filtrar cerrados del mes en curso */
+  const MESES_PE = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const hoyPE = new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'numeric',year:'numeric'}).split('/');
+  const diaPE = parseInt(hoyPE[0]);
+  /* Hasta el día 2 del mes nuevo → seguir mostrando cerrados del mes anterior */
+  const mesIdx = parseInt(hoyPE[1])-1;
+  const mesActual = diaPE<=2 ? MESES_PE[(mesIdx-1+12)%12] : MESES_PE[mesIdx];
+  const esCerradoMesActual = l => (l.categoria==='cerrado'||l.status==='cerrado') && (l.close||'').toUpperCase()===mesActual;
+
   /* RUC = solo leads de captura principal (IZIPAY o sin tipo), excluye QR/ARISALE/PLANILLAS */
   const SVA_TIPOS = ['QR','ARISALE','PLANILLAS'];
   const rucLeads  = leads.filter(l=>l.ruc && l.ruc.length>5 && !SVA_TIPOS.includes((l.tipo_producto||'').toUpperCase()));
   const activosArr= rucLeads.filter(isActiveLead);
   const total     = activosArr.length;
-  const cerrado   = rucLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').length;
+  const cerrado   = rucLeads.filter(esCerradoMesActual).length;
   const perdido   = rucLeads.filter(l=>l.categoria==='caido').length;
   const totalConv = total + cerrado;
   const conv      = totalConv>0?Math.round(cerrado/totalConv*100):0;
@@ -1962,8 +1977,12 @@ function kpiFunnelCardCount(label, leads){
 }
 
 function kpiRowFlat(label, leads, tipoProd){
-  const filtered = leads.filter(l=>(l.tipo_producto||'').toUpperCase()===tipoProd.toUpperCase());
-  const cerradosArr = filtered.filter(l=>l.categoria==='cerrado'||l.status==='cerrado');
+  const MESES_PE = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const _hoyPE = new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'numeric',year:'numeric'}).split('/');
+  const _diaPE = parseInt(_hoyPE[0]), _mesIdx = parseInt(_hoyPE[1])-1;
+  const mesActual = _diaPE<=2 ? MESES_PE[(_mesIdx-1+12)%12] : MESES_PE[_mesIdx];
+  const filtered = leads.filter(l=>(l.tipo_producto||l.tipo_sva||'').toUpperCase()===tipoProd.toUpperCase());
+  const cerradosArr = filtered.filter(l=>(l.categoria==='cerrado'||l.status==='cerrado')&&(l.close||'').toUpperCase()===mesActual);
   const perdidosArr = filtered.filter(l=>l.categoria==='caido');
   const cerrados = cerradosArr.length;
   const perdidos = perdidosArr.length;
@@ -2615,20 +2634,27 @@ const FIELD_LABELS = {
 
 async function saveHistorial(leadId, campo, valorNuevo){
   try {
-    await sbInsert('lead_historial', {
-      lead_id:     leadId,
-      usuario:     curUser.name,
-      rol:         curUser.role,
-      campo:       FIELD_LABELS[campo] || campo,
-      valor_nuevo: String(valorNuevo || '—'),
-      fecha:       new Date().toISOString()
+    /* Obtener valor anterior del lead en memoria */
+    const l = LEADS.find(x=>String(x.id)===String(leadId));
+    const campoMap = {estado:'status',valor:'value',mes_cierre:'close',comentario:'note',
+      tipo_cuenta:'tipo_cuenta',banco:'banco',giros:'giros',fuente:'source',
+      representante_legal:'representante_legal',telefono:'telefono',correo:'correo'};
+    const localKey = campoMap[campo]||campo;
+    const valorAnterior = l ? String(l[localKey]||'—') : '—';
+    await sbInsert('lead_history', {
+      lead_id:        leadId,
+      usuario:        curUser.name,
+      campo:          FIELD_LABELS[campo] || campo,
+      valor_anterior: valorAnterior,
+      valor_nuevo:    String(valorNuevo || '—'),
+      fecha:          new Date().toISOString()
     });
   } catch(e){ console.warn('historial error:', e); }
 }
 
 async function loadHistorial(leadId){
   try {
-    const rows = await sbGet('lead_historial',
+    const rows = await sbGet('lead_history',
       `lead_id=eq.${leadId}&order=fecha.desc&limit=50`);
     return rows || [];
   } catch(e){ return []; }
@@ -2652,22 +2678,22 @@ function canDelete(lead){
 }
 function canFullEdit(lead){
   const r = curUser.role;
+  if(r==='viewer') return false; /* viewer: solo lectura */
   if(r==='director' || r==='analista') return true;
   if(r==='head') return isMyTeamLead(lead);
   return false;
 }
 function canPartialEdit(lead){
-  // director, analista, head (solo su equipo) pueden editar potencial/banco/etapa/mes/fechas
   return canFullEdit(lead);
 }
 function canEditComment(lead){
-  // Hunter: sus propios leads; Head: leads de su equipo; Director/Analista: todos (ya tienen full=true)
+  if(curUser.role==='viewer') return false; /* viewer: solo lectura */
   if(curUser.role === 'hunter') return lead?.hunter === curUser.username;
   if(curUser.role === 'head') return isMyTeamLead(lead);
-  return false; // director/analista usan full edit en su lugar
+  return false;
 }
 function canAddLead(){
-  return true; // todos pueden agregar leads
+  return curUser.role !== 'viewer'; /* viewer no puede agregar leads */
 }
 
 /* Global registry to safely pass UUIDs without quote issues */
@@ -3253,19 +3279,19 @@ async function toggleHistorial(leadId, btn){
         <tr style="background:#eef0f8;">
           <th style="padding:5px 8px;text-align:left;color:#666;font-weight:500;border-bottom:1px solid #e0e3ef;">Fecha</th>
           <th style="padding:5px 8px;text-align:left;color:#666;font-weight:500;border-bottom:1px solid #e0e3ef;">Usuario</th>
-          <th style="padding:5px 8px;text-align:left;color:#666;font-weight:500;border-bottom:1px solid #e0e3ef;">Rol</th>
           <th style="padding:5px 8px;text-align:left;color:#666;font-weight:500;border-bottom:1px solid #e0e3ef;">Campo</th>
-          <th style="padding:5px 8px;text-align:left;color:#666;font-weight:500;border-bottom:1px solid #e0e3ef;">Nuevo valor</th>
+          <th style="padding:5px 8px;text-align:left;color:#666;font-weight:500;border-bottom:1px solid #e0e3ef;">Antes</th>
+          <th style="padding:5px 8px;text-align:left;color:#666;font-weight:500;border-bottom:1px solid #e0e3ef;">Después</th>
         </tr>
       </thead>
       <tbody>
         ${rows.map((r,i)=>`
           <tr style="background:${i%2===0?'#fff':'#f8f9fc'};">
-            <td style="padding:5px 8px;color:#888;">${new Date(r.fecha).toLocaleString('es-PE')}</td>
+            <td style="padding:5px 8px;color:#888;">${new Date(r.fecha).toLocaleString('es-PE',{timeZone:'America/Lima'})}</td>
             <td style="padding:5px 8px;font-weight:500;color:#333;">${r.usuario||'—'}</td>
-            <td style="padding:5px 8px;color:#888;">${r.rol||'—'}</td>
             <td style="padding:5px 8px;color:#534AB7;font-weight:500;">${r.campo||'—'}</td>
-            <td style="padding:5px 8px;color:#333;">${r.valor_nuevo||'—'}</td>
+            <td style="padding:5px 8px;color:#E24B4A;">${r.valor_anterior||'—'}</td>
+            <td style="padding:5px 8px;color:#1D9E75;font-weight:500;">${r.valor_nuevo||'—'}</td>
           </tr>`).join('')}
       </tbody>
     </table>`;
