@@ -1438,21 +1438,25 @@ function renderTab(id){
 function renderSVA2(){
   const SVA_TIPOS = ['QR','ARISALE','PLANILLAS'];
 
-  /* Filter only linea='sva' leads by role — excluir cerrados y caídos (van a SVA Cerrado/Perdido) */
-  const svaLeads = applyOrigenFilter((LEADS||[]).filter(l=>{
+  /* Todos los SVA por rol (para tarjetas KPI) */
+  const svaLeadsAll = applyOrigenFilter((LEADS||[]).filter(l=>{
     if((l.linea||'central') !== 'sva') return false;
-    if(l.categoria==='cerrado'||l.categoria==='caido') return false; /* solo activos */
-    if(curUser.role==='head'){
-      const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo;
-    }
+    if(curUser.role==='head'){ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; }
     if(curUser.role==='hunter') return l.hunter===curUser.username;
     return true;
   }));
+  /* Solo activos para la tabla (cerrados/caídos van a SVA Cerrado/Perdido) */
+  const svaLeads = svaLeadsAll.filter(l=>l.categoria!=='cerrado'&&l.categoria!=='caido');
 
   const activosArrSva = svaLeads.filter(isActiveLead);
   const totalCap = activosArrSva.reduce((s,l)=>s+(l.value||0),0);
-  const cerradosArr = svaLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado');
-  const perdidosArr = svaLeads.filter(l=>l.categoria==='caido');
+  /* Filtrar cerrados por mes actual */
+  const MESES_SVA=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const _hSVA=new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'numeric',year:'numeric'}).split('/');
+  const _dSVA=parseInt(_hSVA[0]),_mSVA=parseInt(_hSVA[1])-1;
+  const mesActSVA=_dSVA<=2?MESES_SVA[(_mSVA-1+12)%12]:MESES_SVA[_mSVA];
+  const cerradosArr = svaLeadsAll.filter(l=>(l.categoria==='cerrado'||l.status==='cerrado')&&(l.close||'').toUpperCase()===mesActSVA);
+  const perdidosArr = svaLeadsAll.filter(l=>l.categoria==='caido');
   const cerrados = cerradosArr.length;
   const perdidos = perdidosArr.length;
   const cerradosVal = cerradosArr.reduce((s,l)=>s+(l.value||0),0);
@@ -1492,11 +1496,11 @@ function renderSVA2(){
   </div>
 
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#3DB8E8;text-transform:uppercase;letter-spacing:.5px;">QR</div>
-  ${kpiRowFlat('QR', svaLeads, 'QR')}
+  ${kpiRowFlat('QR', svaLeadsAll, 'QR')}
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#7F77DD;text-transform:uppercase;letter-spacing:.5px;">Arisale</div>
-  ${kpiRowFlat('Arisale', svaLeads, 'ARISALE')}
+  ${kpiRowFlat('Arisale', svaLeadsAll, 'ARISALE')}
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#F5A623;text-transform:uppercase;letter-spacing:.5px;">Planillas</div>
-  ${kpiRowFlat('Planillas', svaLeads, 'PLANILLAS')}
+  ${kpiRowFlat('Planillas', svaLeadsAll, 'PLANILLAS')}
 
   <!-- Hunter comment note -->
   ${curUser.role==='hunter'?`<div style="padding:8px 14px;background:#FFF3CD;border-radius:7px;font-size:11px;color:#856404;margin-bottom:10px;">
@@ -2188,7 +2192,10 @@ function renderTeam(team){
   <!-- ══ TARJETAS EQUIPO ══ -->
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:.5px;">General</div>
   <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
-    ${(()=>{const cArr=teamLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado');
+    ${(()=>{const _MPES=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+      const _hp=new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'numeric',year:'numeric'}).split('/');
+      const _mes=parseInt(_hp[0])<=2?_MPES[(parseInt(_hp[1])-2+12)%12]:_MPES[parseInt(_hp[1])-1];
+      const cArr=teamLeads.filter(l=>(l.categoria==='cerrado'||l.status==='cerrado')&&(l.close||'').toUpperCase()===_mes);
       const pArr=teamLeads.filter(l=>l.categoria==='caido');
       const c=cArr.length, p=pArr.length;
       const cVal=cArr.reduce((s,l)=>s+(l.value||0),0);
@@ -2280,7 +2287,10 @@ function renderHunter(hid){
   <!-- ══ TARJETAS HUNTER ══ -->
   <div style="margin-bottom:6px;font-size:10px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:.5px;">General</div>
   <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
-    ${(()=>{const cArr=leads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado');
+    ${(()=>{const _MPES=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+      const _hp=new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'numeric',year:'numeric'}).split('/');
+      const _mes=parseInt(_hp[0])<=2?_MPES[(parseInt(_hp[1])-2+12)%12]:_MPES[parseInt(_hp[1])-1];
+      const cArr=leads.filter(l=>(l.categoria==='cerrado'||l.status==='cerrado')&&(l.close||'').toUpperCase()===_mes);
       const pArr=leads.filter(l=>l.categoria==='caido');
       const c=cArr.length, p=pArr.length;
       const cVal=cArr.reduce((s,l)=>s+(l.value||0),0);
