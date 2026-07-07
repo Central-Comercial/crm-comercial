@@ -2102,7 +2102,14 @@ function renderGeneral(){
   <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px;">
     ${kpiCard('1. Captura Total','S/ '+totalReal.toLocaleString(),'potencial pipeline','neutral')}
     ${kpiFunnelCard('2. Leads Total',activeLeads)}
-    ${kpiCard('3. Leads Cerrado','S/ '+allLeads.filter(l=>l.categoria==='cerrado'||l.status==='cerrado').reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'100% Cierre','up','#1D9E75')}
+    ${(()=>{
+      const MESES_PE2=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+      const _h2=new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'numeric',year:'numeric'}).split('/');
+      const _d2=parseInt(_h2[0]),_m2=parseInt(_h2[1])-1;
+      const mesAct2=_d2<=2?MESES_PE2[(_m2-1+12)%12]:MESES_PE2[_m2];
+      const cerradosMes=allLeads.filter(l=>(l.categoria==='cerrado'||l.status==='cerrado')&&(l.close||'').toUpperCase()===mesAct2);
+      return kpiCard('3. Leads Cerrado','S/ '+cerradosMes.reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'100% Cierre','up','#1D9E75');
+    })()}
     ${kpiCard('4. Leads Perdido','S/ '+allLeads.filter(l=>l.categoria==='caido').reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'sin oportunidad','down','#E24B4A')}
     ${kpiCard('5. % Conversión',conv+'%','cerrados / captura',conv>=30?'up':conv>=15?'neutral':'down',conv>=30?'#1D9E75':conv>=15?'#F5A623':'#E24B4A')}
   </div>
