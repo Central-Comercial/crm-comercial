@@ -174,6 +174,10 @@ tr:hover td{background:#fafbff;}
       <div style="font-size:8px;color:#00C9FF;text-align:center;line-height:1.2;">Leads<br>SVA</div>
       <div class="sb-icon" style="pointer-events:none;background:rgba(0,201,255,.15);"><i class="ti ti-layers-difference" style="color:#00C9FF;"></i></div>
     </div>
+    <div id="nav-estado-sva" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goEstadoSVA()">
+      <div style="font-size:8px;color:#B388FF;text-align:center;line-height:1.2;">Estado<br>SVA</div>
+      <div class="sb-icon" style="pointer-events:none;background:rgba(179,136,255,.15);"><i class="ti ti-chart-bar" style="color:#B388FF;"></i></div>
+    </div>
     <div class="sb-icon" id="nav-delete-all" title="Borrar todos los leads" onclick="deleteAllLeads()" style="display:none;background:rgba(226,75,74,0.15);"><i class="ti ti-trash" style="color:#E24B4A;"></i></div>
     <div class="sb-icon" id="nav-reimport" title="Limpiar e importar de nuevo" onclick="clearAndImport()" style="display:none;background:rgba(245,166,35,0.15);"><i class="ti ti-refresh" style="color:#F5A623;"></i></div>
     <div class="sb-sep" style="width:32px;height:1px;background:rgba(255,255,255,.08);margin:4px 0;"></div>
@@ -1224,6 +1228,8 @@ function initApp(){
   if(nc)    nc.style.display    = isDAH ? 'flex' : 'none';
   if(nca)   nca.style.display   = isDAH ? 'flex' : 'none';
   if(nsva2) nsva2.style.display = 'flex'; /* Todos los roles ven SVA */
+  const nest = el('nav-estado-sva');
+  if(nest) nest.style.display = isDAH ? 'flex' : 'none'; /* Estado SVA: director, analista, head, viewer */
   /* SVA Cerrados / SVA Perdidos - solo director, analista y head */
   const nsc = el('nav-sva-cerrados');
   const nsp = el('nav-sva-caidos');
@@ -1428,6 +1434,7 @@ function renderTab(id){
   else if(id==='cerrados')   renderCerradosCaidos('cerrado');
   else if(id==='caidos')     renderCerradosCaidos('caido');
   else if(id==='sva2')       renderSVA2();
+  else if(id==='estado_sva') renderEstadoSVA();
   else if(id==='sva_cerrados') renderSvaCerradosCaidos('cerrado');
   else if(id==='sva_caidos')   renderSvaCerradosCaidos('caido');
   else if(id==='teamA'||id==='teamB') renderTeam(id==='teamA'?'A':'B');
@@ -1656,6 +1663,183 @@ function renderSVA2(){
   </div>`;
 }
 
+/* ── ESTADO SVA: tabla pivote Etapas × Hunters ── */
+function renderEstadoSVA(){
+  /* Filtros */
+  const fTipo   = window.estsva_tipo   || '';   /* '' | QR | ARISALE | PLANILLAS */
+  const fEquipo = window.estsva_equipo || '';   /* '' | A | B */
+
+  /* Leads SVA visibles según rol (misma lógica que renderSVA2) */
+  let svaLeads = applyOrigenFilter((LEADS||[]).filter(l=>{
+    if((l.linea||'central') !== 'sva') return false;
+    if(curUser.role==='head'){ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; }
+    if(curUser.role==='hunter') return l.hunter===curUser.username;
+    return true;
+  }));
+
+  /* Filtro tipo SVA (busca en tipo_producto y tipo_sva) */
+  if(fTipo){
+    svaLeads = svaLeads.filter(l=>{
+      const tp=(l.tipo_producto||l.tipo_sva||'').toUpperCase();
+      return tp===fTipo;
+    });
+  }
+
+  /* Ganados: SOLO del mes actual — los cierres de meses anteriores se excluyen de la tabla */
+  const MESES_EST = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const _hEST = new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'numeric',year:'numeric'}).split('/');
+  const _dEST = parseInt(_hEST[0]), _mEST = parseInt(_hEST[1])-1;
+  const mesActEST = _dEST<=2 ? MESES_EST[(_mEST-1+12)%12] : MESES_EST[_mEST];
+  svaLeads = svaLeads.filter(l=>{
+    const esCerrado = l.categoria==='cerrado' || l.status==='cerrado';
+    if(!esCerrado) return true;
+    return (l.close||'').toUpperCase()===mesActEST;
+  });
+
+  /* Hunters visibles (columnas) */
+  let hunterCols = HUNTERS_DEF.slice();
+  if(curUser.role==='head') hunterCols = hunterCols.filter(h=>h.team===curUser.equipo);
+  if(fEquipo) hunterCols = hunterCols.filter(h=>h.team===fEquipo);
+  /* Etiqueta corta: primer nombre + inicial del apellido */
+  const shortName = h => { const p=h.name.split(' '); return p[0]+(p[1]?' '+p[1][0]+'.':''); };
+  hunterCols = hunterCols.map(h=>({...h, short: shortName(h)}))
+                         .sort((a,b)=>a.short.localeCompare(b.short));
+
+  /* Clasificar cada lead en una fila */
+  const rowOf = l => {
+    if(l.categoria==='caido') return 'perdido';
+    if(l.categoria==='cerrado' || l.status==='cerrado') return 'cerrado';
+    const s = l.status||'prospecto';
+    return ['prospecto','oportunidad','negociacion','precierre'].includes(s) ? s : 'prospecto';
+  };
+
+  const ROWS = [
+    {key:'prospecto',   label:'10% · Prospección (sin contactar)', color:'#3DB8E8', bg:'#EAF6FC'},
+    {key:'oportunidad', label:'25% · Oportunidad (contactado)',    color:'#7F77DD', bg:'#F0EFFA'},
+    {key:'negociacion', label:'50% · Negociación',                 color:'#F5A623', bg:'#FEF6E7'},
+    {key:'precierre',   label:'75% · Pre-cierre (Sí verbal)',      color:'#E8721C', bg:'#FDF0E6'},
+    {key:'cerrado',     label:'100% · Lead ganado (mes actual)',   color:'#1D9E75', bg:'#E8F5EF'},
+    {key:'perdido',     label:'Perdido / Caído (No contesta)',     color:'#E24B4A', bg:'#FCECEC'}
+  ];
+
+  /* Matriz de conteos: counts[rowKey][username] */
+  const counts = {};
+  ROWS.forEach(r=>{ counts[r.key]={}; });
+  svaLeads.forEach(l=>{
+    const rk = rowOf(l);
+    counts[rk][l.hunter] = (counts[rk][l.hunter]||0) + 1;
+  });
+
+  const colTotal = h => ROWS.reduce((s,r)=>s+(counts[r.key][h.username]||0),0);
+  const rowTotal = r => hunterCols.reduce((s,h)=>s+(counts[r.key][h.username]||0),0);
+  const grandTotal = hunterCols.reduce((s,h)=>s+colTotal(h),0);
+
+  /* % Trabajado por hunter = leads que salieron de prospección / total */
+  const trabajados = h => colTotal(h) - (counts['prospecto'][h.username]||0);
+  const pctTrab = h => { const t=colTotal(h); return t>0?Math.round(trabajados(h)/t*100):0; };
+  const trabajadosTot = hunterCols.reduce((s,h)=>s+trabajados(h),0);
+  const pctTrabTot = grandTotal>0?Math.round(trabajadosTot/grandTotal*100):0;
+  const pctColor = p => p>=60?'#1D9E75':p>=30?'#F5A623':'#E24B4A';
+
+  const tipoColors = {'QR':'#3DB8E8','ARISALE':'#7F77DD','PLANILLAS':'#F5A623'};
+  const cellSty = 'padding:7px 6px;text-align:center;border-bottom:1px solid #f0f2f5;font-size:12px;';
+
+  document.getElementById('content').innerHTML = `
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+    <div style="background:rgba(179,136,255,.15);border-radius:10px;padding:8px 12px;font-size:20px;">📊</div>
+    <div>
+      <div style="font-size:16px;font-weight:600;color:#333;">Estado SVA</div>
+      <div style="font-size:11px;color:#999;">Avance de leads SVA por hunter según etapa${fTipo?' — '+fTipo:''}</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <select class="filter-sel" onchange="window.estsva_tipo=this.value;renderEstadoSVA()">
+        <option value="">Todos los SVA</option>
+        <option value="QR"${fTipo==='QR'?' selected':''}>QR</option>
+        <option value="ARISALE"${fTipo==='ARISALE'?' selected':''}>ARISALE</option>
+        <option value="PLANILLAS"${fTipo==='PLANILLAS'?' selected':''}>PLANILLAS</option>
+      </select>
+      ${curUser.role!=='head' ? `
+      <select class="filter-sel" onchange="window.estsva_equipo=this.value;renderEstadoSVA()">
+        <option value="">Ambos equipos</option>
+        <option value="A"${fEquipo==='A'?' selected':''}>Equipo Carlos</option>
+        <option value="B"${fEquipo==='B'?' selected':''}>Equipo Ana</option>
+      </select>` : ''}
+      <span style="background:#B388FF22;color:#7C4DFF;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${grandTotal} leads</span>
+    </div>
+  </div>
+
+  <!-- Mini resumen -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+    ${kpiCard('Sin contactar', rowTotal(ROWS[0]), '10% Prospección', 'down', '#3DB8E8')}
+    ${kpiCard('En trabajo', rowTotal(ROWS[1])+rowTotal(ROWS[2])+rowTotal(ROWS[3]), '25% + 50% + 75%', 'neutral', '#F5A623')}
+    ${kpiCard('Ganados '+mesActEST, rowTotal(ROWS[4]), '100% Cierre · '+mesActEST, 'up', '#1D9E75')}
+    ${kpiCard('% Trabajado global', pctTrabTot+'%', 'leads que salieron de 10%', pctTrabTot>=60?'up':pctTrabTot>=30?'neutral':'down', pctColor(pctTrabTot))}
+  </div>
+
+  <!-- Tabla pivote -->
+  <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:0;overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;min-width:${220+hunterCols.length*70}px;">
+      <thead>
+        <tr style="background:#2B2350;">
+          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;color:#fff;position:sticky;left:0;background:#2B2350;z-index:2;min-width:210px;">Estado / Etapa</th>
+          ${hunterCols.map(h=>`
+            <th style="padding:10px 4px;font-size:10px;font-weight:600;color:#fff;text-align:center;white-space:nowrap;" title="${h.name}">
+              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${h.color};margin-right:3px;"></span>${h.short}
+            </th>`).join('')}
+          <th style="padding:10px 8px;font-size:10px;font-weight:700;color:#FFD93D;text-align:center;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${ROWS.map(r=>{
+          const rt = rowTotal(r);
+          return `<tr>
+            <td style="padding:8px 12px;font-size:11px;font-weight:600;color:${r.color};position:sticky;left:0;background:${r.bg};border-bottom:1px solid #f0f2f5;white-space:nowrap;z-index:1;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${r.color};margin-right:6px;"></span>${r.label}
+            </td>
+            ${hunterCols.map(h=>{
+              const c = counts[r.key][h.username]||0;
+              return `<td style="${cellSty}${c>0?`background:${r.bg};color:${r.color};font-weight:700;`:'color:#ccc;'}">${c>0?c:'·'}</td>`;
+            }).join('')}
+            <td style="${cellSty}font-weight:700;color:${r.color};background:${r.bg};">${rt}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+      <tfoot>
+        <tr style="background:#f7f8fa;">
+          <td style="padding:9px 12px;font-size:11px;font-weight:700;color:#1a1f2e;position:sticky;left:0;background:#f7f8fa;border-top:2px solid #e0e3e8;z-index:1;">Total leads</td>
+          ${hunterCols.map(h=>`<td style="${cellSty}font-weight:700;color:#1a1f2e;border-top:2px solid #e0e3e8;">${colTotal(h)}</td>`).join('')}
+          <td style="${cellSty}font-weight:800;color:#534AB7;border-top:2px solid #e0e3e8;">${grandTotal}</td>
+        </tr>
+        <tr style="background:#fff;">
+          <td style="padding:9px 12px;font-size:11px;font-weight:700;color:#1a1f2e;position:sticky;left:0;background:#fff;z-index:1;">% Trabajado <span style="font-weight:400;color:#999;font-size:9px;">(salieron de 10%)</span></td>
+          ${hunterCols.map(h=>{
+            const p = pctTrab(h);
+            const t = colTotal(h);
+            return `<td style="${cellSty}font-weight:700;color:${t>0?pctColor(p):'#ccc'};">${t>0?p+'%':'·'}</td>`;
+          }).join('')}
+          <td style="${cellSty}font-weight:800;color:${pctColor(pctTrabTot)};">${pctTrabTot}%</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Desglose por tipo SVA (solo cuando no hay filtro de tipo) -->
+  ${!fTipo ? `
+  <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+    ${['QR','ARISALE','PLANILLAS'].map(t=>{
+      const n = svaLeads.filter(l=>(l.tipo_producto||l.tipo_sva||'').toUpperCase()===t).length;
+      return `<div style="background:#fff;border:1px solid #e8eaed;border-radius:8px;padding:8px 14px;font-size:11px;cursor:pointer;"
+        onclick="window.estsva_tipo='${t}';renderEstadoSVA()">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${tipoColors[t]};margin-right:6px;"></span>
+        <strong style="color:${tipoColors[t]};">${t}</strong> · ${n} leads <span style="color:#aaa;">— clic para filtrar</span>
+      </div>`;
+    }).join('')}
+  </div>` : `
+  <div style="margin-top:12px;">
+    <button onclick="window.estsva_tipo='';renderEstadoSVA()" style="padding:5px 14px;border-radius:7px;border:1px solid #B388FF;background:rgba(179,136,255,.1);color:#7C4DFF;font-size:11px;cursor:pointer;font-weight:600;">✕ Quitar filtro ${fTipo}</button>
+  </div>`}`;
+}
+
 /* Handler de importación SVA */
 async function handleSVAImport(input){
   const file = input.files[0];
@@ -1809,7 +1993,13 @@ function renderAllLeads(){
   const totalCapAL    = activeLeadsAL.length + cerradosAL.length;
   const convAL        = totalCapAL>0?Math.round(cerradosAL.length/totalCapAL*100):0;
   const convColorAL   = convAL>=30?'#1D9E75':convAL>=15?'#F5A623':'#E24B4A';
-  const cerradoValAL  = cerradosAL.reduce((s,l)=>s+(l.value||0),0);
+  /* Leads Cerrado = solo cierres del MES ACTUAL (igual que Vista General) */
+  const MESES_AL = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const _hAL = new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'numeric',year:'numeric'}).split('/');
+  const _dAL = parseInt(_hAL[0]), _mAL = parseInt(_hAL[1])-1;
+  const mesActAL = _dAL<=2 ? MESES_AL[(_mAL-1+12)%12] : MESES_AL[_mAL];
+  const cerradosMesAL = cerradosAL.filter(l=>(l.close||'').toUpperCase()===mesActAL);
+  const cerradoValAL  = cerradosMesAL.reduce((s,l)=>s+(l.value||0),0);
   const perdidoValAL  = perdidosAL.reduce((s,l)=>s+(l.value||0),0);
 
   document.getElementById('content').innerHTML = `
@@ -3025,6 +3215,27 @@ window.goSVA2 = function goSVA2(){
   } catch(e){
     document.getElementById('content').innerHTML=
       '<div style="padding:40px;color:#E24B4A;">Error SVA: '+e.message+'</div>';
+  }
+}
+
+window.goEstadoSVA = function goEstadoSVA(){
+  try {
+    const kpiEl=document.getElementById('view-kpi');
+    const huntersEl=document.getElementById('view-hunters');
+    if(kpiEl) kpiEl.style.display='none';
+    if(huntersEl) huntersEl.style.display='none';
+    ['.topbar','.tab-nav','#content'].forEach(s=>{
+      const el=document.querySelector('.main '+s);
+      if(el) el.style.display='';
+    });
+    const navCrm=document.getElementById('nav-crm');
+    if(navCrm) navCrm.classList.add('active');
+    curTab='estado_sva';
+    document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+    renderEstadoSVA();
+  } catch(e){
+    document.getElementById('content').innerHTML=
+      '<div style="padding:40px;color:#E24B4A;">Error Estado SVA: '+e.message+'</div>';
   }
 }
 
