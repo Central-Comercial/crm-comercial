@@ -1438,9 +1438,10 @@ function renderTab(id){
 function renderSVA2(){
   const SVA_TIPOS = ['QR','ARISALE','PLANILLAS'];
 
-  /* Filter only linea='sva' leads by role */
+  /* Filter only linea='sva' leads by role — excluir cerrados y caídos (van a SVA Cerrado/Perdido) */
   const svaLeads = applyOrigenFilter((LEADS||[]).filter(l=>{
     if((l.linea||'central') !== 'sva') return false;
+    if(l.categoria==='cerrado'||l.categoria==='caido') return false; /* solo activos */
     if(curUser.role==='head'){
       const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo;
     }
