@@ -1669,6 +1669,8 @@ function renderEstadoSVA(){
   /* Filtros */
   const fTipo   = window.estsva_tipo   || '';   /* '' | QR | ARISALE | PLANILLAS */
   const fEquipo = window.estsva_equipo || '';   /* '' | A | B */
+  const fMes    = window.estsva_mes    || '';   /* '' | ENERO..DICIEMBRE */
+  const fDia    = window.estsva_dia    || '';   /* '' | yyyy-mm-dd (fecha de ingreso del lote) */
 
   /* Leads SVA visibles según rol (misma lógica que renderSVA2) */
   let svaLeads = applyOrigenFilter((LEADS||[]).filter(l=>{
@@ -1686,16 +1688,42 @@ function renderEstadoSVA(){
     });
   }
 
-  /* Ganados: SOLO del mes actual — los cierres de meses anteriores se excluyen de la tabla */
+  /* Mes de referencia */
   const MESES_EST = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
   const _hEST = new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'numeric',year:'numeric'}).split('/');
   const _dEST = parseInt(_hEST[0]), _mEST = parseInt(_hEST[1])-1;
   const mesActEST = _dEST<=2 ? MESES_EST[(_mEST-1+12)%12] : MESES_EST[_mEST];
-  svaLeads = svaLeads.filter(l=>{
-    const esCerrado = l.categoria==='cerrado' || l.status==='cerrado';
-    if(!esCerrado) return true;
-    return (l.close||'').toUpperCase()===mesActEST;
-  });
+  const mesRef = fMes || mesActEST; /* mes que se muestra en etiquetas */
+
+  if(fMes){
+    /* Con mes seleccionado: TODA la tabla es la foto de ese mes (activos, ganados y perdidos con mes_cierre = fMes) */
+    svaLeads = svaLeads.filter(l=>(l.close||'').toUpperCase()===fMes);
+  } else if(!window.estsva_dia){
+    /* Sin filtro: activos de cualquier mes + ganados SOLO del mes actual */
+    svaLeads = svaLeads.filter(l=>{
+      const esCerrado = l.categoria==='cerrado' || l.status==='cerrado';
+      if(!esCerrado) return true;
+      return (l.close||'').toUpperCase()===mesActEST;
+    });
+  }
+  /* Nota: si hay filtro de DÍA activo (y no de mes), se muestra el lote completo con todos sus cierres */
+
+  /* ── Filtro por DÍA DE INGRESO (lote de subida) ── */
+  /* Fecha de ingreso del lead: usa fecha_ingreso, si no existe usa la fecha de creación */
+  const dayKey = l => {
+    const fi = (l.fecha_ingreso_raw||'').slice(0,10);
+    if(fi) return fi;
+    const p = (l.created||'').split('/');
+    return p.length===3 ? p[2].padStart(4,'0')+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0') : '';
+  };
+  const fmtDia = k => { const p=k.split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : k; };
+  /* Días disponibles (antes de aplicar el filtro de día), con conteo por lote */
+  const diasMap = {};
+  svaLeads.forEach(l=>{ const k=dayKey(l); if(k) diasMap[k]=(diasMap[k]||0)+1; });
+  const diasList = Object.keys(diasMap).sort().reverse(); /* más recientes primero */
+  if(fDia){
+    svaLeads = svaLeads.filter(l=>dayKey(l)===fDia);
+  }
 
   /* Hunters visibles (columnas) */
   let hunterCols = HUNTERS_DEF.slice();
@@ -1719,7 +1747,7 @@ function renderEstadoSVA(){
     {key:'oportunidad', label:'25% · Oportunidad (contactado)',    color:'#7F77DD', bg:'#F0EFFA'},
     {key:'negociacion', label:'50% · Negociación',                 color:'#F5A623', bg:'#FEF6E7'},
     {key:'precierre',   label:'75% · Pre-cierre (Sí verbal)',      color:'#E8721C', bg:'#FDF0E6'},
-    {key:'cerrado',     label:'100% · Lead ganado (mes actual)',   color:'#1D9E75', bg:'#E8F5EF'},
+    {key:'cerrado',     label:'100% · Lead ganado ('+mesRef+')',    color:'#1D9E75', bg:'#E8F5EF'},
     {key:'perdido',     label:'Perdido / Caído (No contesta)',     color:'#E24B4A', bg:'#FCECEC'}
   ];
 
@@ -1750,9 +1778,17 @@ function renderEstadoSVA(){
     <div style="background:rgba(179,136,255,.15);border-radius:10px;padding:8px 12px;font-size:20px;">📊</div>
     <div>
       <div style="font-size:16px;font-weight:600;color:#333;">Estado SVA</div>
-      <div style="font-size:11px;color:#999;">Avance de leads SVA por hunter según etapa${fTipo?' — '+fTipo:''}</div>
+      <div style="font-size:11px;color:#999;">Avance de leads SVA por hunter según etapa${fTipo?' — '+fTipo:''}${fMes?' — '+fMes:''}${fDia?' — lote del '+fmtDia(fDia):''}</div>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <select class="filter-sel" onchange="window.estsva_mes=this.value;renderEstadoSVA()">
+        <option value="">Todos los meses</option>
+        ${MESES_EST.map(m=>`<option value="${m}"${fMes===m?' selected':''}>${m}</option>`).join('')}
+      </select>
+      <select class="filter-sel" onchange="window.estsva_dia=this.value;renderEstadoSVA()" title="Día en que se subieron los leads">
+        <option value="">Todos los días</option>
+        ${diasList.map(d=>`<option value="${d}"${fDia===d?' selected':''}>📥 ${fmtDia(d)} (${diasMap[d]})</option>`).join('')}
+      </select>
       <select class="filter-sel" onchange="window.estsva_tipo=this.value;renderEstadoSVA()">
         <option value="">Todos los SVA</option>
         <option value="QR"${fTipo==='QR'?' selected':''}>QR</option>
@@ -1773,7 +1809,7 @@ function renderEstadoSVA(){
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
     ${kpiCard('Sin contactar', rowTotal(ROWS[0]), '10% Prospección', 'down', '#3DB8E8')}
     ${kpiCard('En trabajo', rowTotal(ROWS[1])+rowTotal(ROWS[2])+rowTotal(ROWS[3]), '25% + 50% + 75%', 'neutral', '#F5A623')}
-    ${kpiCard('Ganados '+mesActEST, rowTotal(ROWS[4]), '100% Cierre · '+mesActEST, 'up', '#1D9E75')}
+    ${kpiCard('Ganados '+mesRef, rowTotal(ROWS[4]), '100% Cierre · '+mesRef, 'up', '#1D9E75')}
     ${kpiCard('% Trabajado global', pctTrabTot+'%', 'leads que salieron de 10%', pctTrabTot>=60?'up':pctTrabTot>=30?'neutral':'down', pctColor(pctTrabTot))}
   </div>
 
