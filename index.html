@@ -1876,13 +1876,17 @@ function renderCerradosCaidos(tipo){
       <div style="font-size:15px;font-weight:600;color:#333;">${titulo}</div>
       <div style="font-size:11px;color:#999;">${desc}</div>
     </div>
-    <span style="margin-left:auto;background:${color}22;color:${color};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${leads.length} leads</span>
+    <span id="count-${tipo}" style="margin-left:auto;background:${color}22;color:${color};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${leads.length} leads</span>
   </div>
   <div style="margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
     <input class="search-box" id="srch-${tipo}" data-key="${tipo}" placeholder="Buscar por RUC o Razón Social..." value="${window['search_'+tipo]||''}" autocomplete="off" style="width:260px;">
     <select id="filter-hunter-${tipo}" onchange="filterCerradosByHunter('${tipo}')" style="font-size:12px;padding:6px 10px;border:1px solid #dde1e7;border-radius:8px;background:#fff;color:#333;cursor:pointer;">
       <option value="">Todos los hunters</option>
       ${Object.values(HUNTERS).filter(h=>curUser.role==='head'?h.team===curUser.equipo:true).map(h=>`<option value="${h.username}">${h.name}</option>`).join('')}
+    </select>
+    <select id="filter-mes-${tipo}" onchange="filterCerradosByHunter('${tipo}')" style="font-size:12px;padding:6px 10px;border:1px solid #dde1e7;border-radius:8px;background:#fff;color:#333;cursor:pointer;">
+      <option value="">Todos los meses</option>
+      ${['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'].map(m=>`<option value="${m}">${m}</option>`).join('')}
     </select>
   </div>
   <div class="tbl-wrap" id="tbl-${tipo}">${leads.length ? leadsTableHTML(leads, false, tipo) :
@@ -1893,20 +1897,30 @@ function renderCerradosCaidos(tipo){
 function filterCerradosByHunter(tipo){
   const hunterVal = document.getElementById('filter-hunter-'+tipo)?.value || '';
   const searchVal = (document.getElementById('srch-'+tipo)?.value || '').toLowerCase().trim();
+  const mesVal    = (document.getElementById('filter-mes-'+tipo)?.value || '').toLowerCase();
   const rows = document.querySelectorAll(`#tbl-${tipo} tbody tr.lead-row`);
+  let shown=0, total=0;
   rows.forEach(tr=>{
+    total++;
     const ruc = (tr.dataset.ruc||'').toLowerCase();
     const name = (tr.dataset.name||'').toLowerCase();
     const hunter = (tr.dataset.hunter||'').toLowerCase();
+    const mes = (tr.dataset.mes||'').toLowerCase();
     const matchSearch = !searchVal || ruc.includes(searchVal) || name.includes(searchVal);
     const matchHunter = !hunterVal || hunter===hunterVal.toLowerCase();
-    tr.style.display = (matchSearch && matchHunter) ? '' : 'none';
+    const matchMes    = !mesVal || mes===mesVal;
+    const show = matchSearch && matchHunter && matchMes;
+    tr.style.display = show ? '' : 'none';
+    if(show) shown++;
     /* también ocultar fila de historial si existe */
     const next = tr.nextElementSibling;
     if(next && next.classList.contains('historial-row')){
-      next.style.display = (matchSearch && matchHunter) ? '' : 'none';
+      next.style.display = show ? '' : 'none';
     }
   });
+  /* Actualizar contador: "X de Y leads" */
+  const c = document.getElementById('count-'+tipo);
+  if(c) c.textContent = (shown===total ? total+' leads' : shown+' de '+total+' leads');
 }
 
 /* Mark a lead as cerrado or caido */
@@ -3023,7 +3037,7 @@ function leadsTableHTML(leads, canEdit, key){
         : '';
       const actionBtn = `<span style="white-space:nowrap;">${editBtn}${fullSaveBtn}${cerrarBtn}${caidoBtn}${restoreBtn}${deleteBtn}${hunterSaveBtn}</span>`;
 
-      return `<tr id="row-${l.id}" class="lead-row" data-ruc="${(l.ruc||'').toLowerCase()}" data-name="${(l.name||'').toLowerCase()}" data-hunter="${(l.hunter||'').toLowerCase()}">
+      return `<tr id="row-${l.id}" class="lead-row" data-ruc="${(l.ruc||'').toLowerCase()}" data-name="${(l.name||'').toLowerCase()}" data-hunter="${(l.hunter||'').toLowerCase()}" data-mes="${(l.close||'').toLowerCase()}">
         <td><span class="dot" style="background:${dc};"></span></td>
         <td style="text-align:center;cursor:pointer;" title="Ver historial" onclick="toggleHistorial('${l.id}',this)">
           <span style="font-size:13px;" id="exp-${l.id}">▶</span>
@@ -3323,6 +3337,7 @@ function renderSvaCerradosCaidos(tipo){
   const color  = tipo==='cerrado'?'#3DB8E8':'#F5A623';
   const titulo = tipo==='cerrado'?'SVA Cerrados':'SVA Perdidos';
   const icono  = tipo==='cerrado'?'ti-rosette':'ti-mood-sad';
+  const svaKey = tipo==='cerrado'?'sva_cerrados':'sva_caidos';
 
   /* Agrupar por tipo SVA */
   const byTipo = {QR:0, ARISALE:0, PLANILLAS:0};
@@ -3333,15 +3348,30 @@ function renderSvaCerradosCaidos(tipo){
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
         <i class="ti ${icono}" style="font-size:20px;color:${color};"></i>
         <div style="font-size:16px;font-weight:700;color:#1a1f2e;">${titulo}</div>
-        <span style="font-size:12px;color:#888;margin-left:4px;">${leads.length} leads</span>
+        <span id="count-${svaKey}" style="font-size:12px;color:#888;margin-left:4px;">${leads.length} leads</span>
         <div style="margin-left:auto;display:flex;gap:8px;">
           <span style="background:rgba(61,184,232,.12);color:#3DB8E8;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">QR: ${byTipo.QR}</span>
           <span style="background:rgba(127,119,221,.12);color:#7F77DD;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">Arisale: ${byTipo.ARISALE}</span>
           <span style="background:rgba(245,166,35,.12);color:#F5A623;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">Planillas: ${byTipo.PLANILLAS}</span>
         </div>
       </div>
-      <div class="tbl-wrap">
-        ${leadsTableHTML(leads, false, tipo==='cerrado'?'sva_cerrados':'sva_caidos')}
+      <div style="margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input id="srch-${svaKey}" placeholder="Buscar por RUC o Razón Social..." autocomplete="off"
+          oninput="filterCerradosByHunter('${svaKey}')"
+          style="width:260px;font-size:12px;padding:6px 12px;border:1px solid #dde1e7;border-radius:8px;background:#fff;outline:none;">
+        <select id="filter-hunter-${svaKey}" onchange="filterCerradosByHunter('${svaKey}')"
+          style="font-size:12px;padding:6px 10px;border:1px solid #dde1e7;border-radius:8px;background:#fff;color:#333;cursor:pointer;">
+          <option value="">Todos los hunters</option>
+          ${Object.values(HUNTERS).filter(h=>curUser.role==='head'?h.team===curUser.equipo:true).map(h=>`<option value="${h.username}">${h.name}</option>`).join('')}
+        </select>
+        <select id="filter-mes-${svaKey}" onchange="filterCerradosByHunter('${svaKey}')"
+          style="font-size:12px;padding:6px 10px;border:1px solid #dde1e7;border-radius:8px;background:#fff;color:#333;cursor:pointer;">
+          <option value="">Todos los meses</option>
+          ${['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'].map(m=>`<option value="${m}">${m}</option>`).join('')}
+        </select>
+      </div>
+      <div class="tbl-wrap" id="tbl-${svaKey}">
+        ${leadsTableHTML(leads, false, svaKey)}
       </div>
     </div>`;
 }
