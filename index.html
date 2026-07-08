@@ -559,7 +559,7 @@ let SB_USUARIOS = [];
 let LEADS = [];
 const USERS = {}; /* vacío, se usa Supabase */
 
-/* ── HUNTERS (14 reales) ── */
+/* ── HUNTERS (15 reales) ── */
 const HUNTERS_DEF = [
   {username:'mvasquez',   name:'Melissa Vasquez',   initials:'MV', color:'#FF6B6B', team:'A', meta:0, real:0},
   {username:'mllacchuas', name:'Melissa Llacchuas', initials:'ML', color:'#FF6B9D', team:'A', meta:0, real:0},
@@ -575,6 +575,7 @@ const HUNTERS_DEF = [
   {username:'acastillo',  name:'Analiz Castillo',    initials:'AC', color:'#F59E0B', team:'B', meta:0, real:0},
   {username:'rllanos',    name:'Rock Llanos',         initials:'RL', color:'#7F77DD', team:'B', meta:0, real:0},
   {username:'frouillon',  name:'Franco Rouillon',     initials:'FR', color:'#D4537E', team:'B', meta:0, real:0},
+  {username:'rmarsano',   name:'Renato Marsano',      initials:'RM', color:'#16A085', team:'B', meta:0, real:0},
 ];
 const HUNTERS = Object.fromEntries(HUNTERS_DEF.map(h=>[h.username, h]));
 const HUNTERS_A = HUNTERS_DEF.filter(h=>h.team==='A');
