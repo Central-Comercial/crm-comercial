@@ -2075,7 +2075,7 @@ function renderAllLeads(){
       <option value="">Todos los meses</option>${mesOpts}
     </select>
     <span style="margin-left:auto;font-size:11px;color:#999;">${filtered.length} de ${total} leads</span>
-    ${curUser.role!=='viewer'?`<button onclick="exportAllLeads()" style="padding:5px 12px;border-radius:7px;border:1px solid #1D9E75;background:#e8f5e9;color:#1D9E75;font-size:11px;cursor:pointer;font-weight:600;">
+    ${!['viewer','hunter'].includes(curUser.role)?`<button onclick="exportAllLeads()" style="padding:5px 12px;border-radius:7px;border:1px solid #1D9E75;background:#e8f5e9;color:#1D9E75;font-size:11px;cursor:pointer;font-weight:600;">
       ⬇ Exportar Excel
     </button>`:''}
     ${['director','analista','head','hunter'].includes(curUser.role) ? `
@@ -2088,6 +2088,7 @@ function renderAllLeads(){
 }
 
 function exportAllLeads(){
+  if(['hunter','viewer'].includes(curUser.role)){ alert('No tienes permisos para exportar.'); return; }
   if(typeof XLSX === 'undefined'){ alert('SheetJS no cargó'); return; }
   const fHunter = window['al_hunter']||'';
   const fEstado = window['al_estado']||'all';
