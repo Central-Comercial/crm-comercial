@@ -1693,23 +1693,9 @@ function renderEstadoSVA(){
   const mesActEST = _dEST<=2 ? MESES_EST[(_mEST-1+12)%12] : MESES_EST[_mEST];
   const mesRef = fMes || mesActEST; /* mes que se muestra en etiquetas */
 
-  if(fMes){
-    /* Con mes seleccionado: TODA la tabla es la foto de ese mes (activos, ganados y perdidos con mes_cierre = fMes) */
-    svaLeads = svaLeads.filter(l=>(l.close||'').toUpperCase()===fMes);
-  } else if(!window.estsva_dia){
-    /* Sin filtro: activos de cualquier mes + ganados SOLO del mes actual */
-    svaLeads = svaLeads.filter(l=>{
-      const esCerrado = l.categoria==='cerrado' || l.status==='cerrado';
-      if(!esCerrado) return true;
-      return (l.close||'').toUpperCase()===mesActEST;
-    });
-  }
-  /* Nota: si hay filtro de DÍA activo (y no de mes), se muestra el lote completo con todos sus cierres */
-
-  /* ── Filtro por DÍA DE IMPORTACIÓN (solo lotes importados por administración) ── */
+  /* ── Filtro por DÍA DE IMPORTACIÓN — tiene PRIORIDAD sobre el filtro de mes ── */
   /* Un lead "importado" es todo el que NO es LEAD PROPIO (los propios los crean los hunters manualmente) */
   const isImport = l => (l.source||'').toUpperCase().trim() !== 'LEAD PROPIO';
-  /* Fecha de ingreso del lead: usa fecha_ingreso, si no existe usa la fecha de creación */
   const dayKey = l => {
     const fi = (l.fecha_ingreso_raw||'').slice(0,10);
     if(fi) return fi;
@@ -1717,13 +1703,24 @@ function renderEstadoSVA(){
     return p.length===3 ? p[2].padStart(4,'0')+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0') : '';
   };
   const fmtDia = k => { const p=k.split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : k; };
-  /* Días disponibles: SOLO días con lotes importados, con conteo de importados por día */
+  /* El dropdown de días SIEMPRE muestra el lote completo (no lo recorta el filtro de mes) */
   const diasMap = {};
   svaLeads.forEach(l=>{ if(!isImport(l)) return; const k=dayKey(l); if(k) diasMap[k]=(diasMap[k]||0)+1; });
-  const diasList = Object.keys(diasMap).sort().reverse(); /* más recientes primero */
+  const diasList = Object.keys(diasMap).sort().reverse();
+
   if(fDia){
-    /* Al filtrar por día: SOLO los importados de ese lote (los LEAD PROPIO quedan fuera) */
+    /* DÍA seleccionado: se muestra el lote COMPLETO de ese día (solo importados), ignorando el filtro de mes */
     svaLeads = svaLeads.filter(l=>isImport(l) && dayKey(l)===fDia);
+  } else if(fMes){
+    /* Con mes seleccionado: TODA la tabla es la foto de ese mes (activos, ganados y perdidos con mes_cierre = fMes) */
+    svaLeads = svaLeads.filter(l=>(l.close||'').toUpperCase()===fMes);
+  } else {
+    /* Sin filtros: activos de cualquier mes + ganados SOLO del mes actual */
+    svaLeads = svaLeads.filter(l=>{
+      const esCerrado = l.categoria==='cerrado' || l.status==='cerrado';
+      if(!esCerrado) return true;
+      return (l.close||'').toUpperCase()===mesActEST;
+    });
   }
 
   /* Hunters visibles (columnas) */
