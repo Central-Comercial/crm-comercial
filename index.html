@@ -1680,12 +1680,10 @@ function renderEstadoSVA(){
     return true;
   }));
 
-  /* Filtro tipo SVA (busca en tipo_producto y tipo_sva) */
+  /* Filtro tipo SVA (busca en tipo_producto y tipo_sva, tolerante a espacios/mayúsculas) */
+  const normTipo = l => (l.tipo_producto||l.tipo_sva||'').toUpperCase().trim();
   if(fTipo){
-    svaLeads = svaLeads.filter(l=>{
-      const tp=(l.tipo_producto||l.tipo_sva||'').toUpperCase();
-      return tp===fTipo;
-    });
+    svaLeads = svaLeads.filter(l=>normTipo(l)===fTipo);
   }
 
   /* Mes de referencia */
@@ -1708,7 +1706,9 @@ function renderEstadoSVA(){
   }
   /* Nota: si hay filtro de DÍA activo (y no de mes), se muestra el lote completo con todos sus cierres */
 
-  /* ── Filtro por DÍA DE INGRESO (lote de subida) ── */
+  /* ── Filtro por DÍA DE IMPORTACIÓN (solo lotes importados por administración) ── */
+  /* Un lead "importado" es todo el que NO es LEAD PROPIO (los propios los crean los hunters manualmente) */
+  const isImport = l => (l.source||'').toUpperCase().trim() !== 'LEAD PROPIO';
   /* Fecha de ingreso del lead: usa fecha_ingreso, si no existe usa la fecha de creación */
   const dayKey = l => {
     const fi = (l.fecha_ingreso_raw||'').slice(0,10);
@@ -1717,12 +1717,13 @@ function renderEstadoSVA(){
     return p.length===3 ? p[2].padStart(4,'0')+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0') : '';
   };
   const fmtDia = k => { const p=k.split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : k; };
-  /* Días disponibles (antes de aplicar el filtro de día), con conteo por lote */
+  /* Días disponibles: SOLO días con lotes importados, con conteo de importados por día */
   const diasMap = {};
-  svaLeads.forEach(l=>{ const k=dayKey(l); if(k) diasMap[k]=(diasMap[k]||0)+1; });
+  svaLeads.forEach(l=>{ if(!isImport(l)) return; const k=dayKey(l); if(k) diasMap[k]=(diasMap[k]||0)+1; });
   const diasList = Object.keys(diasMap).sort().reverse(); /* más recientes primero */
   if(fDia){
-    svaLeads = svaLeads.filter(l=>dayKey(l)===fDia);
+    /* Al filtrar por día: SOLO los importados de ese lote (los LEAD PROPIO quedan fuera) */
+    svaLeads = svaLeads.filter(l=>isImport(l) && dayKey(l)===fDia);
   }
 
   /* Hunters visibles (columnas) */
@@ -1733,6 +1734,14 @@ function renderEstadoSVA(){
   const shortName = h => { const p=h.name.split(' '); return p[0]+(p[1]?' '+p[1][0]+'.':''); };
   hunterCols = hunterCols.map(h=>({...h, short: shortName(h)}))
                          .sort((a,b)=>a.short.localeCompare(b.short));
+
+  /* ⚠ Leads con hunter NO reconocido (typo o usuario fuera de la lista): columna especial para que no queden invisibles */
+  const knownUsers = new Set(HUNTERS_DEF.map(h=>h.username));
+  const unknownLeads = svaLeads.filter(l=>!knownUsers.has(l.hunter));
+  const unknownUsers = [...new Set(unknownLeads.map(l=>l.hunter||'(vacío)'))];
+  if(unknownLeads.length > 0){
+    hunterCols.push({username:'__unknown__', name:'Sin asignar / no reconocido', short:'⚠ Sin asignar', color:'#E24B4A', team:''});
+  }
 
   /* Clasificar cada lead en una fila */
   const rowOf = l => {
@@ -1756,7 +1765,8 @@ function renderEstadoSVA(){
   ROWS.forEach(r=>{ counts[r.key]={}; });
   svaLeads.forEach(l=>{
     const rk = rowOf(l);
-    counts[rk][l.hunter] = (counts[rk][l.hunter]||0) + 1;
+    const col = knownUsers.has(l.hunter) ? l.hunter : '__unknown__';
+    counts[rk][col] = (counts[rk][col]||0) + 1;
   });
 
   const colTotal = h => ROWS.reduce((s,r)=>s+(counts[r.key][h.username]||0),0);
@@ -1778,7 +1788,7 @@ function renderEstadoSVA(){
     <div style="background:rgba(179,136,255,.15);border-radius:10px;padding:8px 12px;font-size:20px;">📊</div>
     <div>
       <div style="font-size:16px;font-weight:600;color:#333;">Estado SVA</div>
-      <div style="font-size:11px;color:#999;">Avance de leads SVA por hunter según etapa${fTipo?' — '+fTipo:''}${fMes?' — '+fMes:''}${fDia?' — lote del '+fmtDia(fDia):''}</div>
+      <div style="font-size:11px;color:#999;">Avance de leads SVA por hunter según etapa${fTipo?' — '+fTipo:''}${fMes?' — '+fMes:''}${fDia?' — lote importado el '+fmtDia(fDia)+' (sin leads propios)':''}</div>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <select class="filter-sel" onchange="window.estsva_mes=this.value;renderEstadoSVA()">
@@ -1804,6 +1814,13 @@ function renderEstadoSVA(){
       <span style="background:#B388FF22;color:#7C4DFF;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${grandTotal} leads</span>
     </div>
   </div>
+
+  <!-- Alerta de leads con hunter no reconocido -->
+  ${unknownLeads.length>0 ? `
+  <div style="background:#FDEDED;border:1px solid #E24B4A;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#B03A39;">
+    ⚠ <strong>${unknownLeads.length} lead${unknownLeads.length>1?'s':''} con hunter no reconocido</strong> — asignado${unknownLeads.length>1?'s':''} a: <strong>${unknownUsers.join(', ')}</strong>.
+    Aparecen en la columna "⚠ Sin asignar". Revisa el nombre en la importación o reasígnalos a un hunter válido.
+  </div>` : ''}
 
   <!-- Mini resumen -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
@@ -1864,7 +1881,7 @@ function renderEstadoSVA(){
   ${!fTipo ? `
   <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
     ${['QR','ARISALE','PLANILLAS'].map(t=>{
-      const n = svaLeads.filter(l=>(l.tipo_producto||l.tipo_sva||'').toUpperCase()===t).length;
+      const n = svaLeads.filter(l=>normTipo(l)===t).length;
       return `<div style="background:#fff;border:1px solid #e8eaed;border-radius:8px;padding:8px 14px;font-size:11px;cursor:pointer;"
         onclick="window.estsva_tipo='${t}';renderEstadoSVA()">
         <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${tipoColors[t]};margin-right:6px;"></span>
