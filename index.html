@@ -1694,8 +1694,8 @@ function renderEstadoSVA(){
   const mesRef = fMes || mesActEST; /* mes que se muestra en etiquetas */
 
   /* ── Filtro por DÍA DE IMPORTACIÓN — tiene PRIORIDAD sobre el filtro de mes ── */
-  /* Un lead "importado" es todo el que NO es LEAD PROPIO (los propios los crean los hunters manualmente) */
-  const isImport = l => (l.source||'').toUpperCase().trim() !== 'LEAD PROPIO';
+  /* Un lead "importado" es SOLO el que tiene origen LEAD CENTRAL (las cargas de administración) */
+  const isImport = l => (l.source||'').toUpperCase().trim() === 'LEAD CENTRAL';
   const dayKey = l => {
     const fi = (l.fecha_ingreso_raw||'').slice(0,10);
     if(fi) return fi;
