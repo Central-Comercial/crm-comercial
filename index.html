@@ -334,6 +334,7 @@ tr:hover td{background:#fafbff;}
           <option>WINBACK (6 MESES)</option>
           <option>NUEVO</option>
           <option>REACTIVACION</option>
+          <option>ADICIONAL O CARTERIZADO</option>
         </select>
       </div>
       <div class="mf"><label>Banco</label>
@@ -1823,7 +1824,11 @@ function renderEstadoSVA(){
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
     ${kpiCard('Sin contactar', rowTotal(ROWS[0]), '10% Prospección', 'down', '#3DB8E8')}
     ${kpiCard('En trabajo', rowTotal(ROWS[1])+rowTotal(ROWS[2])+rowTotal(ROWS[3]), '25% + 50% + 75%', 'neutral', '#F5A623')}
-    ${kpiCard('Ganados '+mesRef, rowTotal(ROWS[4]), '100% Cierre · '+mesRef, 'up', '#1D9E75')}
+    ${(()=>{ 
+      const ganadosLeads = svaLeads.filter(l=>rowOf(l)==='cerrado');
+      const qrGanUnits = ganadosLeads.filter(l=>normTipo(l)==='QR').reduce((s,l)=>s+(Number(l.parlantes)||0),0);
+      return kpiCard('Ganados '+mesRef, rowTotal(ROWS[4]), '100% Cierre · '+mesRef+(qrGanUnits>0?' · '+qrGanUnits+' QR':''), 'up', '#1D9E75');
+    })()}
     ${kpiCard('% Trabajado global', pctTrabTot+'%', 'leads que salieron de 10%', pctTrabTot>=60?'up':pctTrabTot>=30?'neutral':'down', pctColor(pctTrabTot))}
   </div>
 
@@ -2255,12 +2260,17 @@ function kpiRowFlat(label, leads, tipoProd){
 
   /* QR y PLANILLAS se miden por CANTIDAD de leads; ARISALE se mide en S/ */
   const byCount = (tipoProd.toUpperCase()==='QR' || tipoProd.toUpperCase()==='PLANILLAS');
+  const esQR = tipoProd.toUpperCase()==='QR';
+
+  /* QR cerrado se contabiliza por UNIDADES (campo Cantidad/Valor = parlantes), no por leads */
+  const qrUnidades = cerradosArr.reduce((s,l)=>s+(Number(l.parlantes)||0),0);
 
   const totalCard   = byCount ? kpiCard(label+' Total', filtered.length, 'leads totales','neutral')
                                : kpiCard(label+' Total','S/ '+captura.toLocaleString(),'captura potencial','neutral');
   const leadsTotalCard = byCount ? kpiFunnelCardCount(label+' Leads Total', activosArr)
                                   : kpiFunnelCard(label+' Leads Total', activosArr);
-  const cerradoCard = byCount ? kpiCard(label+' Cerrado', cerrados, '100% Cierre','up','#1D9E75')
+  const cerradoCard = esQR    ? kpiCard(label+' Cerrado', qrUnidades+' QR', cerrados+' lead'+(cerrados===1?'':'s')+' · 100% Cierre','up','#1D9E75')
+                    : byCount ? kpiCard(label+' Cerrado', cerrados, '100% Cierre','up','#1D9E75')
                                : kpiCard(label+' Cerrado','S/ '+cerradosArr.reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'100% Cierre','up','#1D9E75');
   const perdidoCard = byCount ? kpiCard(label+' Perdido', perdidos, 'caídos','down','#E24B4A')
                                : kpiCard(label+' Perdido','S/ '+perdidosArr.reduce((s,l)=>s+(l.value||0),0).toLocaleString(),'caídos','down','#E24B4A');
@@ -3393,7 +3403,8 @@ function renderSvaCerradosCaidos(tipo){
 
   /* Agrupar por tipo SVA */
   const byTipo = {QR:0, ARISALE:0, PLANILLAS:0};
-  leads.forEach(l=>{ const tp=(l.tipo_producto||l.tipo_sva||'').toUpperCase(); if(byTipo[tp]!==undefined) byTipo[tp]++; });
+  let qrParlantes = 0;
+  leads.forEach(l=>{ const tp=(l.tipo_producto||l.tipo_sva||'').toUpperCase().trim(); if(byTipo[tp]!==undefined) byTipo[tp]++; if(tp==='QR') qrParlantes += Number(l.parlantes)||0; });
 
   document.getElementById('content').innerHTML = `
     <div style="padding:20px;">
@@ -3402,7 +3413,7 @@ function renderSvaCerradosCaidos(tipo){
         <div style="font-size:16px;font-weight:700;color:#1a1f2e;">${titulo}</div>
         <span id="count-${svaKey}" style="font-size:12px;color:#888;margin-left:4px;">${leads.length} leads</span>
         <div style="margin-left:auto;display:flex;gap:8px;">
-          <span style="background:rgba(61,184,232,.12);color:#3DB8E8;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">QR: ${byTipo.QR}</span>
+          <span style="background:rgba(61,184,232,.12);color:#3DB8E8;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">QR: ${byTipo.QR} lead${byTipo.QR===1?'':'s'} · ${qrParlantes} parlantes</span>
           <span style="background:rgba(127,119,221,.12);color:#7F77DD;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">Arisale: ${byTipo.ARISALE}</span>
           <span style="background:rgba(245,166,35,.12);color:#F5A623;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">Planillas: ${byTipo.PLANILLAS}</span>
         </div>
