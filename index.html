@@ -4241,7 +4241,8 @@ async function handleImport(input){
     let hunter_id = null, equipo = null;
     if(hunterName){
       /* 1) Try exact match (original y normalizado) */
-      hunter_id = hunterNameMap[hunterName] || hunterNameMap[hunterNameNorm.toUpperCase()];
+      const hunterNameNormC = normalizeName(hunterName).toUpperCase().trim();
+      hunter_id = hunterNameMap[hunterName] || hunterNameMap[hunterNameNormC];
 
       /* 2) Substring match con normalización (ignora tildes, mayúsculas, ñ) */
       if(!hunter_id){
