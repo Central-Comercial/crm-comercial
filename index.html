@@ -3037,7 +3037,7 @@ function leadsTableHTML(leads, canEdit, key){
       /* Director/Analista/Head pueden editar inline: potencial, banco, etapa, mes cierre, comentario */
       const canPartial = canFullEdit(l);
 
-      const potencialCell = canPartial
+      const potencialCell = (canPartial || commentOnly)
         ? `<input class="ecell" type="number" value="${l.value||0}" style="font-weight:700;font-size:11px;width:70px;" data-id="${l.id}" data-field="valor" data-key="${key}" onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)">`
         : `S/${(l.value||0).toLocaleString()}`;
 
@@ -3055,7 +3055,7 @@ function leadsTableHTML(leads, canEdit, key){
            </select>`
         : `<span class="sbadge" style="background:${sc2.bg};color:${sc2.c};">${sc2.l}</span>`;
 
-      const mesCierreCell = canPartial
+      const mesCierreCell = (canPartial || commentOnly)
         ? `<select style="font-size:10px;border:1px solid #dde1e7;padding:2px 4px;border-radius:5px;" data-id="${l.id}" data-field="mes_cierre" data-key="${key}" onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)">
             ${['','ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'].map(m=>`<option value="${m}"${m===l.close?' selected':''}>${m||'—'}</option>`).join('')}
            </select>`
@@ -3133,10 +3133,12 @@ function leadsTableHTML(leads, canEdit, key){
         <td>${comentarioCell}</td>
         ${isSVA?(()=>{
           const tipoSva=(l.tipo_sva||l.tipo_producto||'').toUpperCase();
+          const canCant = canPartial || commentOnly;
+          const inp=(field,val,w,ph)=>`<input class="ecell" type="number" min="0" value="${val||0}" placeholder="${ph}" title="${ph}" style="font-size:10px;width:${w}px;" data-id="${l.id}" data-field="${field}" data-key="${key}" onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)">`;
           let cantVal='—';
-          if(tipoSva==='QR') cantVal=(l.parlantes||0)+' parlantes';
-          else if(tipoSva==='ARISALE') cantVal='S/'+(l.arisale_valor||0).toLocaleString()+' · '+(l.arisale_licencias||0)+' lic.';
-          else if(tipoSva==='PLANILLAS') cantVal=(l.planillas_colaboradores||0)+' colab.';
+          if(tipoSva==='QR')            cantVal = canCant ? inp('parlantes',l.parlantes,50,'Parlantes')+' <span style="color:#999;">parl.</span>' : (l.parlantes||0)+' parlantes';
+          else if(tipoSva==='ARISALE')  cantVal = canCant ? 'S/'+inp('arisale_valor',l.arisale_valor,60,'Valor S/')+' · '+inp('arisale_licencias',l.arisale_licencias,42,'Licencias')+' <span style="color:#999;">lic.</span>' : 'S/'+(l.arisale_valor||0).toLocaleString()+' · '+(l.arisale_licencias||0)+' lic.';
+          else if(tipoSva==='PLANILLAS')cantVal = canCant ? inp('planillas_colaboradores',l.planillas_colaboradores,50,'Colaboradores')+' <span style="color:#999;">colab.</span>' : (l.planillas_colaboradores||0)+' colab.';
           const implColors={'PENDIENTE':'#E24B4A','EN PROCESO':'#F5A623','IMPLEMENTADO':'#3DB8E8','COMPLETADO':'#1D9E75'};
           const implColor=implColors[(l.etapa_implementacion||'').toUpperCase()]||'#999';
           return `<td style="font-size:10px;font-weight:600;color:#7F77DD;">${tipoSva||'—'}</td>
@@ -3630,7 +3632,8 @@ function handleTblAction(el){
 async function updateLeadDB(id, field, value, key){
   /* Save single field directly to Supabase */
   const hoy = new Date().toISOString().slice(0,10);
-  const body = { [field]: field==='valor'?Number(value):value, updated_at: new Date().toISOString() };
+  const NUM_FIELDS = ['valor','parlantes','arisale_valor','arisale_licencias','planillas_colaboradores'];
+  const body = { [field]: NUM_FIELDS.includes(field)?(Number(value)||0):value, updated_at: new Date().toISOString() };
   /* Cualquier modificación actualiza también la fecha de modificación (salvo que el campo editado SEA esa fecha) */
   if(field!=='fecha_modif'){ body.fecha_modif = hoy; }
   /* Auto-cerrado: si la nueva etapa es 100%, marcar categoría=cerrado en el mismo PATCH */
@@ -3756,7 +3759,8 @@ async function openModal(id,key){
   document.getElementById('modal-title').textContent=id?'Editar lead':'Nuevo lead';
 
   /* Bloquear campos según rol */
-  const lockFields = ['m-name','m-ruc','m-status','m-source','m-giros','m-tipo-producto','m-tipo-cuenta','m-banco','m-value','m-close','m-fecha-ingreso','m-rep-legal','m-telefono'];
+  /* Hunter SÍ puede editar: Potencial (m-value) y Mes de Cierre (m-close). El resto queda bloqueado. */
+  const lockFields = ['m-name','m-ruc','m-status','m-source','m-giros','m-tipo-producto','m-tipo-cuenta','m-banco','m-fecha-ingreso','m-rep-legal','m-telefono'];
   lockFields.forEach(f=>{
     const el=document.getElementById(f);
     if(el) el.disabled = isHunter && !!id; // hunter no puede editar esos campos en leads existentes
@@ -3816,10 +3820,9 @@ async function openSVAModal(id){
   const isHunter = curUser.role === 'hunter';
   document.getElementById('modal-sva-title').textContent = id?'Editar lead SVA':'Nuevo lead SVA';
 
-  /* Bloquear campos según rol (hunter solo edita comentario en leads existentes) */
+  /* Hunter SÍ puede editar: Cantidad/Valor (parlantes, valor y licencias Arisale, colaboradores Planillas) y Mes de Cierre. El resto queda bloqueado. */
   const lockFields = ['sva-hunter','sva-telefono','sva-razon','sva-ruc','sva-rep-legal','sva-giros','sva-source',
-    'sva-tipo','sva-parlantes','sva-arisale-valor','sva-arisale-licencias','sva-planillas',
-    'sva-status','sva-close','sva-etapa-impl','sva-fecha-ingreso'];
+    'sva-tipo','sva-status','sva-etapa-impl','sva-fecha-ingreso'];
   lockFields.forEach(f=>{
     const el=document.getElementById(f);
     if(el) el.disabled = isHunter && !!id;
@@ -3889,9 +3892,14 @@ async function saveSVALead(){
     let payload;
 
     if(isHunter && editingId){
-      /* Hunter solo actualiza comentario + fecha modif */
+      /* Hunter puede actualizar: comentario, Cantidad/Valor (parlantes, Arisale, Planillas) y Mes de Cierre */
       payload = {
         comentario: document.getElementById('sva-note').value,
+        parlantes: parseInt(document.getElementById('sva-parlantes').value)||0,
+        arisale_valor: parseFloat(document.getElementById('sva-arisale-valor').value)||0,
+        arisale_licencias: parseInt(document.getElementById('sva-arisale-licencias').value)||0,
+        planillas_colaboradores: parseInt(document.getElementById('sva-planillas').value)||0,
+        mes_cierre: document.getElementById('sva-close').value||null,
         fecha_modif: document.getElementById('sva-fecha-modif').value || new Date().toISOString().slice(0,10),
         updated_at: new Date().toISOString(),
       };
@@ -3992,9 +4000,11 @@ async function saveLead(){
     let payload;
 
     if(isHunter && editingId){
-      /* Hunter solo puede actualizar el comentario */
+      /* Hunter puede actualizar: comentario, Potencial y Mes de Cierre */
       payload = {
         comentario: document.getElementById('m-note').value,
+        valor: parseFloat(document.getElementById('m-value').value)||0,
+        mes_cierre: document.getElementById('m-close').value||null,
         fecha_ingreso: document.getElementById('m-fecha-ingreso').value||null,
         fecha_modif:   document.getElementById('m-fecha-modif').value||null,
         updated_at: new Date().toISOString(),
