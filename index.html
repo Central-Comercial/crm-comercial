@@ -3748,8 +3748,9 @@ let modalKey='';
 async function openModal(id,key){
   modalKey=key||'';editingId=id;
 
-  /* Leads SVA usan un modal con campos distintos */
-  if(key==='sva2'){ return openSVAModal(id); }
+  /* Leads SVA usan un modal con campos distintos — se decide por la LÍNEA del lead, no por la pestaña */
+  const leadRef = id ? LEADS.find(x=>String(x.id)===String(id)) : null;
+  if(key==='sva2' || (leadRef && (leadRef.linea||'central')==='sva')){ return openSVAModal(id); }
 
   const isHunter = curUser.role === 'hunter';
   document.getElementById('modal-title').textContent=id?'Editar lead':'Nuevo lead';
