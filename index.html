@@ -1537,10 +1537,10 @@ function renderSVA2(){
       <option value="75% Pre-cierre"${window.sva2_etapa==='75% Pre-cierre'?' selected':''}>75% Pre-cierre</option>
       <option value="100% Cierre"${window.sva2_etapa==='100% Cierre'?' selected':''}>100% Cierre</option>
     </select>
-    ${['director','analista'].includes(curUser.role)?`
+    ${['director','analista','head'].includes(curUser.role)?`
     <select class="filter-sel" onchange="window.sva2_hunter=this.value;renderSVA2()">
       <option value="">Todos los hunters</option>
-      ${HUNTERS_DEF.map(h=>`<option value="${h.username}"${window.sva2_hunter===h.username?' selected':''}>${h.name}</option>`).join('')}
+      ${HUNTERS_DEF.filter(h=>curUser.role==='head'?h.team===curUser.equipo:true).map(h=>`<option value="${h.username}"${window.sva2_hunter===h.username?' selected':''}>${h.name}</option>`).join('')}
     </select>`:''}
     ${curUser.role!=='viewer'?`<button class="btn-new" onclick="openModal(null,'sva2')"><i class="ti ti-plus"></i> Nuevo lead</button>`:''}
     <span style="font-size:11px;color:#999;margin-left:auto;">${svaLeads.length} leads SVA</span>
