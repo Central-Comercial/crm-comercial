@@ -1981,7 +1981,10 @@ function filterCerradosByHunter(tipo){
 
 /* Mark a lead as cerrado or caido */
 async function markLeadAs(leadId, categoria, key){
-  if(!['director','analista','head'].includes(curUser.role)){
+  const leadChk = LEADS.find(x=>String(x.id)===String(leadId));
+  const hunterCaidoOK = curUser.role==='hunter' && categoria==='caido'
+    && leadChk && leadChk.hunter===curUser.username && (leadChk.linea||'central')==='sva';
+  if(!['director','analista','head'].includes(curUser.role) && !hunterCaidoOK){
     alert('No tienes permisos.'); return;
   }
   const labels = {cerrado:'✅ Lead Cerrado', caido:'📉 Lead Caído', activo:'↩ Restaurado a Activo'};
@@ -3091,7 +3094,9 @@ function leadsTableHTML(leads, canEdit, key){
       const cerrarBtn = canMark && l.categoria!=='cerrado'
         ? `<span style="cursor:pointer;font-size:13px;margin-left:4px;" title="Marcar como Cerrado" onclick="markLeadAs('${safeId}','cerrado','${key}')">🏆</span>`
         : '';
-      const caidoBtn = canMark && l.categoria!=='caido'
+      /* Hunter puede marcar como CAÍDO únicamente sus propios leads SVA */
+      const hunterCanCaido = curUser.role==='hunter' && l.hunter===curUser.username && (l.linea||'central')==='sva';
+      const caidoBtn = (canMark || hunterCanCaido) && l.categoria!=='caido'
         ? `<span style="cursor:pointer;font-size:13px;margin-left:4px;" title="Marcar como Caído" onclick="markLeadAs('${safeId}','caido','${key}')">📉</span>`
         : '';
       const restoreBtn = (canMark && (l.categoria==='cerrado'||l.categoria==='caido'))
@@ -4196,6 +4201,9 @@ async function handleImport(input){
   const iEtapa    = col('ETAPA','ESTADO','STAGE');
   const iMes      = col('MES DE CIERRE','MES CIERR','MES');
   const iComent   = col('COMENTARIO','COMMENT','NOTA','OBS');
+  const iTelefono = col('TELEFONO','TELÉFONO','CELULAR','TELF');
+  const iCorreo   = col('CORREO','EMAIL','MAIL');
+  const iRepLegal = col('REPRESENTANTE','REP LEGAL','REP. LEGAL');
 
   const g = (row, idx) => idx >= 0 ? (row[idx]||'').toString().trim() : '';
 
@@ -4315,6 +4323,9 @@ async function handleImport(input){
       categoria:     mapEstadoImport(g(row, iEtapa))==='cerrado' ? 'cerrado' : 'activo',
       mes_cierre:    g(row, iMes) || null,
       comentario:    g(row, iComent) || null,
+      telefono:      g(row, iTelefono).slice(0,12) || null,
+      correo:        g(row, iCorreo) || null,
+      representante_legal: g(row, iRepLegal) || null,
     };
 
     try {
