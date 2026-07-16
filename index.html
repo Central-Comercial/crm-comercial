@@ -253,7 +253,7 @@ tr:hover td{background:#fafbff;}
     <!-- / HUNTERS DASHBOARD VIEW -->
     <div class="topbar">
       <div style="display:flex;align-items:center;gap:10px;">
-        <span class="page-title">Pipeline · Mayo 2026</span>
+        <span class="page-title" id="page-title-mes">Pipeline</span>
         <span class="badge-role" id="badge-role"></span>
       </div>
       <div class="topbar-right">
@@ -1197,6 +1197,13 @@ function doLogout(){
 
 /* ─── INIT ─── */
 function initApp(){
+  /* Título dinámico: Pipeline · MES AÑO (hora de Perú) — se actualiza solo cada mes */
+  try {
+    const MESES_T = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const _pt = new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',month:'numeric',year:'numeric'}).split('/');
+    const tEl = document.getElementById('page-title-mes');
+    if(tEl) tEl.textContent = 'Pipeline · ' + MESES_T[parseInt(_pt[0])-1] + ' ' + _pt[1];
+  } catch(e){}
   const av=document.getElementById('sb-av');
   av.textContent=curUser.name.split(' ').map(x=>x[0]).join('').substring(0,2);
   av.style.background=curUser.color;
