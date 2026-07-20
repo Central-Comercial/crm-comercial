@@ -1961,8 +1961,10 @@ function filterCerradosByHunter(tipo){
   const hunterVal = document.getElementById('filter-hunter-'+tipo)?.value || '';
   const searchVal = (document.getElementById('srch-'+tipo)?.value || '').toLowerCase().trim();
   const mesVal    = (document.getElementById('filter-mes-'+tipo)?.value || '').toLowerCase();
+  const tipoVal   = (document.getElementById('filter-tipo-'+tipo)?.value || '').toUpperCase();
   const rows = document.querySelectorAll(`#tbl-${tipo} tbody tr.lead-row`);
   let shown=0, total=0;
+  let qrN=0, qrP=0, ariN=0, plaN=0;
   rows.forEach(tr=>{
     total++;
     const ruc = (tr.dataset.ruc||'').toLowerCase();
@@ -1972,9 +1974,16 @@ function filterCerradosByHunter(tipo){
     const matchSearch = !searchVal || ruc.includes(searchVal) || name.includes(searchVal);
     const matchHunter = !hunterVal || hunter===hunterVal.toLowerCase();
     const matchMes    = !mesVal || mes===mesVal;
-    const show = matchSearch && matchHunter && matchMes;
+    const matchTipo   = !tipoVal || (tr.dataset.tipo||'')===tipoVal;
+    const show = matchSearch && matchHunter && matchMes && matchTipo;
     tr.style.display = show ? '' : 'none';
-    if(show) shown++;
+    if(show){
+      shown++;
+      const t = tr.dataset.tipo||'';
+      if(t==='QR'){ qrN++; qrP += Number(tr.dataset.parl)||0; }
+      else if(t==='ARISALE') ariN++;
+      else if(t==='PLANILLAS') plaN++;
+    }
     /* también ocultar fila de historial si existe */
     const next = tr.nextElementSibling;
     if(next && next.classList.contains('historial-row')){
@@ -1984,6 +1993,13 @@ function filterCerradosByHunter(tipo){
   /* Actualizar contador: "X de Y leads" */
   const c = document.getElementById('count-'+tipo);
   if(c) c.textContent = (shown===total ? total+' leads' : shown+' de '+total+' leads');
+  /* Actualizar chips de tipo SVA con lo visible */
+  const chQ = document.getElementById('chip-qr-'+tipo);
+  if(chQ) chQ.textContent = `QR: ${qrN} lead${qrN===1?'':'s'} · ${qrP} parlantes`;
+  const chA = document.getElementById('chip-ari-'+tipo);
+  if(chA) chA.textContent = `Arisale: ${ariN}`;
+  const chP = document.getElementById('chip-pla-'+tipo);
+  if(chP) chP.textContent = `Planillas: ${plaN}`;
 }
 
 /* Mark a lead as cerrado or caido */
@@ -3111,7 +3127,7 @@ function leadsTableHTML(leads, canEdit, key){
         : '';
       const actionBtn = `<span style="white-space:nowrap;">${editBtn}${fullSaveBtn}${cerrarBtn}${caidoBtn}${restoreBtn}${deleteBtn}${hunterSaveBtn}</span>`;
 
-      return `<tr id="row-${l.id}" class="lead-row" data-ruc="${(l.ruc||'').toLowerCase()}" data-name="${(l.name||'').toLowerCase()}" data-hunter="${(l.hunter||'').toLowerCase()}" data-mes="${(l.close||'').toLowerCase()}">
+      return `<tr id="row-${l.id}" class="lead-row" data-ruc="${(l.ruc||'').toLowerCase()}" data-name="${(l.name||'').toLowerCase()}" data-hunter="${(l.hunter||'').toLowerCase()}" data-mes="${(l.close||'').toLowerCase()}" data-tipo="${((l.tipo_sva||l.tipo_producto||'')+'').toUpperCase().trim()}" data-parl="${Number(l.parlantes)||0}">
         <td><span class="dot" style="background:${dc};"></span></td>
         <td style="text-align:center;cursor:pointer;" title="Ver historial" onclick="toggleHistorial('${l.id}',this)">
           <span style="font-size:13px;" id="exp-${l.id}">▶</span>
@@ -3427,9 +3443,9 @@ function renderSvaCerradosCaidos(tipo){
         <div style="font-size:16px;font-weight:700;color:#1a1f2e;">${titulo}</div>
         <span id="count-${svaKey}" style="font-size:12px;color:#888;margin-left:4px;">${leads.length} leads</span>
         <div style="margin-left:auto;display:flex;gap:8px;">
-          <span style="background:rgba(61,184,232,.12);color:#3DB8E8;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">QR: ${byTipo.QR} lead${byTipo.QR===1?'':'s'} · ${qrParlantes} parlantes</span>
-          <span style="background:rgba(127,119,221,.12);color:#7F77DD;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">Arisale: ${byTipo.ARISALE}</span>
-          <span style="background:rgba(245,166,35,.12);color:#F5A623;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">Planillas: ${byTipo.PLANILLAS}</span>
+          <span id="chip-qr-${svaKey}" style="background:rgba(61,184,232,.12);color:#3DB8E8;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">QR: ${byTipo.QR} lead${byTipo.QR===1?'':'s'} · ${qrParlantes} parlantes</span>
+          <span id="chip-ari-${svaKey}" style="background:rgba(127,119,221,.12);color:#7F77DD;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">Arisale: ${byTipo.ARISALE}</span>
+          <span id="chip-pla-${svaKey}" style="background:rgba(245,166,35,.12);color:#F5A623;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">Planillas: ${byTipo.PLANILLAS}</span>
         </div>
       </div>
       <div style="margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
@@ -3445,6 +3461,13 @@ function renderSvaCerradosCaidos(tipo){
           style="font-size:12px;padding:6px 10px;border:1px solid #dde1e7;border-radius:8px;background:#fff;color:#333;cursor:pointer;">
           <option value="">Todos los meses</option>
           ${['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'].map(m=>`<option value="${m}">${m}</option>`).join('')}
+        </select>
+        <select id="filter-tipo-${svaKey}" onchange="filterCerradosByHunter('${svaKey}')"
+          style="font-size:12px;padding:6px 10px;border:1px solid #dde1e7;border-radius:8px;background:#fff;color:#333;cursor:pointer;">
+          <option value="">Todos los SVA</option>
+          <option value="QR">QR</option>
+          <option value="ARISALE">ARISALE</option>
+          <option value="PLANILLAS">PLANILLAS</option>
         </select>
       </div>
       <div class="tbl-wrap" id="tbl-${svaKey}">
