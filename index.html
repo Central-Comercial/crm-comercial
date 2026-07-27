@@ -1140,6 +1140,8 @@ function filterDeals(){renderKPI();}
 
 let kpiChartsBuilt=false, huntersLoaded=false;
 function switchView(v){
+  /* Análisis solo para roles con permiso; un hunter no puede abrirlo ni por consola */
+  if(v==='kpi' && curUser.role==='hunter'){ return; }
   if(v==='kpi') setTimeout(renderKPI, 100); /* auto-refresh analytics */
   ['crm','kpi','hunters'].forEach(n=>{
     const el=document.getElementById('nav-'+n);
@@ -1244,6 +1246,10 @@ function initApp(){
   const nsp = el('nav-sva-caidos');
   if(nsc) nsc.style.display = isDAH ? 'flex' : 'none';
   if(nsp) nsp.style.display = isDAH ? 'flex' : 'none';
+
+  /* Análisis (KPI) - oculto para hunters; solo director, analista, head (y viewer) */
+  const nkpi = el('nav-kpi');
+  if(nkpi) nkpi.style.display = isDAH ? 'flex' : 'none';
 
   const tabs=getTabs();
   buildTabNav(tabs);
