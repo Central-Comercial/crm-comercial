@@ -733,7 +733,7 @@ async function doLogin(){
     btn.textContent = 'Cargando datos...';
     SB_USUARIOS = await sbGet('usuarios','select=*&activo=eq.true');
     /* cargar leads */
-    const rawLeads = await sbGet('leads','select=*&order=created_at.desc');
+    const rawLeads = await sbGet('leads',`select=${LEAD_COLS}&order=created_at.desc`);
 
     /* ── Reconstruir HUNTERS_DEF y HUNTERS desde Supabase ── */
     const hunterUsers = SB_USUARIOS.filter(u => u.rol === 'hunter');
@@ -2874,8 +2874,11 @@ function filterBarHTML(leads, key, showNew=true){
    hunter              → solo añade leads y edita comentario de los suyos
 */
 /* ── FETCH LEADS HELPER ── */
+/* Columnas exactas que el CRM usa — evita traer datos de más (optimización de egress) */
+const LEAD_COLS = 'id,hunter_id,razon_social,nombre,ruc,giros,fuente,tipo_producto,tipo_sva,tipo_cuenta,banco,estado,valor,mes_cierre,comentario,probabilidad,conflicto,categoria,linea,telefono,correo,representante_legal,parlantes,arisale_valor,arisale_licencias,planillas_colaboradores,etapa_implementacion,created_at,fecha_ingreso,fecha_modif,fecha_cierre';
+
 async function fetchLeads(){
-  const rawLeads = await sbGet('leads','select=*&order=created_at.desc');
+  const rawLeads = await sbGet('leads',`select=${LEAD_COLS}&order=created_at.desc`);
   /* Asegurar que SB_USUARIOS esté cargado para mapear hunter_id → username */
   if(!SB_USUARIOS || SB_USUARIOS.length===0){
     SB_USUARIOS = await sbGet('usuarios','select=*&activo=eq.true');
@@ -2892,7 +2895,7 @@ async function fetchLeads(){
     banco:l.banco||'', status:mapEstado(l.estado||'prospecto'),
     value:l.valor||0, close:l.mes_cierre||'',
     note:l.comentario||'', prob:l.probabilidad||10,
-    conflict:l.conflicto||false, categoria:l.categoria||'activo',
+    conflict:l.conflicto||false, categoria:(l.estado==='cerrado'?'cerrado':(l.categoria||'activo')),
     linea:l.linea||'central',
     telefono:l.telefono||'', correo:l.correo||'', representante_legal:l.representante_legal||'',
     tipo_sva:l.tipo_sva||'', parlantes:l.parlantes||0,
@@ -4099,6 +4102,8 @@ async function saveLead(){
         banco:           document.getElementById('m-banco').value||null,
         valor:           Number(document.getElementById('m-value').value)||0,
         estado:          document.getElementById('m-status').value,
+        categoria:       document.getElementById('m-status').value==='cerrado' ? 'cerrado'
+                         : (document.getElementById('m-status').value==='caido' ? 'caido' : 'activo'),
         linea:           (modalKey==='sva2') ? 'sva' : 'central',
         mes_cierre:      document.getElementById('m-close').value||null,
         comentario:      document.getElementById('m-note').value,
@@ -4386,7 +4391,7 @@ async function handleImport(input){
   }
 
   /* Reload leads */
-  const rawLeads = await sbGet('leads','select=*&order=created_at.desc');
+  const rawLeads = await sbGet('leads',`select=${LEAD_COLS}&order=created_at.desc`);
   const hunterMap2 = {};
   SB_USUARIOS.forEach(u => { hunterMap2[u.id] = u.username; });
   LEADS = rawLeads.map((l,i) => ({
@@ -4602,7 +4607,7 @@ async function handleImportWithLinea(file, linea){
   }
 
   /* Reload leads */
-  const rawLeads=await sbGet('leads','select=*&order=created_at.desc');
+  const rawLeads=await sbGet('leads',`select=${LEAD_COLS}&order=created_at.desc`);
   const hm={};SB_USUARIOS.forEach(u=>{hm[u.id]=u.username;});
   LEADS=rawLeads.map((l,i)=>({
     id:l.id,hunter:hm[l.hunter_id]||'',
