@@ -1240,7 +1240,8 @@ function initApp(){
   if(nca)   nca.style.display   = isDAH ? 'flex' : 'none';
   if(nsva2) nsva2.style.display = 'flex'; /* Todos los roles ven SVA */
   const nest = el('nav-estado-sva');
-  if(nest) nest.style.display = isDAH ? 'flex' : 'none'; /* Estado SVA: director, analista, head, viewer */
+  const soloSebas = curUser.username === 'scavalier'; /* Estado SVA: exclusivo de scavalier */
+  if(nest) nest.style.display = soloSebas ? 'flex' : 'none';
   /* SVA Cerrados / SVA Perdidos - solo director, analista y head */
   const nsc = el('nav-sva-cerrados');
   const nsp = el('nav-sva-caidos');
@@ -1680,6 +1681,11 @@ function renderSVA2(){
 
 /* ── ESTADO SVA: tabla pivote Etapas × Hunters ── */
 function renderEstadoSVA(){
+  /* Acceso exclusivo de scavalier — nadie más puede ver esta pestaña, ni por consola */
+  if(curUser.username !== 'scavalier'){
+    document.getElementById('content').innerHTML='<div style="padding:40px;color:#999;text-align:center;">Sin acceso.</div>';
+    return;
+  }
   /* Filtros */
   const fTipo   = window.estsva_tipo   || '';   /* '' | QR | ARISALE | PLANILLAS */
   const fEquipo = window.estsva_equipo || '';   /* '' | A | B */
@@ -1689,6 +1695,8 @@ function renderEstadoSVA(){
   /* Leads SVA visibles según rol (misma lógica que renderSVA2) */
   let svaLeads = applyOrigenFilter((LEADS||[]).filter(l=>{
     if((l.linea||'central') !== 'sva') return false;
+    /* Estado SVA muestra SOLO leads cargados por administración (origen LEAD CENTRAL) */
+    if((l.source||'').toUpperCase().trim() !== 'LEAD CENTRAL') return false;
     if(curUser.role==='head'){ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; }
     if(curUser.role==='hunter') return l.hunter===curUser.username;
     return true;
@@ -1799,7 +1807,7 @@ function renderEstadoSVA(){
     <div style="background:rgba(179,136,255,.15);border-radius:10px;padding:8px 12px;font-size:20px;">📊</div>
     <div>
       <div style="font-size:16px;font-weight:600;color:#333;">Estado SVA</div>
-      <div style="font-size:11px;color:#999;">Avance de leads SVA por hunter según etapa${fTipo?' — '+fTipo:''}${fMes?' — '+fMes:''}${fDia?' — lote importado el '+fmtDia(fDia)+' (sin leads propios)':''}</div>
+      <div style="font-size:11px;color:#999;">Solo leads cargados (origen LEAD CENTRAL)${fTipo?' — '+fTipo:''}${fMes?' — '+fMes:''}${fDia?' — lote del '+fmtDia(fDia):''}</div>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <select class="filter-sel" onchange="window.estsva_mes=this.value;renderEstadoSVA()">
@@ -1906,7 +1914,98 @@ function renderEstadoSVA(){
   </div>` : `
   <div style="margin-top:12px;">
     <button onclick="window.estsva_tipo='';renderEstadoSVA()" style="padding:5px 14px;border-radius:7px;border:1px solid #B388FF;background:rgba(179,136,255,.1);color:#7C4DFF;font-size:11px;cursor:pointer;font-weight:600;">✕ Quitar filtro ${fTipo}</button>
-  </div>`}`;
+  </div>`}
+
+  <!-- ══ EMBUDO CÓNICO (solo leads de origen LEAD CENTRAL, respeta todos los filtros) ══ -->
+  ${(()=>{
+    const centralLeads = svaLeads.filter(l=>(l.source||'').toUpperCase().trim()==='LEAD CENTRAL');
+    const rowOfF = l => {
+      if(l.categoria==='caido') return 'perdido';
+      if(l.categoria==='cerrado' || l.status==='cerrado') return 'cerrado';
+      const s = l.status||'prospecto';
+      return ['prospecto','oportunidad','negociacion','precierre'].includes(s) ? s : 'prospecto';
+    };
+    const cnt = {prospecto:0,oportunidad:0,negociacion:0,precierre:0,cerrado:0,perdido:0};
+    centralLeads.forEach(l=>{ cnt[rowOfF(l)]++; });
+    const totalF = centralLeads.length;
+    const etiqMes = fDia ? 'lote del '+fmtDia(fDia) : (fMes||mesActEST);
+
+    /* 5 capas del cono (el flujo real). Perdido va aparte en tarjeta. */
+    const STAGES = [
+      {key:'prospecto',   label:'10% · Prospección',  color:'#E24B4A'},
+      {key:'oportunidad', label:'25% · Oportunidad',  color:'#E8721C'},
+      {key:'negociacion', label:'50% · Negociación',  color:'#F5A623'},
+      {key:'precierre',   label:'75% · Pre-cierre',   color:'#2BB6A3'},
+      {key:'cerrado',     label:'100% · Ganado',      color:'#2C5F73'},
+    ];
+    const maxC = Math.max(1, ...STAGES.map(s=>cnt[s.key]));
+
+    /* Geometría del cono: cada capa es un trapecio que se angosta hacia abajo.
+       El ancho superior de cada capa = ancho inferior de la anterior (cono continuo),
+       pero además modulado por la cantidad real de leads. */
+    const W=440, H=340, cx=W/2, topH=54, gap=6;
+    const maxHalf=165, minHalf=24;
+    /* ancho de cada frontera proporcional a la cantidad (con piso para que siempre se vea) */
+    const halfAt = i => {
+      const val = i<STAGES.length ? cnt[STAGES[i].key] : cnt[STAGES[STAGES.length-1].key];
+      const base = minHalf + (maxHalf-minHalf) * (val/maxC);
+      /* forzar que nunca sea más ancho que la capa de arriba (cono descendente) */
+      return base;
+    };
+    /* anchos monotónicos decrecientes: cada capa no puede ser más ancha que la de arriba */
+    let halves=[]; 
+    for(let i=0;i<=STAGES.length;i++){ halves.push(halfAt(i)); }
+    for(let i=1;i<halves.length;i++){ if(halves[i]>halves[i-1]) halves[i]=halves[i-1]; }
+
+    let y=8; const layers = STAGES.map((s,i)=>{
+      const topHalf=halves[i], botHalf=halves[i+1];
+      const yTop=y, yBot=y+topH;
+      const path=`M${cx-topHalf},${yTop} L${cx+topHalf},${yTop} L${cx+botHalf},${yBot} L${cx-botHalf},${yBot} Z`;
+      /* borde 3D: elipse inferior más oscura */
+      const ell=`<ellipse cx="${cx}" cy="${yBot}" rx="${botHalf}" ry="5" fill="rgba(0,0,0,0.12)"/>`;
+      const n=cnt[s.key], pct=totalF>0?Math.round(n/totalF*100):0;
+      const lineY=yTop+topH/2;
+      const layer=`<path d="${path}" fill="${s.color}"/>
+        ${ell}
+        <text x="${cx}" y="${lineY+1}" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="16" font-weight="800">${n}</text>
+        <line x1="${cx+topHalf}" y1="${lineY}" x2="${cx+maxHalf+14}" y2="${lineY}" stroke="${s.color}" stroke-width="1" stroke-dasharray="2,2" opacity="0.45"/>
+        <text x="${cx+maxHalf+20}" y="${lineY-4}" text-anchor="start" fill="${s.color}" font-size="10.5" font-weight="700">${s.label}</text>
+        <text x="${cx+maxHalf+20}" y="${lineY+9}" text-anchor="start" fill="#999" font-size="9">${pct}% del total</text>`;
+      y=yBot+gap;
+      return layer;
+    }).join('');
+
+    const perdidoN=cnt.perdido, perdidoPct=totalF>0?Math.round(perdidoN/totalF*100):0;
+    const svgW=cx+maxHalf+150;
+
+    return `
+    <div style="margin-top:18px;background:#fff;border:1px solid #e8eaed;border-radius:12px;padding:18px 20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:15px;">🎯</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#1a1f2e;">Embudo de conversión — Leads Central cargados</div>
+          <div style="font-size:11px;color:#999;">Origen LEAD CENTRAL · ${etiqMes}${fTipo?' · '+fTipo:''}${fEquipo?' · Equipo '+(fEquipo==='A'?'Carlos':'Ana'):''} — Total: ${totalF} leads</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;justify-content:center;">
+        <svg viewBox="0 0 ${svgW} ${H}" style="max-width:${svgW}px;width:100%;height:auto;">
+          <g transform="translate(${(svgW-W)/2},0)">${layers}</g>
+        </svg>
+        <div style="display:flex;flex-direction:column;gap:12px;min-width:150px;">
+          <div style="background:#FCECEC;border:1px solid #E24B4A;border-radius:10px;padding:14px 16px;text-align:center;">
+            <div style="font-size:11px;color:#B03A39;font-weight:600;margin-bottom:4px;">📉 Perdido / Caído</div>
+            <div style="font-size:28px;font-weight:800;color:#E24B4A;">${perdidoN}</div>
+            <div style="font-size:10px;color:#B03A39;">${perdidoPct}% del total cargado</div>
+          </div>
+          <div style="background:#E8F5EF;border:1px solid #1D9E75;border-radius:10px;padding:14px 16px;text-align:center;">
+            <div style="font-size:11px;color:#0d6e4e;font-weight:600;margin-bottom:4px;">✓ Tasa de cierre</div>
+            <div style="font-size:28px;font-weight:800;color:#1D9E75;">${totalF>0?Math.round(cnt.cerrado/totalF*100):0}%</div>
+            <div style="font-size:10px;color:#0d6e4e;">${cnt.cerrado} de ${totalF} ganados</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  })()}`;
 }
 
 /* Handler de importación SVA */
