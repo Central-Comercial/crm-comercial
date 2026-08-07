@@ -2005,6 +2005,93 @@ function renderEstadoSVA(){
         </div>
       </div>
     </div>`;
+  })()}
+
+  <!-- ══ COSTO POR ADQUISICIÓN (CPA) — monto editable, desglose por tipo SVA ══ -->
+  ${(()=>{
+    const centralLeads = svaLeads.filter(l=>(l.source||'').toUpperCase().trim()==='LEAD CENTRAL');
+    const esGanado = l => l.categoria==='cerrado' || l.status==='cerrado';
+    const ganados = centralLeads.filter(esGanado);
+    const gTot = ganados.length;
+    const gQR  = ganados.filter(l=>normTipo(l)==='QR').length;
+    const gARI = ganados.filter(l=>normTipo(l)==='ARISALE').length;
+    const gPLA = ganados.filter(l=>normTipo(l)==='PLANILLAS').length;
+    const inv = (window.cpa_inversion!==undefined && window.cpa_inversion!=='') ? Number(window.cpa_inversion) : 0;
+    const cpa = n => n>0 ? 'S/ '+(inv/n).toLocaleString('es-PE',{maximumFractionDigits:2}) : '—';
+    const etiqMes = fDia ? 'lote del '+fmtDia(fDia) : (fMes||mesActEST);
+    return `
+    <div style="margin-top:16px;background:#fff;border:1px solid #e8eaed;border-radius:12px;padding:18px 20px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <span style="font-size:15px;">💰</span>
+        <div style="flex:1;min-width:180px;">
+          <div style="font-size:14px;font-weight:700;color:#1a1f2e;">Costo por Adquisición (CPA)</div>
+          <div style="font-size:11px;color:#999;">Inversión ÷ leads ganados · ${etiqMes}${fTipo?' · '+fTipo:''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="font-size:11px;color:#555;font-weight:600;">Inversión S/</label>
+          <input type="number" min="0" step="1" value="${window.cpa_inversion||''}" placeholder="480"
+            style="width:110px;font-size:13px;padding:6px 10px;border:1.5px solid #B388FF;border-radius:8px;outline:none;font-weight:600;color:#7C4DFF;"
+            oninput="window.cpa_inversion=this.value;actualizarCPA()">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div style="background:rgba(61,184,232,.08);border:1px solid #3DB8E8;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:11px;color:#3DB8E8;font-weight:600;margin-bottom:4px;">CPA QR</div>
+          <div id="cpa-qr" data-n="${gQR}" style="font-size:22px;font-weight:800;color:#3DB8E8;">${cpa(gQR)}</div>
+          <div style="font-size:10px;color:#999;">${gQR} ganado${gQR===1?'':'s'}</div>
+        </div>
+        <div style="background:rgba(127,119,221,.08);border:1px solid #7F77DD;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:11px;color:#7F77DD;font-weight:600;margin-bottom:4px;">CPA Arisale</div>
+          <div id="cpa-ari" data-n="${gARI}" style="font-size:22px;font-weight:800;color:#7F77DD;">${cpa(gARI)}</div>
+          <div style="font-size:10px;color:#999;">${gARI} ganado${gARI===1?'':'s'}</div>
+        </div>
+        <div style="background:rgba(245,166,35,.08);border:1px solid #F5A623;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:11px;color:#F5A623;font-weight:600;margin-bottom:4px;">CPA Planillas</div>
+          <div id="cpa-pla" data-n="${gPLA}" style="font-size:22px;font-weight:800;color:#F5A623;">${cpa(gPLA)}</div>
+          <div style="font-size:10px;color:#999;">${gPLA} ganado${gPLA===1?'':'s'}</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:#aaa;">💡 El CPA baja mientras más ventas cierres con la misma inversión. Escribe tu inversión del periodo arriba.</div>
+    </div>`;
+  })()}
+
+  <!-- ══ COSTO POR LEAD (CPL) — usa la misma inversión del CPA, desglose por tipo SVA ══ -->
+  ${(()=>{
+    const centralLeads = svaLeads.filter(l=>(l.source||'').toUpperCase().trim()==='LEAD CENTRAL');
+    const lTot = centralLeads.length;
+    const lQR  = centralLeads.filter(l=>normTipo(l)==='QR').length;
+    const lARI = centralLeads.filter(l=>normTipo(l)==='ARISALE').length;
+    const lPLA = centralLeads.filter(l=>normTipo(l)==='PLANILLAS').length;
+    const inv = (window.cpa_inversion!==undefined && window.cpa_inversion!=='') ? Number(window.cpa_inversion) : 0;
+    const cpl = n => n>0 ? 'S/ '+(inv/n).toLocaleString('es-PE',{maximumFractionDigits:2}) : '—';
+    return `
+    <div style="margin-top:16px;background:#fff;border:1px solid #e8eaed;border-radius:12px;padding:18px 20px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <span style="font-size:15px;">🏷️</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#1a1f2e;">Costo por Lead (CPL)</div>
+          <div style="font-size:11px;color:#999;">Inversión ÷ total de leads cargados · usa la inversión de arriba</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div style="background:rgba(61,184,232,.08);border:1px solid #3DB8E8;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:11px;color:#3DB8E8;font-weight:600;margin-bottom:4px;">CPL QR</div>
+          <div id="cpl-qr" data-n="${lQR}" style="font-size:22px;font-weight:800;color:#3DB8E8;">${cpl(lQR)}</div>
+          <div style="font-size:10px;color:#999;">${lQR} lead${lQR===1?'':'s'}</div>
+        </div>
+        <div style="background:rgba(127,119,221,.08);border:1px solid #7F77DD;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:11px;color:#7F77DD;font-weight:600;margin-bottom:4px;">CPL Arisale</div>
+          <div id="cpl-ari" data-n="${lARI}" style="font-size:22px;font-weight:800;color:#7F77DD;">${cpl(lARI)}</div>
+          <div style="font-size:10px;color:#999;">${lARI} lead${lARI===1?'':'s'}</div>
+        </div>
+        <div style="background:rgba(245,166,35,.08);border:1px solid #F5A623;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:11px;color:#F5A623;font-weight:600;margin-bottom:4px;">CPL Planillas</div>
+          <div id="cpl-pla" data-n="${lPLA}" style="font-size:22px;font-weight:800;color:#F5A623;">${cpl(lPLA)}</div>
+          <div style="font-size:10px;color:#999;">${lPLA} lead${lPLA===1?'':'s'}</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:#aaa;">💡 El CPL es lo que te cuesta cada lead cargado (antes de cerrar). Siempre más bajo que el CPA.</div>
+    </div>`;
   })()}`;
 }
 
@@ -3430,6 +3517,17 @@ window.goSVA2 = function goSVA2(){
     document.getElementById('content').innerHTML=
       '<div style="padding:40px;color:#E24B4A;">Error SVA: '+e.message+'</div>';
   }
+}
+
+/* Recalcula el CPA en vivo sin re-renderizar toda la pestaña (mantiene el foco del input) */
+window.actualizarCPA = function actualizarCPA(){
+  const inv = (window.cpa_inversion!==undefined && window.cpa_inversion!=='') ? Number(window.cpa_inversion) : 0;
+  const g = id => { const el=document.getElementById(id); return el ? parseInt(el.dataset.n||'0') : 0; };
+  const fmt = n => n>0 ? 'S/ '+(inv/n).toLocaleString('es-PE',{maximumFractionDigits:2}) : '—';
+  ['cpa-qr','cpa-ari','cpa-pla','cpl-qr','cpl-ari','cpl-pla'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent = fmt(parseInt(el.dataset.n||'0'));
+  });
 }
 
 window.goEstadoSVA = function goEstadoSVA(){
