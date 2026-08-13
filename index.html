@@ -3340,7 +3340,7 @@ function leadsTableHTML(leads, canEdit, key){
         : `${l.banco||'—'}`;
 
       /* Hunter puede cambiar etapa solo en sus leads SVA de tipo QR */
-      const canEditEtapa = canPartial || (commentOnly && l.linea==='sva' && (l.tipo_producto||l.tipo_sva||'').toUpperCase()==='QR');
+      const canEditEtapa = canPartial || (commentOnly && l.linea==='sva' && ['QR','ARISALE','PLANILLAS'].includes((l.tipo_producto||l.tipo_sva||'').toUpperCase().trim()));
       const etapaCell = canEditEtapa
         ? `<select style="font-size:10px;border:1px solid #dde1e7;padding:2px 4px;border-radius:5px;background:${sc2.bg};color:${sc2.c};font-weight:600;" data-id="${l.id}" data-field="estado" data-key="${key}" onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)">
             ${Object.keys(SC).map(s=>`<option value="${s}"${s===l.status?' selected':''}>${SC[s].l}</option>`).join('')}
