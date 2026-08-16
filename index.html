@@ -704,9 +704,14 @@ async function doLogin(){
 
   btn.textContent = 'Verificando...'; btn.disabled = true;
   try {
-    const rows = await sbGet('usuarios',
-      `username=eq.${encodeURIComponent(username)}&password=eq.${encodeURIComponent(password)}&activo=eq.true&select=*`
-    );
+    /* Login SEGURO: llama a la función verify_login en Supabase, que compara el hash
+       internamente y devuelve los datos del usuario SIN exponer la contraseña. */
+    const resp = await fetch(`${SB_URL}/rest/v1/rpc/verify_login`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_username: username, p_password: password })
+    });
+    const rows = resp.ok ? await resp.json() : [];
     if(!rows || rows.length === 0){
       const data = registerFailedAttempt(username);
       if(data.lockedUntil){
@@ -729,9 +734,9 @@ async function doLogin(){
       id:       u.id,
       hunter:   u.username
     };
-    /* cargar todos los usuarios para el dashboard */
+    /* cargar todos los usuarios para el dashboard — SIN la columna password */
     btn.textContent = 'Cargando datos...';
-    SB_USUARIOS = await sbGet('usuarios','select=*&activo=eq.true');
+    SB_USUARIOS = await sbGet('usuarios','select=id,nombre,username,rol,equipo,head_id,color,activo&activo=eq.true');
     /* cargar leads */
     const rawLeads = await sbGet('leads',`select=${LEAD_COLS}&order=created_at.desc`);
 
@@ -3138,7 +3143,7 @@ async function fetchLeads(){
   const rawLeads = await sbGet('leads',`select=${LEAD_COLS}&order=created_at.desc`);
   /* Asegurar que SB_USUARIOS esté cargado para mapear hunter_id → username */
   if(!SB_USUARIOS || SB_USUARIOS.length===0){
-    SB_USUARIOS = await sbGet('usuarios','select=*&activo=eq.true');
+    SB_USUARIOS = await sbGet('usuarios','select=id,nombre,username,rol,equipo,head_id,color,activo&activo=eq.true');
   }
   const hm={};
   SB_USUARIOS.forEach(u=>{hm[u.id]=u.username;});
