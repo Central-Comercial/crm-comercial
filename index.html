@@ -2340,6 +2340,15 @@ function renderAllLeads(){
     return true;
   });
 
+  /* OPTIMIZACIÓN: si NO hay búsqueda ni filtros activos, mostrar solo los 200 más recientes
+     (evita dibujar 3000+ filas de golpe = mucho más rápido). Al buscar o filtrar, se muestran
+     TODOS los resultados de esa búsqueda (que consulta toda la base en memoria). */
+  const hayFiltro = !!(fSearch || fHunter || (fEstado && fEstado!=='all') || fMes);
+  const LIMITE_TABLA = 200;
+  const totalFiltrado = filtered.length;
+  const limitado = !hayFiltro && totalFiltrado > LIMITE_TABLA;
+  const filteredMostrar = limitado ? filtered.slice(0, LIMITE_TABLA) : filtered;
+
   /* Hunter options */
   const hunterOpts = [...new Set(allLeads.map(l=>l.hunter))].filter(Boolean)
     .map(u => `<option value="${u}"${u===fHunter?' selected':''}>${HUNTERS[u]?.name||u}</option>`).join('');
@@ -2387,7 +2396,7 @@ function renderAllLeads(){
     <select class="filter-sel" onchange="window['al_mes']=this.value;renderAllLeads()">
       <option value="">Todos los meses</option>${mesOpts}
     </select>
-    <span style="margin-left:auto;font-size:11px;color:#999;">${filtered.length} de ${total} leads</span>
+    <span style="margin-left:auto;font-size:11px;color:#999;">${limitado ? `mostrando ${LIMITE_TABLA} de ${totalFiltrado} · busca para ver más` : `${filtered.length} de ${total} leads`}</span>
     ${!['viewer','hunter'].includes(curUser.role)?`<button onclick="exportAllLeads()" style="padding:5px 12px;border-radius:7px;border:1px solid #1D9E75;background:#e8f5e9;color:#1D9E75;font-size:11px;cursor:pointer;font-weight:600;">
       ⬇ Exportar Excel
     </button>`:''}
@@ -2397,7 +2406,7 @@ function renderAllLeads(){
     </button>` : ''}
   </div>
 
-  <div class="tbl-wrap">${leadsTableHTML(filtered, true, key)}</div>`;
+  <div class="tbl-wrap">${leadsTableHTML(filteredMostrar, true, key)}</div>`;
 }
 
 function exportAllLeads(){
@@ -3483,6 +3492,18 @@ document.addEventListener('input', function(e){
   const v = el.value;
   window['search_'+key] = v;
   clearTimeout(_searchTimer);
+  /* La tabla "Lead Central" (al_search) muestra solo 200 sin filtro; al buscar hay que
+     re-renderizar para que busque en TODOS los leads, no solo en las 200 filas visibles. */
+  if(key === 'al_search'){
+    window['al_search'] = v;
+    _searchTimer = setTimeout(()=>{
+      renderAllLeads();
+      /* devolver el foco al input tras el re-render */
+      const nuevo = document.getElementById('srch-allleads');
+      if(nuevo){ nuevo.focus(); nuevo.setSelectionRange(nuevo.value.length, nuevo.value.length); }
+    }, 300);
+    return;
+  }
   _searchTimer = setTimeout(()=>{ filterTableRows(el, v); }, 150);
 });
 
