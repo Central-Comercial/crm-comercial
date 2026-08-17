@@ -737,8 +737,6 @@ async function doLogin(){
     /* cargar todos los usuarios para el dashboard — SIN la columna password */
     btn.textContent = 'Cargando datos...';
     SB_USUARIOS = await sbGet('usuarios','select=id,nombre,username,rol,equipo,head_id,color,activo&activo=eq.true');
-    /* cargar leads */
-    const rawLeads = await sbGet('leads',`select=${LEAD_COLS}&order=created_at.desc`);
 
     /* ── Reconstruir HUNTERS_DEF y HUNTERS desde Supabase ── */
     const hunterUsers = SB_USUARIOS.filter(u => u.rol === 'hunter');
