@@ -2462,12 +2462,20 @@ function kpiCard(label, val, sub, trend, color){
 /* ── KPI FUNNEL MINI CARD (50% / 75%) ── */
 function kpiFunnelCard(label, leads){
   const total   = leads.reduce((s,l)=>s+(l.value||0),0);
+  const opo25V  = leads.filter(l=>l.status==='oportunidad').reduce((s,l)=>s+(l.value||0),0);
   const neg50V  = leads.filter(l=>l.status==='negociacion').reduce((s,l)=>s+(l.value||0),0);
   const pre75V  = leads.filter(l=>l.status==='precierre').reduce((s,l)=>s+(l.value||0),0);
   return `<div class="kpi">
     <div class="kpi-label">${label}</div>
     <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:10px;color:#7F77DD;font-weight:500;">25% Oportunidad</span>
+        <span style="font-size:16px;font-weight:600;color:#7F77DD;">S/ ${opo25V.toLocaleString()}</span>
+      </div>
+      <div style="height:3px;background:#f0f0f0;border-radius:2px;overflow:hidden;">
+        <div style="width:${total>0?Math.round(opo25V/total*100):0}%;height:100%;background:#7F77DD;border-radius:2px;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
         <span style="font-size:10px;color:#E8721C;font-weight:500;">50% Negociación</span>
         <span style="font-size:16px;font-weight:600;color:#E8721C;">S/ ${neg50V.toLocaleString()}</span>
       </div>
@@ -2520,12 +2528,20 @@ function kpiRucRow(leads){
 /* Mini-funnel en CANTIDAD (no S/) - usado para QR y Planillas */
 function kpiFunnelCardCount(label, leads){
   const total = leads.length;
+  const opo25 = leads.filter(l=>l.status==='oportunidad').length;
   const neg50 = leads.filter(l=>l.status==='negociacion').length;
   const pre75 = leads.filter(l=>l.status==='precierre').length;
   return `<div class="kpi">
     <div class="kpi-label">${label}</div>
     <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:10px;color:#7F77DD;font-weight:500;">25% Oportunidad</span>
+        <span style="font-size:16px;font-weight:600;color:#7F77DD;">${opo25}</span>
+      </div>
+      <div style="height:3px;background:#f0f0f0;border-radius:2px;overflow:hidden;">
+        <div style="width:${total>0?Math.round(opo25/total*100):0}%;height:100%;background:#7F77DD;border-radius:2px;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
         <span style="font-size:10px;color:#E8721C;font-weight:500;">50% Negociación</span>
         <span style="font-size:16px;font-weight:600;color:#E8721C;">${neg50}</span>
       </div>
