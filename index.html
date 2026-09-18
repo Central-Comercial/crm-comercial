@@ -178,6 +178,10 @@ tr:hover td{background:#fafbff;}
       <div style="font-size:8px;color:#B388FF;text-align:center;line-height:1.2;">Estado<br>SVA</div>
       <div class="sb-icon" style="pointer-events:none;background:rgba(179,136,255,.15);"><i class="ti ti-chart-bar" style="color:#B388FF;"></i></div>
     </div>
+    <div id="nav-estado-captura" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goEstadoCaptura()">
+      <div style="font-size:8px;color:#3DB8E8;text-align:center;line-height:1.2;">Estado<br>Captura</div>
+      <div class="sb-icon" style="pointer-events:none;background:rgba(61,184,232,.15);"><i class="ti ti-address-book" style="color:#3DB8E8;"></i></div>
+    </div>
     <div class="sb-icon" id="nav-delete-all" title="Borrar todos los leads" onclick="deleteAllLeads()" style="display:none;background:rgba(226,75,74,0.15);"><i class="ti ti-trash" style="color:#E24B4A;"></i></div>
     <div class="sb-icon" id="nav-reimport" title="Limpiar e importar de nuevo" onclick="clearAndImport()" style="display:none;background:rgba(245,166,35,0.15);"><i class="ti ti-refresh" style="color:#F5A623;"></i></div>
     <div class="sb-sep" style="width:32px;height:1px;background:rgba(255,255,255,.08);margin:4px 0;"></div>
@@ -1246,6 +1250,10 @@ function initApp(){
   /* Estado SVA: analista, director, head y hunter (los hunters ven versión recortada) */
   const puedeEstadoSVA = ['director','analista','head','hunter'].includes(curUser.role);
   if(nest) nest.style.display = puedeEstadoSVA ? 'flex' : 'none';
+  const ncap = el('nav-estado-captura');
+  /* Estado Captura: analista, director y head (no hunters) */
+  const puedeEstadoCaptura = ['director','analista','head'].includes(curUser.role);
+  if(ncap) ncap.style.display = puedeEstadoCaptura ? 'flex' : 'none';
   /* SVA Cerrados / SVA Perdidos - solo director, analista y head */
   const nsc = el('nav-sva-cerrados');
   const nsp = el('nav-sva-caidos');
@@ -1455,6 +1463,7 @@ function renderTab(id){
   else if(id==='caidos')     renderCerradosCaidos('caido');
   else if(id==='sva2')       renderSVA2();
   else if(id==='estado_sva') renderEstadoSVA();
+  else if(id==='estado_captura') renderEstadoCaptura();
   else if(id==='sva_cerrados') renderSvaCerradosCaidos('cerrado');
   else if(id==='sva_caidos')   renderSvaCerradosCaidos('caido');
   else if(id==='teamA'||id==='teamB') renderTeam(id==='teamA'?'A':'B');
@@ -2179,6 +2188,322 @@ async function handleSVAImport(input){
 }
 
 /* ── LEADS CERRADOS / CAÍDOS ── */
+function renderEstadoCaptura(){
+  /* Acceso: analista, director y head (NO hunters) */
+  if(!['director','analista','head'].includes(curUser.role)){
+    document.getElementById('content').innerHTML='<div style="padding:40px;color:#999;text-align:center;">Sin acceso.</div>';
+    return;
+  }
+  const esHunterVista = false;
+  /* Filtros */
+  const fTipo   = '';   /* Captura no usa tipo SVA */
+  const fEquipo = window.estcap_equipo || '';   /* '' | A | B */
+  const fMes    = window.estcap_mes    || '';   /* '' | ENERO..DICIEMBRE */
+  const fDia    = window.estcap_dia    || '';   /* '' | yyyy-mm-dd (fecha de ingreso del lote) */
+  const fSemana = window.estcap_semana || '';   /* '' | yyyy-mm-dd del SÁBADO que inicia la semana */
+
+  /* Leads SVA visibles según rol (misma lógica que renderSVA2) */
+  let svaLeads = applyOrigenFilter((LEADS||[]).filter(l=>{
+    if((l.linea||'central') !== 'central') return false;
+    /* Estado Captura muestra TODOS los leads de captura (incluye propios de hunters) */
+    if(curUser.role==='head'){ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; }
+    if(curUser.role==='hunter') return l.hunter===curUser.username;
+    return true;
+  }));
+
+  /* Filtro tipo SVA (busca en tipo_producto y tipo_sva, tolerante a espacios/mayúsculas) */
+  const normTipo = l => (l.tipo_producto||l.tipo_sva||'').toUpperCase().trim();
+  if(fTipo){
+    svaLeads = svaLeads.filter(l=>normTipo(l)===fTipo);
+  }
+
+  /* Mes de referencia */
+  const MESES_EST = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const _hEST = new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'numeric',year:'numeric'}).split('/');
+  const _dEST = parseInt(_hEST[0]), _mEST = parseInt(_hEST[1])-1;
+  const mesActEST = _dEST<=2 ? MESES_EST[(_mEST-1+12)%12] : MESES_EST[_mEST];
+  const mesRef = fMes || mesActEST; /* mes que se muestra en etiquetas */
+
+  /* ── Filtro por DÍA DE IMPORTACIÓN — tiene PRIORIDAD sobre el filtro de mes ── */
+  /* Un lead "importado" es SOLO el que tiene origen LEAD CENTRAL (las cargas de administración) */
+  const isImport = l => true; /* Captura: todos los leads cuentan para día/semana */
+  const dayKey = l => {
+    const fi = (l.fecha_ingreso_raw||'').slice(0,10);
+    if(fi) return fi;
+    const p = (l.created||'').split('/');
+    return p.length===3 ? p[2].padStart(4,'0')+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0') : '';
+  };
+  const fmtDia = k => { const p=k.split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : k; };
+  /* El dropdown de días SIEMPRE muestra el lote completo (no lo recorta el filtro de mes) */
+  const diasMap = {};
+  svaLeads.forEach(l=>{ if(!isImport(l)) return; const k=dayKey(l); if(k) diasMap[k]=(diasMap[k]||0)+1; });
+  const diasList = Object.keys(diasMap).sort().reverse();
+
+  /* ── SEMANAS SÁBADO→VIERNES (por fecha de carga) ── */
+  /* Dada una fecha yyyy-mm-dd, devuelve la fecha del SÁBADO que inicia su semana */
+  const sabadoDeLaSemana = k => {
+    if(!k) return '';
+    const d = new Date(k+'T12:00:00'); /* mediodía para evitar saltos de zona */
+    const dow = d.getDay(); /* 0=Dom,1=Lun,...,6=Sáb */
+    /* días a retroceder hasta el sábado: Sáb=0, Dom=1, Lun=2, Mar=3, Mié=4, Jue=5, Vie=6 */
+    const back = (dow+1)%7;
+    d.setDate(d.getDate()-back);
+    return d.toISOString().slice(0,10);
+  };
+  /* Rango de la semana para etiqueta: sábado + viernes siguiente */
+  const rangoSemana = sab => {
+    const s = new Date(sab+'T12:00:00');
+    const v = new Date(s); v.setDate(v.getDate()+6);
+    const f = x => { const p=x.toISOString().slice(0,10).split('-'); return p[2]+'/'+p[1]; };
+    return f(s)+' – '+f(v);
+  };
+  /* Semanas disponibles (solo importados), con conteo */
+  const semMap = {};
+  svaLeads.forEach(l=>{ if(!isImport(l)) return; const k=dayKey(l); if(!k) return; const sab=sabadoDeLaSemana(k); if(sab) semMap[sab]=(semMap[sab]||0)+1; });
+  const semList = Object.keys(semMap).sort().reverse();
+
+  if(fSemana){
+    /* SEMANA seleccionada: importados cuya fecha de carga cae en esa semana sábado→viernes */
+    svaLeads = svaLeads.filter(l=>isImport(l) && sabadoDeLaSemana(dayKey(l))===fSemana);
+  } else if(fDia){
+    /* DÍA seleccionado: se muestra el lote COMPLETO de ese día (solo importados), ignorando el filtro de mes */
+    svaLeads = svaLeads.filter(l=>isImport(l) && dayKey(l)===fDia);
+  } else if(fMes){
+    /* Con mes seleccionado: TODA la tabla es la foto de ese mes (activos, ganados y perdidos con mes_cierre = fMes) */
+    svaLeads = svaLeads.filter(l=>(l.close||'').toUpperCase()===fMes);
+  } else {
+    /* Sin filtros: activos de cualquier mes + ganados SOLO del mes actual */
+    svaLeads = svaLeads.filter(l=>{
+      const esCerrado = l.categoria==='cerrado' || l.status==='cerrado';
+      if(!esCerrado) return true;
+      return (l.close||'').toUpperCase()===mesActEST;
+    });
+  }
+
+  /* Hunters visibles (columnas) */
+  let hunterCols = HUNTERS_DEF.slice();
+  if(curUser.role==='head') hunterCols = hunterCols.filter(h=>h.team===curUser.equipo);
+  if(fEquipo) hunterCols = hunterCols.filter(h=>h.team===fEquipo);
+  /* Etiqueta corta: primer nombre + inicial del apellido */
+  const shortName = h => { const p=h.name.split(' '); return p[0]+(p[1]?' '+p[1][0]+'.':''); };
+  hunterCols = hunterCols.map(h=>({...h, short: shortName(h)}))
+                         .sort((a,b)=>a.short.localeCompare(b.short));
+
+  /* ⚠ Leads con hunter NO reconocido (typo o usuario fuera de la lista): columna especial para que no queden invisibles */
+  const knownUsers = new Set(HUNTERS_DEF.map(h=>h.username));
+  const unknownLeads = svaLeads.filter(l=>!knownUsers.has(l.hunter));
+  const unknownUsers = [...new Set(unknownLeads.map(l=>l.hunter||'(vacío)'))];
+  if(unknownLeads.length > 0){
+    hunterCols.push({username:'__unknown__', name:'Sin asignar / no reconocido', short:'⚠ Sin asignar', color:'#E24B4A', team:''});
+  }
+
+  /* Clasificar cada lead en una fila */
+  const rowOf = l => {
+    if(l.categoria==='caido') return 'perdido';
+    if(l.categoria==='cerrado' || l.status==='cerrado') return 'cerrado';
+    const s = l.status||'prospecto';
+    return ['prospecto','oportunidad','negociacion','precierre'].includes(s) ? s : 'prospecto';
+  };
+
+  const ROWS = [
+    {key:'prospecto',   label:'10% · Prospección (sin contactar)', color:'#3DB8E8', bg:'#EAF6FC'},
+    {key:'oportunidad', label:'25% · Oportunidad (contactado)',    color:'#7F77DD', bg:'#F0EFFA'},
+    {key:'negociacion', label:'50% · Negociación',                 color:'#F5A623', bg:'#FEF6E7'},
+    {key:'precierre',   label:'75% · Pre-cierre (Sí verbal)',      color:'#E8721C', bg:'#FDF0E6'},
+    {key:'cerrado',     label:'100% · Lead ganado ('+mesRef+')',    color:'#1D9E75', bg:'#E8F5EF'},
+    {key:'perdido',     label:'Perdido / Caído (No contesta)',     color:'#E24B4A', bg:'#FCECEC'}
+  ];
+
+  /* Matriz de conteos: counts[rowKey][username] */
+  const counts = {};
+  ROWS.forEach(r=>{ counts[r.key]={}; });
+  svaLeads.forEach(l=>{
+    const rk = rowOf(l);
+    const col = knownUsers.has(l.hunter) ? l.hunter : '__unknown__';
+    counts[rk][col] = (counts[rk][col]||0) + 1;
+  });
+
+  const colTotal = h => ROWS.reduce((s,r)=>s+(counts[r.key][h.username]||0),0);
+  const rowTotal = r => hunterCols.reduce((s,h)=>s+(counts[r.key][h.username]||0),0);
+  const grandTotal = hunterCols.reduce((s,h)=>s+colTotal(h),0);
+
+  /* % Trabajado por hunter = leads que salieron de prospección / total */
+  const trabajados = h => colTotal(h) - (counts['prospecto'][h.username]||0);
+  const pctTrab = h => { const t=colTotal(h); return t>0?Math.round(trabajados(h)/t*100):0; };
+  const trabajadosTot = hunterCols.reduce((s,h)=>s+trabajados(h),0);
+  const pctTrabTot = grandTotal>0?Math.round(trabajadosTot/grandTotal*100):0;
+  const pctColor = p => p>=60?'#1D9E75':p>=30?'#F5A623':'#E24B4A';
+
+  /* ── ALERTA DE CORTE: hunters con MÁS DE 1 lead en 10% Prospección (sin contactar) ── */
+  const enProspecto = h => counts['prospecto'][h.username]||0;
+  const huntersIncumplen = hunterCols.filter(h=>h.username!=='__unknown__' && enProspecto(h)>1)
+                                      .sort((a,b)=>enProspecto(b)-enProspecto(a));
+  const incumpleSet = new Set(huntersIncumplen.map(h=>h.username));
+
+  /* ── ALERTA 30 DÍAS: cuentas cargadas hace +30 días que NO se están trabajando ──
+     Criterio: (sigue en 10% Prospección) O (nunca se tocó/modificó), contando desde la fecha de carga. */
+  const hoy30 = new Date();
+  const diasDesde = k => { if(!k) return 0; const d=new Date(k+'T12:00:00'); return Math.floor((hoy30 - d)/(1000*60*60*24)); };
+  const seTrabajo = l => {
+    const enProsp = (l.status||'prospecto')==='prospecto' && l.categoria!=='cerrado' && l.categoria!=='caido';
+    const tocado = !!(l.fecha_modif_raw || (l.note||'').trim());
+    /* "no se trabaja" = sigue en 10% O no ha sido tocado */
+    return !(enProsp || !tocado);
+  };
+  const leadsVencidos = svaLeads.filter(l=>{
+    const dias = diasDesde(dayKey(l));
+    return dias > 30 && !seTrabajo(l);
+  });
+  /* Agrupar vencidos por hunter */
+  const vencidosPorHunter = {};
+  leadsVencidos.forEach(l=>{
+    const u = knownUsers.has(l.hunter) ? l.hunter : '__unknown__';
+    vencidosPorHunter[u] = (vencidosPorHunter[u]||0) + 1;
+  });
+  const huntersVencidos = hunterCols.filter(h=>vencidosPorHunter[h.username]>0)
+                                    .sort((a,b)=>vencidosPorHunter[b.username]-vencidosPorHunter[a.username]);
+
+  const tipoColors = {'QR':'#3DB8E8','ARISALE':'#7F77DD','PLANILLAS':'#F5A623'};
+  const cellSty = 'padding:7px 6px;text-align:center;border-bottom:1px solid #f0f2f5;font-size:12px;';
+
+  document.getElementById('content').innerHTML = `
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+    <div style="background:rgba(61,184,232,.15);border-radius:10px;padding:8px 12px;font-size:20px;">📇</div>
+    <div>
+      <div style="font-size:16px;font-weight:600;color:#333;">Estado Captura</div>
+      <div style="font-size:11px;color:#999;">Todos los leads de captura${fMes?' — '+fMes:''}${fSemana?' — semana '+rangoSemana(fSemana):''}${fDia?' — lote del '+fmtDia(fDia):''}</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <select class="filter-sel" onchange="window.estcap_mes=this.value;renderEstadoCaptura()">
+        <option value="">Todos los meses</option>
+        ${MESES_EST.map(m=>`<option value="${m}"${fMes===m?' selected':''}>${m}</option>`).join('')}
+      </select>
+      <select class="filter-sel" onchange="window.estcap_dia=this.value;renderEstadoCaptura()" title="Día en que se subieron los leads">
+        <option value="">Todos los días</option>
+        ${diasList.map(d=>`<option value="${d}"${fDia===d?' selected':''}>📥 ${fmtDia(d)} (${diasMap[d]})</option>`).join('')}
+      </select>
+      <select class="filter-sel" onchange="window.estcap_semana=this.value;renderEstadoCaptura()" title="Semana de carga (sábado a viernes)">
+        <option value="">Todas las semanas</option>
+        ${semList.map(s=>`<option value="${s}"${fSemana===s?' selected':''}>📆 Sem ${rangoSemana(s)} (${semMap[s]})</option>`).join('')}
+      </select>
+      ${curUser.role!=='head' ? `
+      <select class="filter-sel" onchange="window.estcap_equipo=this.value;renderEstadoCaptura()">
+        <option value="">Ambos equipos</option>
+        <option value="A"${fEquipo==='A'?' selected':''}>Equipo Carlos</option>
+        <option value="B"${fEquipo==='B'?' selected':''}>Equipo Ana</option>
+      </select>` : ''}
+      <span style="background:#B388FF22;color:#7C4DFF;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${grandTotal} leads</span>
+    </div>
+  </div>
+
+  <!-- Alerta de leads con hunter no reconocido -->
+  ${unknownLeads.length>0 ? `
+  <div style="background:#FDEDED;border:1px solid #E24B4A;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#B03A39;">
+    ⚠ <strong>${unknownLeads.length} lead${unknownLeads.length>1?'s':''} con hunter no reconocido</strong> — asignado${unknownLeads.length>1?'s':''} a: <strong>${unknownUsers.join(', ')}</strong>.
+    Aparecen en la columna "⚠ Sin asignar". Revisa el nombre en la importación o reasígnalos a un hunter válido.
+  </div>` : ''}
+
+  <!-- Mini resumen -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+    ${kpiCard('Sin contactar', rowTotal(ROWS[0]), '10% Prospección', 'down', '#3DB8E8')}
+    ${kpiCard('En trabajo', rowTotal(ROWS[1])+rowTotal(ROWS[2])+rowTotal(ROWS[3]), '25% + 50% + 75%', 'neutral', '#F5A623')}
+    ${(()=>{ 
+      const ganadosLeads = svaLeads.filter(l=>rowOf(l)==='cerrado');
+      const qrGanUnits = ganadosLeads.filter(l=>normTipo(l)==='QR').reduce((s,l)=>s+(Number(l.parlantes)||0),0);
+      return kpiCard('Ganados '+mesRef, rowTotal(ROWS[4]), '100% Cierre · '+mesRef+(qrGanUnits>0?' · '+qrGanUnits+' QR':''), 'up', '#1D9E75');
+    })()}
+    ${kpiCard('% Trabajado global', pctTrabTot+'%', 'leads que salieron de 10%', pctTrabTot>=60?'up':pctTrabTot>=30?'neutral':'down', pctColor(pctTrabTot))}
+  </div>
+
+  <!-- ⚠ ALERTA DE CORTE: hunters con más de 1 lead en 10% -->
+  ${huntersIncumplen.length>0 ? `
+  <div style="background:#FDEDED;border:1px solid #E24B4A;border-radius:10px;padding:12px 16px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-size:16px;">⚠️</span>
+      <span style="font-size:13px;font-weight:700;color:#B03A39;">${huntersIncumplen.length} hunter${huntersIncumplen.length>1?'s tienen':' tiene'} más de 1 lead en 10% (sin contactar)</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      ${huntersIncumplen.map(h=>`
+        <span style="background:#fff;border:1px solid #E24B4A;border-radius:20px;padding:4px 12px;font-size:11px;color:#B03A39;font-weight:600;">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${h.color};margin-right:5px;"></span>${h.name}: <strong>${enProspecto(h)}</strong> en 10%
+        </span>`).join('')}
+    </div>
+    <div style="font-size:10px;color:#B03A39;margin-top:8px;opacity:.8;">💡 Cada hunter debería tener como máximo 1 lead sin contactar. Los de arriba necesitan trabajar su cartera.</div>
+  </div>` : `
+  <div style="background:#E8F5EF;border:1px solid #1D9E75;border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:12px;color:#0d6e4e;font-weight:600;">
+    ✓ Todos los hunters tienen 1 o menos leads en 10% — cartera al día.
+  </div>`}
+
+  <!-- ⏰ ALERTA 30 DÍAS: cuentas cargadas hace +30 días sin trabajar -->
+  ${leadsVencidos.length>0 ? `
+  <div style="background:#FEF3E7;border:1px solid #E8721C;border-radius:10px;padding:12px 16px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-size:16px;">⏰</span>
+      <span style="font-size:13px;font-weight:700;color:#B35A16;">${leadsVencidos.length} cuenta${leadsVencidos.length>1?'s llevan':' lleva'} más de 30 días cargada${leadsVencidos.length>1?'s':''} sin trabajar (siguen en 10% o nunca se tocaron)</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      ${huntersVencidos.map(h=>`
+        <span style="background:#fff;border:1px solid #E8721C;border-radius:20px;padding:4px 12px;font-size:11px;color:#B35A16;font-weight:600;">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${h.color};margin-right:5px;"></span>${h.name}: <strong>${vencidosPorHunter[h.username]}</strong> vencida${vencidosPorHunter[h.username]>1?'s':''}
+        </span>`).join('')}
+    </div>
+    <div style="font-size:10px;color:#B35A16;margin-top:8px;opacity:.8;">💡 Estas cuentas pasaron el plazo de 30 días desde su carga y no muestran avance. Hay que revisarlas o reasignarlas.</div>
+  </div>` : `
+  <div style="background:#E8F5EF;border:1px solid #1D9E75;border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:12px;color:#0d6e4e;font-weight:600;">
+    ✓ Ninguna cuenta pasó los 30 días sin trabajar.
+  </div>`}
+
+  <!-- Tabla pivote -->
+  <div style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:0;overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;min-width:${220+hunterCols.length*70}px;">
+      <thead>
+        <tr style="background:#2B2350;">
+          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;color:#fff;position:sticky;left:0;background:#2B2350;z-index:2;min-width:210px;">Estado / Etapa</th>
+          ${hunterCols.map(h=>`
+            <th style="padding:10px 4px;font-size:10px;font-weight:600;color:${incumpleSet.has(h.username)?'#FF9B9B':'#fff'};text-align:center;white-space:nowrap;${incumpleSet.has(h.username)?'background:#5a2340;':''}" title="${incumpleSet.has(h.username)?'⚠ '+enProspecto(h)+' leads en 10% — '+h.name:h.name}">
+              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${h.color};margin-right:3px;"></span>${incumpleSet.has(h.username)?'⚠ ':''}${h.short}
+            </th>`).join('')}
+          <th style="padding:10px 8px;font-size:10px;font-weight:700;color:#FFD93D;text-align:center;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${ROWS.map(r=>{
+          const rt = rowTotal(r);
+          return `<tr>
+            <td style="padding:8px 12px;font-size:11px;font-weight:600;color:${r.color};position:sticky;left:0;background:${r.bg};border-bottom:1px solid #f0f2f5;white-space:nowrap;z-index:1;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${r.color};margin-right:6px;"></span>${r.label}
+            </td>
+            ${hunterCols.map(h=>{
+              const c = counts[r.key][h.username]||0;
+              /* Resaltar en rojo si es la fila de prospección (10%) y el hunter tiene más de 1 */
+              const alerta = r.key==='prospecto' && c>1;
+              if(alerta) return `<td style="${cellSty}background:#FCD8D8;color:#C0392B;font-weight:800;border:1px solid #E24B4A;">${c} ⚠</td>`;
+              return `<td style="${cellSty}${c>0?`background:${r.bg};color:${r.color};font-weight:700;`:'color:#ccc;'}">${c>0?c:'·'}</td>`;
+            }).join('')}
+            <td style="${cellSty}font-weight:700;color:${r.color};background:${r.bg};">${rt}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+      <tfoot>
+        <tr style="background:#f7f8fa;">
+          <td style="padding:9px 12px;font-size:11px;font-weight:700;color:#1a1f2e;position:sticky;left:0;background:#f7f8fa;border-top:2px solid #e0e3e8;z-index:1;">Total leads</td>
+          ${hunterCols.map(h=>`<td style="${cellSty}font-weight:700;color:#1a1f2e;border-top:2px solid #e0e3e8;">${colTotal(h)}</td>`).join('')}
+          <td style="${cellSty}font-weight:800;color:#534AB7;border-top:2px solid #e0e3e8;">${grandTotal}</td>
+        </tr>
+        <tr style="background:#fff;">
+          <td style="padding:9px 12px;font-size:11px;font-weight:700;color:#1a1f2e;position:sticky;left:0;background:#fff;z-index:1;">% Trabajado <span style="font-weight:400;color:#999;font-size:9px;">(salieron de 10%)</span></td>
+          ${hunterCols.map(h=>{
+            const p = pctTrab(h);
+            const t = colTotal(h);
+            return `<td style="${cellSty}font-weight:700;color:${t>0?pctColor(p):'#ccc'};">${t>0?p+'%':'·'}</td>`;
+          }).join('')}
+          <td style="${cellSty}font-weight:800;color:${pctColor(pctTrabTot)};">${pctTrabTot}%</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>`;
+}
+
 function renderCerradosCaidos(tipo){
   const isDA = ['director','analista'].includes(curUser.role);
   const leads = applyOrigenFilter((LEADS||[]).filter(l=>{
@@ -3647,6 +3972,27 @@ window.actualizarCPA = function actualizarCPA(){
     const el=document.getElementById(id);
     if(el) el.textContent = fmt(parseInt(el.dataset.n||'0'));
   });
+}
+
+window.goEstadoCaptura = function goEstadoCaptura(){
+  try {
+    const kpiEl=document.getElementById('view-kpi');
+    const huntersEl=document.getElementById('view-hunters');
+    if(kpiEl) kpiEl.style.display='none';
+    if(huntersEl) huntersEl.style.display='none';
+    ['.topbar','.tab-nav','#content'].forEach(s=>{
+      const el=document.querySelector('.main '+s);
+      if(el) el.style.display='';
+    });
+    const navCrm=document.getElementById('nav-crm');
+    if(navCrm) navCrm.classList.add('active');
+    curTab='estado_captura';
+    document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+    renderEstadoCaptura();
+  } catch(e){
+    document.getElementById('content').innerHTML=
+      '<div style="padding:40px;color:#E24B4A;">Error Estado Captura: '+e.message+'</div>';
+  }
 }
 
 window.goEstadoSVA = function goEstadoSVA(){
