@@ -196,6 +196,11 @@ tr:hover td{background:#fafbff;}
       <div class="sb-icon" style="color:#D85A30;pointer-events:none;"><i class="ti ti-users"></i></div>
     </div>
     <div class="sb-sep" style="width:32px;height:1px;background:rgba(255,255,255,.08);margin:4px 0;"></div>
+    <div id="sb-teamC-group" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goTeam('C')">
+      <div style="font-size:8px;color:#00A77D;text-align:center;line-height:1.2;">Equipo<br>Rosa</div>
+      <div class="sb-icon" style="color:#00A77D;pointer-events:none;"><i class="ti ti-users"></i></div>
+    </div>
+    <div class="sb-sep" style="width:32px;height:1px;background:rgba(255,255,255,.08);margin:4px 0;"></div>
     <div id="nav-cerrados" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goCerrados()">
       <div style="font-size:8px;color:#1D9E75;text-align:center;line-height:1.2;">Leads<br>Cerrados</div>
       <div class="sb-icon" style="pointer-events:none;background:rgba(29,158,117,.15);"><i class="ti ti-trophy" style="color:#1D9E75;"></i></div>
@@ -233,6 +238,7 @@ tr:hover td{background:#fafbff;}
       <option value="">Todos los equipos</option>
       <option value="A">Equipo Carlos</option>
       <option value="B">Equipo Ana</option>
+      <option value="C">Equipo Rosa</option>
     </select>
     <select id="kpi-prod" onchange="renderKPI()" style="font-size:11px;padding:5px 10px;border:1px solid #dde1e7;border-radius:7px;background:#fff;color:#333;cursor:pointer;">
       <option value="">Todos los productos</option>
@@ -586,11 +592,15 @@ const HUNTERS_DEF = [
 const HUNTERS = Object.fromEntries(HUNTERS_DEF.map(h=>[h.username, h]));
 const HUNTERS_A = HUNTERS_DEF.filter(h=>h.team==='A');
 const HUNTERS_B = HUNTERS_DEF.filter(h=>h.team==='B');
+const HUNTERS_C = HUNTERS_DEF.filter(h=>h.team==='C');
 
 const TEAMS = {
   A:{name:'Equipo A', head:'Carlos Portal', headColor:'#F59E0B', hunters:HUNTERS_A.map(h=>h.username)},
   B:{name:'Equipo B', head:'Ana Carrera',   headColor:'#A855F7', hunters:HUNTERS_B.map(h=>h.username)},
+  C:{name:'Equipo C', head:'Rosa Torres',   headColor:'#00C896', hunters:HUNTERS_C.map(h=>h.username)},
 };
+/* Nombre corto del head por equipo (para etiquetas) */
+const TEAM_HEAD = {A:'Carlos', B:'Ana', C:'Rosa'};
 
 const SC={
   prospecto:  {bg:'#E6F1FB',c:'#0C447C', l:'10% Prospección', pct:10},
@@ -764,17 +774,21 @@ async function doLogin(){
     /* Rebuild HUNTERS map */
     Object.keys(HUNTERS).forEach(k => delete HUNTERS[k]);
     HUNTERS_DEF.forEach(h => { HUNTERS[h.username] = h; });
-    HUNTERS_A.length = 0; HUNTERS_B.length = 0;
+    HUNTERS_A.length = 0; HUNTERS_B.length = 0; HUNTERS_C.length = 0;
     HUNTERS_DEF.filter(h=>h.team==='A').forEach(h=>HUNTERS_A.push(h));
     HUNTERS_DEF.filter(h=>h.team==='B').forEach(h=>HUNTERS_B.push(h));
+    HUNTERS_DEF.filter(h=>h.team==='C').forEach(h=>HUNTERS_C.push(h));
     TEAMS.A.hunters = HUNTERS_A.map(h=>h.username);
     TEAMS.B.hunters = HUNTERS_B.map(h=>h.username);
+    TEAMS.C.hunters = HUNTERS_C.map(h=>h.username);
 
     /* Heads */
     const headA = SB_USUARIOS.find(u=>u.username==='cportal');
     const headB = SB_USUARIOS.find(u=>u.username==='acarrera');
+    const headC = SB_USUARIOS.find(u=>u.username==='rtorres');
     if(headA){ TEAMS.A.head = headA.nombre; TEAMS.A.headColor = headA.color||'#F59E0B'; }
     if(headB){ TEAMS.B.head = headB.nombre; TEAMS.B.headColor = headB.color||'#A855F7'; }
+    if(headC){ TEAMS.C.head = headC.nombre; TEAMS.C.headColor = headC.color||'#00C896'; }
 
     /* ── Transformar leads con fetchLeads() para garantizar mapa completo (incluye linea, tipo_sva, SVA fields) ── */
     LEADS = await fetchLeads();
@@ -1233,12 +1247,15 @@ function initApp(){
   /* Show team groups - Head solo ve su propio equipo, Director/Analista ven ambos */
   const tAg = el('sb-teamA-group');
   const tBg = el('sb-teamB-group');
+  const tCg = el('sb-teamC-group');
   if(curUser.role==='head'){
     if(tAg) tAg.style.display = curUser.equipo==='A' ? 'flex' : 'none';
     if(tBg) tBg.style.display = curUser.equipo==='B' ? 'flex' : 'none';
+    if(tCg) tCg.style.display = curUser.equipo==='C' ? 'flex' : 'none';
   } else {
     if(tAg) tAg.style.display = isDAH ? 'flex' : 'none';
     if(tBg) tBg.style.display = isDAH ? 'flex' : 'none';
+    if(tCg) tCg.style.display = isDAH ? 'flex' : 'none';
   }
   /* Cerrados / Caídos - visible for head, analista, director */
   const nc   = el('nav-cerrados');
@@ -1353,11 +1370,11 @@ function getTabs(){
 
   if(r==='head') {
     const myTeam = curUser.equipo;
-    const hunters = myTeam==='A' ? HUNTERS_A : HUNTERS_B;
-    const headName = myTeam==='A' ? 'Carlos' : 'Ana';
+    const hunters = myTeam==='A' ? HUNTERS_A : myTeam==='C' ? HUNTERS_C : HUNTERS_B;
+    const headName = TEAM_HEAD[myTeam] || myTeam;
     const tabs = [
       {id:'general',     label:'Vista general',   icon:'ti-home',  dot:'#534AB7'},
-      {id:'team'+myTeam, label:'Equipo '+headName, icon:'ti-users', dot: myTeam==='A'?'#1D9E75':'#D85A30'}
+      {id:'team'+myTeam, label:'Equipo '+headName, icon:'ti-users', dot: myTeam==='A'?'#1D9E75':myTeam==='C'?'#00A77D':'#D85A30'}
     ];
     hunters.forEach(h => tabs.push(hunterTab(h)));
     return tabs;
@@ -1467,7 +1484,7 @@ function renderTab(id){
   else if(id==='estado_captura') renderEstadoCaptura();
   else if(id==='sva_cerrados') renderSvaCerradosCaidos('cerrado');
   else if(id==='sva_caidos')   renderSvaCerradosCaidos('caido');
-  else if(id==='teamA'||id==='teamB') renderTeam(id==='teamA'?'A':'B');
+  else if(id==='teamA'||id==='teamB'||id==='teamC') renderTeam(id.slice(4));
   else renderHunter(id);
 }
 
@@ -1617,6 +1634,7 @@ function renderSVA2(){
     /* Si director, agrupar por equipo */
     const teamARows = isDirector ? rows.filter(([,c])=>c.team==='A') : rows;
     const teamBRows = isDirector ? rows.filter(([,c])=>c.team==='B') : [];
+    const teamCRows = isDirector ? rows.filter(([,c])=>c.team==='C') : [];
 
     const renderCards = (list) => list.map(([name,c])=>`
       <div style="background:#fff;border:1px solid #e8eaed;border-radius:8px;padding:6px 10px;font-size:11px;min-width:140px;">
@@ -1632,6 +1650,7 @@ function renderSVA2(){
     if(isDirector){
       const totA = teamARows.reduce((s,[,c])=>({qr:s.qr+c.qr,ars:s.ars+c.arisale,pla:s.pla+c.planillas}),{qr:0,ars:0,pla:0});
       const totB = teamBRows.reduce((s,[,c])=>({qr:s.qr+c.qr,ars:s.ars+c.arisale,pla:s.pla+c.planillas}),{qr:0,ars:0,pla:0});
+      const totC = teamCRows.reduce((s,[,c])=>({qr:s.qr+c.qr,ars:s.ars+c.arisale,pla:s.pla+c.planillas}),{qr:0,ars:0,pla:0});
       return `<div style="margin-bottom:12px;background:#f8f9fb;border-radius:10px;padding:10px 14px;">
         <div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">
           Distribución por Hunter ${window.sva2_tipo?'— '+window.sva2_tipo:'— Todos los tipos'}
@@ -1642,17 +1661,23 @@ function renderSVA2(){
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:5px;">${renderCards(teamARows)}</div>
         </div>
-        <div>
+        <div style="margin-bottom:6px;">
           <div style="font-size:10px;font-weight:700;color:#A855F7;margin-bottom:5px;">
             ⚡ Equipo Ana — QR: ${totB.qr} | ARS: ${totB.ars} | PLA: ${totB.pla}
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:5px;">${renderCards(teamBRows)}</div>
         </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#00A77D;margin-bottom:5px;">
+            ⚡ Equipo Rosa — QR: ${totC.qr} | ARS: ${totC.ars} | PLA: ${totC.pla}
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;">${renderCards(teamCRows)}</div>
+        </div>
       </div>`;
     }
 
     /* Head: solo su equipo */
-    const teamName = curUser.equipo==='A'?'Carlos':'Ana';
+    const teamName = TEAM_HEAD[curUser.equipo]||curUser.equipo;
     const tot = rows.reduce((s,[,c])=>({qr:s.qr+c.qr,ars:s.ars+c.arisale,pla:s.pla+c.planillas}),{qr:0,ars:0,pla:0});
     return `<div style="margin-bottom:12px;background:#f8f9fb;border-radius:10px;padding:10px 14px;">
       <div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">
@@ -1881,6 +1906,7 @@ function renderEstadoSVA(){
         <option value="">Ambos equipos</option>
         <option value="A"${fEquipo==='A'?' selected':''}>Equipo Carlos</option>
         <option value="B"${fEquipo==='B'?' selected':''}>Equipo Ana</option>
+        <option value="C"${fEquipo==='C'?' selected':''}>Equipo Rosa</option>
       </select>` : ''}
       <span style="background:#B388FF22;color:#7C4DFF;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${grandTotal} leads</span>
     </div>
@@ -2058,7 +2084,7 @@ function renderEstadoSVA(){
         <span style="font-size:15px;">🎯</span>
         <div>
           <div style="font-size:14px;font-weight:700;color:#1a1f2e;">Embudo de conversión — Leads Central cargados</div>
-          <div style="font-size:11px;color:#999;">Origen LEAD CENTRAL · ${etiqMes}${fTipo?' · '+fTipo:''}${fEquipo?' · Equipo '+(fEquipo==='A'?'Carlos':'Ana'):''} — Total: ${totalF} leads</div>
+          <div style="font-size:11px;color:#999;">Origen LEAD CENTRAL · ${etiqMes}${fTipo?' · '+fTipo:''}${fEquipo?' · Equipo '+(TEAM_HEAD[fEquipo]||fEquipo):''} — Total: ${totalF} leads</div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;justify-content:center;">
@@ -2392,6 +2418,7 @@ function renderEstadoCaptura(){
         <option value="">Ambos equipos</option>
         <option value="A"${fEquipo==='A'?' selected':''}>Equipo Carlos</option>
         <option value="B"${fEquipo==='B'?' selected':''}>Equipo Ana</option>
+        <option value="C"${fEquipo==='C'?' selected':''}>Equipo Rosa</option>
       </select>` : ''}
       <span style="background:#B388FF22;color:#7C4DFF;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${grandTotal} leads</span>
     </div>
@@ -3074,6 +3101,18 @@ function renderGeneral(){
     <div class="hunters-grid">
       ${HUNTERS_B.map(h=>hunterCardHTML(h,true)).join('')}
     </div>
+  </div>` : ''}
+
+  ${curUser.role!=='head' || curUser.equipo==='C' ? `
+  <div style="margin-top:16px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;" onclick="goTeam('C')">
+      <span style="width:10px;height:10px;border-radius:50%;background:#00A77D;display:inline-block;"></span>
+      <span style="font-size:12px;font-weight:600;color:#00A77D;">Equipo Rosa</span>
+      <span style="font-size:11px;color:#999;">→ ver equipo completo</span>
+    </div>
+    <div class="hunters-grid">
+      ${HUNTERS_C.map(h=>hunterCardHTML(h,true)).join('')}
+    </div>
   </div>` : ''}`;
   document.getElementById('content').innerHTML=html;
 }
@@ -3178,7 +3217,7 @@ function renderHunter(hid){
   const roleCanEdit=(curUser.role==='director')||(curUser.role==='analista')||(curUser.role==='head'&&(HUNTERS[hid]?.team===curUser.equipo))||(curUser.role==='hunter'&&isOwn);
 
   const backBtnHtml = ['director','analista'].includes(curUser.role)
-    ? `<div style="margin-bottom:12px;"><button onclick="window.goTeam('${h.team}')" style="font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid #dde1e7;background:#fff;cursor:pointer;color:#534AB7;font-weight:500;">← Equipo ${h.team==='A'?'Carlos':'Ana'}</button></div>`
+    ? `<div style="margin-bottom:12px;"><button onclick="window.goTeam('${h.team}')" style="font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid #dde1e7;background:#fff;cursor:pointer;color:#534AB7;font-weight:500;">← Equipo ${TEAM_HEAD[h.team]||h.team}</button></div>`
     : '';
   let html=`${backBtnHtml}
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
@@ -3392,14 +3431,14 @@ function leadsForHunter(username){
 }
 
 function leadsForTeam(team){
-  const hunters = team==='A' ? HUNTERS_A.map(h=>h.username) : HUNTERS_B.map(h=>h.username);
+  const hunters = (TEAMS[team]?.hunters) || [];
   return (LEADS||[]).filter(l => hunters.includes(l.hunter));
 }
 
 function teamsCompareHTML(){
-  return ['A','B'].map(k=>{
+  return ['A','B','C'].map(k=>{
     const t=TEAMS[k];
-    const hunters=k==='A'?HUNTERS_A:HUNTERS_B;
+    const hunters=k==='A'?HUNTERS_A:k==='C'?HUNTERS_C:HUNTERS_B;
     const real=leadsForTeam(k).reduce((s,l)=>s+l.value,0);
     const meta=hunters.reduce((s,h)=>s+(h.meta||0),0);
     const pct=Math.round(real/meta*100);
