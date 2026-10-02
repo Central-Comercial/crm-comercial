@@ -106,15 +106,25 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;height:10
 .btn-new{font-size:12px;padding:5px 14px;border-radius:8px;border:none;background:#534AB7;color:#fff;cursor:pointer;font-weight:500;}
 .btn-new:hover{background:#3C3489;}
 .tbl-wrap{background:#fff;border:1px solid #e8eaed;border-radius:10px;overflow-x:auto;}
-table{width:100%;border-collapse:collapse;font-size:12px;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
 thead tr{background:#f7f8fa;}
-th{padding:8px 10px;font-size:11px;font-weight:600;color:#888;border-bottom:1px solid #e8eaed;white-space:nowrap;text-align:left;}
-td{padding:7px 10px;border-bottom:1px solid #f0f2f5;vertical-align:middle;color:#333;}
+th{padding:5px 7px;font-size:10px;font-weight:600;color:#888;border-bottom:1px solid #e8eaed;white-space:nowrap;text-align:left;}
+td{padding:3px 7px;border-bottom:1px solid #f0f2f5;vertical-align:middle;color:#333;}
+td.clip{max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+td.clip .ecell,td.clip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+table td select{min-width:0;max-width:100%;}
+/* Toggle "Esenciales": oculta columnas secundarias (Rep.Legal, Giros, Origen, Tipo Prod., Tipo Cta., Banco) */
+.cols-esenciales .content table th:nth-child(5),.cols-esenciales .content table td:nth-child(5),
+.cols-esenciales .content table th:nth-child(9),.cols-esenciales .content table td:nth-child(9),
+.cols-esenciales .content table th:nth-child(10),.cols-esenciales .content table td:nth-child(10),
+.cols-esenciales .content table th:nth-child(11),.cols-esenciales .content table td:nth-child(11),
+.cols-esenciales .content table th:nth-child(12),.cols-esenciales .content table td:nth-child(12),
+.cols-esenciales .content table th:nth-child(13),.cols-esenciales .content table td:nth-child(13){display:none!important;}
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:#fafbff;}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
 .sbadge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap;}
-.ecell{border:none;background:transparent;font-size:12px;color:#333;width:100%;padding:1px 2px;font-family:inherit;}
+.ecell{border:none;background:transparent;font-size:12px;color:#333;width:100%;min-width:0;padding:1px 2px;font-family:inherit;}
 .ecell:focus{background:#f0f2f5;border-radius:3px;outline:none;}
 .ecell[readonly]{color:#999;cursor:default;}
 .alink{font-size:11px;color:#534AB7;cursor:pointer;font-weight:500;}
@@ -273,6 +283,7 @@ tr:hover td{background:#fafbff;}
           <i class="ti ti-upload" id="import-icon"></i> <span id="import-txt">Importar Excel</span>
         </button>
         <input type="file" id="import-file" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleImport(this)">
+        <button class="btn-sm" id="cols-toggle" onclick="toggleCols()" title="Mostrar u ocultar columnas secundarias para que entre todo a 100%"><i class="ti ti-columns"></i> <span id="cols-toggle-txt">Compactar</span></button>
         <button class="btn-sm" onclick="doLogout()"><i class="ti ti-logout"></i> Salir</button>
       </div>
     </div>
@@ -1402,6 +1413,26 @@ function toggleOrigenMenu(){
   const menu = document.getElementById('origen-menu');
   if(menu) menu.style.display = menu.style.display==='none' ? 'block' : 'none';
 }
+
+/* ── Toggle de columnas: "Esenciales" oculta columnas secundarias para que la tabla entre al 100% ── */
+function updateColsLabel(){
+  const on = document.body.classList.contains('cols-esenciales');
+  const el = document.getElementById('cols-toggle-txt');
+  const btn = document.getElementById('cols-toggle');
+  if(el) el.textContent = on ? 'Ver todas' : 'Compactar';
+  if(btn) btn.style.background = on ? '#ece9fb' : '#fff';
+}
+function toggleCols(){
+  const on = document.body.classList.toggle('cols-esenciales');
+  try{ localStorage.setItem('crm_cols_esenciales', on?'1':'0'); }catch(e){}
+  updateColsLabel();
+}
+/* aplica preferencia guardada en este equipo al cargar */
+(function(){
+  try{ if(localStorage.getItem('crm_cols_esenciales')==='1') document.body.classList.add('cols-esenciales'); }catch(e){}
+  if(document.readyState!=='loading') updateColsLabel();
+  else document.addEventListener('DOMContentLoaded', updateColsLabel);
+})();
 
 document.addEventListener('click', function(e){
   const menu = document.getElementById('origen-menu');
@@ -3694,15 +3725,14 @@ function leadsTableHTML(leads, canEdit, key){
   if(!filtered.length) return `<table><tbody><tr><td colspan="22" style="text-align:center;padding:24px;color:#aaa;font-size:13px;">Sin leads para mostrar</td></tr></tbody></table>`;
   return `<table>
     <colgroup>
-      <col style="width:18px"><col style="width:26px"><col style="width:150px"><col style="width:80px">
-      <col style="width:130px"><col style="width:90px">
-      <col style="width:82px"><col style="width:82px"><col style="width:95px">
-      <col style="width:100px"><col style="width:110px"><col style="width:100px">
-      <col style="width:85px"><col style="width:100px">
-      <col style="width:60px"><col style="width:80px"><col style="width:100px">
-      <col style="width:80px"><col style="width:140px">
-      ${isSVA?'<col style="width:90px"><col style="width:90px"><col style="width:110px">':''}
-      <col style="width:50px">
+      <col style="width:16px"><col style="width:22px"><col style="width:150px"><col style="width:96px">
+      <col style="width:110px"><col style="width:92px">
+      <col style="width:120px"><col style="width:95px"><col style="width:80px">
+      <col style="width:80px"><col style="width:90px"><col style="width:85px">
+      <col style="width:70px"><col style="width:78px">
+      <col style="width:100px"><col style="width:92px"><col style="width:150px">
+      ${isSVA?'<col style="width:70px"><col style="width:120px"><col style="width:100px">':''}
+      <col style="width:70px">
     </colgroup>
     <thead><tr>
       <th></th><th></th><th>Razón Social</th><th>RUC</th>
@@ -3791,30 +3821,30 @@ function leadsTableHTML(leads, canEdit, key){
         <td style="text-align:center;cursor:pointer;" title="Ver historial" onclick="toggleHistorial('${l.id}',this)">
           <span style="font-size:13px;" id="exp-${l.id}">▶</span>
         </td>
-        <td style="padding:4px 8px;">
+        <td class="clip" style="padding:4px 8px;">
           ${(full || commentOnly)
-            ? `<input class="ecell" value="${(l.name||'').replace(/"/g,'&quot;')}" placeholder="Razón social" title="${l.name||''}" onchange="updateLeadDB('${safeId}','razon_social',this.value,'${key}')" style="font-size:11px;font-weight:600;width:150px;">`
+            ? `<input class="ecell" value="${(l.name||'').replace(/"/g,'&quot;')}" placeholder="Razón social" title="${l.name||''}" onchange="updateLeadDB('${safeId}','razon_social',this.value,'${key}')" style="font-size:11px;font-weight:600;">`
             : `<span style="font-weight:600;font-size:11px;" title="${l.name}">${l.name}</span>`}
         </td>
         <td style="padding:4px 8px;">
           ${(full || commentOnly)
-            ? `<input class="ecell" value="${l.ruc||''}" placeholder="RUC" maxlength="11" onchange="updateLeadDB('${safeId}','ruc',this.value,'${key}')" style="font-size:11px;width:100px;">`
+            ? `<input class="ecell" value="${l.ruc||''}" placeholder="RUC" maxlength="11" onchange="updateLeadDB('${safeId}','ruc',this.value,'${key}')" style="font-size:11px;width:88px;">`
             : `<span style="font-size:11px;color:#666;">${l.ruc||'—'}</span>`}
         </td>
-        <td style="padding:4px 8px;">
+        <td class="clip" style="padding:4px 8px;">
           ${full || commentOnly
             ? `<input class="ecell" value="${l.representante_legal||''}" placeholder="—" onchange="updateLeadDB('${safeId}','representante_legal',this.value,'${key}')" style="font-size:11px;">`
             : `<span style="font-size:11px;color:#666;">${l.representante_legal||'—'}</span>`}
         </td>
         <td style="padding:4px 8px;">
           ${full || commentOnly
-            ? `<input class="ecell" value="${l.telefono||''}" placeholder="—" maxlength="12" onchange="updateLeadDB('${safeId}','telefono',this.value,'${key}')" style="font-size:11px;width:100px;">`
+            ? `<input class="ecell" value="${l.telefono||''}" placeholder="—" maxlength="12" onchange="updateLeadDB('${safeId}','telefono',this.value,'${key}')" style="font-size:11px;width:82px;">`
             : `<span style="font-size:11px;color:#666;">${l.telefono||'—'}</span>`}
         </td>
-        <td style="padding:4px 8px;">
+        <td class="clip" style="padding:4px 8px;">
           <input class="ecell" value="${l.correo||''}" placeholder="correo@ejemplo.com"
             onchange="updateLeadDB('${safeId}','correo',this.value,'${key}')"
-            style="font-size:11px;width:150px;">
+            style="font-size:11px;">
         </td>
         <td style="font-size:11px;color:#666;">${l.owner}</td>
         <td style="font-size:11px;color:#666;">${l.giros||'—'}</td>
@@ -3825,7 +3855,7 @@ function leadsTableHTML(leads, canEdit, key){
         <td>${potencialCell}</td>
         <td>${etapaCell}</td>
         <td>${mesCierreCell}</td>
-        <td>${comentarioCell}</td>
+        <td class="clip">${comentarioCell}</td>
         ${isSVA?(()=>{
           const tipoSva=(l.tipo_sva||l.tipo_producto||'').toUpperCase();
           const canCant = canPartial || commentOnly;
