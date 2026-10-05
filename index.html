@@ -3549,8 +3549,12 @@ function filterBarHTML(leads, key, showNew=true){
       <button class="ftab active" onclick="setFilter('all','${key}')">Todos <span style="background:rgba(255,255,255,.3);padding:0 5px;border-radius:8px;font-size:10px;">${leads.length}</span></button>
       ${stageKeys.map(s=>`<button class="ftab" onclick="setFilter('${s}','${key}')">${SC[s].l}</button>`).join('')}
     </div>
-    <input class="search-box" id="srch-${key}" data-key="${key}" placeholder="Buscar por RUC o Razón Social..." 
+    <input class="search-box" id="srch-${key}" data-key="${key}" placeholder="Buscar por RUC o Razón Social..."
       value="${window['search_'+key]||''}" autocomplete="off">
+    <select class="filter-sel" onchange="setMesFilter(this.value,'${key}')">
+      <option value="">Todos los meses</option>
+      ${['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'].map(m=>`<option value="${m}"${(window['mes_'+key]||'')===m?' selected':''}>${m.charAt(0)+m.slice(1).toLowerCase()}</option>`).join('')}
+    </select>
     ${showNew!==false?`<button class="btn-new" onclick="openModal(null,'${key}')"><i class="ti ti-plus"></i> Nuevo lead</button>`:''}
   </div>`;
 }
@@ -3724,8 +3728,10 @@ function leadsTableHTML(leads, canEdit, key){
     if(hideClosed && (l.categoria==='cerrado' || l.categoria==='caido' || l.status==='cerrado')) return false;
     const fs=window['filter_'+key]||'all';
     const ss=window['search_'+key]||'';
+    const fm=window['mes_'+key]||'';
     if(fs!=='all'&&(SC[l.status]?l.status:mapEstado(l.status))!==fs) return false;
     if(ss&&!l.name.toLowerCase().includes(ss.toLowerCase())&&!(l.ruc||'').includes(ss)) return false;
+    if(fm&&(l.close||'').toUpperCase()!==fm) return false;
     return true;
   });
   if(!filtered.length) return `<table><tbody><tr><td colspan="22" style="text-align:center;padding:24px;color:#aaa;font-size:13px;">Sin leads para mostrar</td></tr></tbody></table>`;
@@ -3895,6 +3901,11 @@ function setFilter(f,key){
     const match=(f==='all'&&b.textContent.trim().startsWith('Todos'))||(b.textContent.trim()===SC[f]?.l);
     b.classList.toggle('active',match);
   });
+  renderTab(curTab);
+}
+/* Filtro por mes de cierre en las tablas que usan filterBarHTML */
+function setMesFilter(m,key){
+  window['mes_'+key]=m;
   renderTab(curTab);
 }
 /* ── GLOBAL SEARCH LISTENER - never loses focus ── */
