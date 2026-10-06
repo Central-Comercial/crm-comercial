@@ -3944,7 +3944,11 @@ function filterTableRows(inputEl, q){
     tbody.querySelectorAll('tr').forEach(tr=>{
       if(tr.id && tr.id.startsWith('hist-')) return; /* skip historial rows */
       total++;
-      const txt = (tr.innerText||tr.textContent||'').toLowerCase();
+      /* Incluir el valor de los campos editables (Razón Social, RUC, etc. son <input>),
+         porque el texto de un input NO aparece en innerText/textContent */
+      let inputTxt = '';
+      tr.querySelectorAll('input, textarea, select').forEach(f=>{ inputTxt += ' ' + (f.value||''); });
+      const txt = ((tr.innerText||tr.textContent||'') + ' ' + inputTxt).toLowerCase();
       const show = !q || txt.includes(q);
       tr.style.display = show ? '' : 'none';
       /* hide historial row too if parent hidden */
