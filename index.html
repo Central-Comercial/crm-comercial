@@ -3838,8 +3838,8 @@ function leadsTableHTML(leads, canEdit, key){
     <colgroup>
       <col style="width:16px"><col style="width:22px"><col style="width:240px"><col style="width:96px">
       <col style="width:110px"><col style="width:92px">
-      ${isArisale?'<col style="width:180px"><col style="width:110px">':''}
-      <col style="width:120px"><col style="width:95px"><col style="width:80px">
+      ${isArisale?'<col style="width:260px"><col style="width:120px">':''}
+      ${isArisale?'':'<col style="width:120px">'}<col style="width:95px"><col style="width:80px">
       <col style="width:80px"><col style="width:90px"><col style="width:85px">
       <col style="width:70px"><col style="width:78px">
       <col style="width:100px"><col style="width:92px"><col style="width:150px">
@@ -3848,7 +3848,7 @@ function leadsTableHTML(leads, canEdit, key){
     </colgroup>
     <thead><tr>
       <th></th><th></th><th>Razón Social</th><th>RUC</th>
-      <th>Representante Legal</th><th style="min-width:110px;">Teléfono</th>${isArisale?'<th>Dirección</th><th>Distrito</th>':''}<th style="min-width:160px;">Correo</th>
+      <th>Representante Legal</th><th style="min-width:110px;">Teléfono</th>${isArisale?'<th>Dirección</th><th>Distrito</th>':'<th style="min-width:160px;">Correo</th>'}
       <th>Hunter</th>
       <th>Giros</th><th>Origen</th><th>Tipo Producto</th><th>Tipo Cuenta</th>
       <th>Banco</th><th>Potencial</th><th>Etapa</th><th>Mes Cierre</th><th>Comentarios</th>
@@ -3954,13 +3954,13 @@ function leadsTableHTML(leads, canEdit, key){
             : `<span style="font-size:11px;color:#666;">${l.telefono||'—'}</span>`}
         </td>
         ${isArisale?`
-        <td class="clip" style="padding:4px 8px;"><input class="ecell" value="${(l.direccion||'').replace(/"/g,'&quot;')}" placeholder="—" title="${(l.direccion||'').replace(/"/g,'&quot;')}" onchange="updateLeadDB('${safeId}','direccion',this.value,'${key}')" style="font-size:11px;"></td>
-        <td class="clip" style="padding:4px 8px;"><input class="ecell" value="${(l.distrito||'').replace(/"/g,'&quot;')}" placeholder="—" onchange="updateLeadDB('${safeId}','distrito',this.value,'${key}')" style="font-size:11px;"></td>`:''}
-        <td class="clip" style="padding:4px 8px;">
+        <td style="padding:4px 8px;"><input class="ecell" value="${(l.direccion||'').replace(/"/g,'&quot;')}" placeholder="—" title="${(l.direccion||'').replace(/"/g,'&quot;')}" onchange="updateLeadDB('${safeId}','direccion',this.value,'${key}')" style="font-size:11px;min-width:250px;"></td>
+        <td style="padding:4px 8px;"><input class="ecell" value="${(l.distrito||'').replace(/"/g,'&quot;')}" placeholder="—" onchange="updateLeadDB('${safeId}','distrito',this.value,'${key}')" style="font-size:11px;min-width:100px;"></td>`:''}
+        ${isArisale?'':`<td class="clip" style="padding:4px 8px;">
           <input class="ecell" value="${l.correo||''}" placeholder="correo@ejemplo.com"
             onchange="updateLeadDB('${safeId}','correo',this.value,'${key}')"
             style="font-size:11px;">
-        </td>
+        </td>`}
         <td style="font-size:11px;color:#666;">${l.owner}</td>
         <td style="font-size:11px;color:#666;">${l.giros||'—'}</td>
         <td style="font-size:11px;color:#666;">${l.source||'—'}</td>
