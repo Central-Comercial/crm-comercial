@@ -116,12 +116,12 @@ td.clip{max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 td.clip .ecell,td.clip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
 table td select{min-width:0;max-width:100%;}
 /* Toggle "Esenciales": oculta columnas secundarias (Rep.Legal, Giros, Origen, Tipo Prod., Tipo Cta., Banco) */
-.cols-esenciales .content table th:nth-child(5),.cols-esenciales .content table td:nth-child(5),
-.cols-esenciales .content table th:nth-child(9),.cols-esenciales .content table td:nth-child(9),
-.cols-esenciales .content table th:nth-child(10),.cols-esenciales .content table td:nth-child(10),
-.cols-esenciales .content table th:nth-child(11),.cols-esenciales .content table td:nth-child(11),
-.cols-esenciales .content table th:nth-child(12),.cols-esenciales .content table td:nth-child(12),
-.cols-esenciales .content table th:nth-child(13),.cols-esenciales .content table td:nth-child(13){display:none!important;}
+.cols-esenciales .content table:not(.tbl-arisale) th:nth-child(5),.cols-esenciales .content table:not(.tbl-arisale) td:nth-child(5),
+.cols-esenciales .content table:not(.tbl-arisale) th:nth-child(9),.cols-esenciales .content table:not(.tbl-arisale) td:nth-child(9),
+.cols-esenciales .content table:not(.tbl-arisale) th:nth-child(10),.cols-esenciales .content table:not(.tbl-arisale) td:nth-child(10),
+.cols-esenciales .content table:not(.tbl-arisale) th:nth-child(11),.cols-esenciales .content table:not(.tbl-arisale) td:nth-child(11),
+.cols-esenciales .content table:not(.tbl-arisale) th:nth-child(12),.cols-esenciales .content table:not(.tbl-arisale) td:nth-child(12),
+.cols-esenciales .content table:not(.tbl-arisale) th:nth-child(13),.cols-esenciales .content table:not(.tbl-arisale) td:nth-child(13){display:none!important;}
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:#fafbff;}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
@@ -3834,26 +3834,25 @@ function leadsTableHTML(leads, canEdit, key){
   const _RENDER_CAP = 300;
   const _overCap = filtered.length > _RENDER_CAP;
   const _rows = _overCap ? filtered.slice(0, _RENDER_CAP) : filtered;
-  return `<table>
+  return `<table class="${isArisale?'tbl-arisale':''}">
     <colgroup>
       <col style="width:16px"><col style="width:22px"><col style="width:240px"><col style="width:96px">
       <col style="width:110px"><col style="width:92px">
+      ${isArisale?'<col style="width:180px"><col style="width:110px">':''}
       <col style="width:120px"><col style="width:95px"><col style="width:80px">
       <col style="width:80px"><col style="width:90px"><col style="width:85px">
       <col style="width:70px"><col style="width:78px">
       <col style="width:100px"><col style="width:92px"><col style="width:150px">
       ${isSVA?'<col style="width:70px"><col style="width:120px"><col style="width:100px">':''}
-      ${isArisale?'<col style="width:180px"><col style="width:110px">':''}
       <col style="width:70px">
     </colgroup>
     <thead><tr>
       <th></th><th></th><th>Razón Social</th><th>RUC</th>
-      <th>Representante Legal</th><th style="min-width:110px;">Teléfono</th><th style="min-width:160px;">Correo</th>
+      <th>Representante Legal</th><th style="min-width:110px;">Teléfono</th>${isArisale?'<th>Dirección</th><th>Distrito</th>':''}<th style="min-width:160px;">Correo</th>
       <th>Hunter</th>
       <th>Giros</th><th>Origen</th><th>Tipo Producto</th><th>Tipo Cuenta</th>
       <th>Banco</th><th>Potencial</th><th>Etapa</th><th>Mes Cierre</th><th>Comentarios</th>
       ${isSVA?'<th>Tipo SVA</th><th>Cantidad/Valor</th><th>Etapa Implement.</th>':''}
-      ${isArisale?'<th>Dirección</th><th>Distrito</th>':''}
       <th></th>
     </tr></thead>
     <tbody>${_rows.map(l=>{
@@ -3954,6 +3953,9 @@ function leadsTableHTML(leads, canEdit, key){
             ? `<input class="ecell" value="${l.telefono||''}" placeholder="—" maxlength="12" onchange="updateLeadDB('${safeId}','telefono',this.value,'${key}')" style="font-size:11px;width:82px;">`
             : `<span style="font-size:11px;color:#666;">${l.telefono||'—'}</span>`}
         </td>
+        ${isArisale?`
+        <td class="clip" style="padding:4px 8px;"><input class="ecell" value="${(l.direccion||'').replace(/"/g,'&quot;')}" placeholder="—" title="${(l.direccion||'').replace(/"/g,'&quot;')}" onchange="updateLeadDB('${safeId}','direccion',this.value,'${key}')" style="font-size:11px;"></td>
+        <td class="clip" style="padding:4px 8px;"><input class="ecell" value="${(l.distrito||'').replace(/"/g,'&quot;')}" placeholder="—" onchange="updateLeadDB('${safeId}','distrito',this.value,'${key}')" style="font-size:11px;"></td>`:''}
         <td class="clip" style="padding:4px 8px;">
           <input class="ecell" value="${l.correo||''}" placeholder="correo@ejemplo.com"
             onchange="updateLeadDB('${safeId}','correo',this.value,'${key}')"
@@ -3983,9 +3985,6 @@ function leadsTableHTML(leads, canEdit, key){
             <td style="font-size:10px;color:#555;white-space:nowrap;">${cantVal}</td>
             <td><span class="sbadge" style="background:${implColor}22;color:${implColor};font-size:10px;">${l.etapa_implementacion||'—'}</span></td>`;
         })():''}
-        ${isArisale?`
-        <td class="clip" style="padding:4px 8px;"><input class="ecell" value="${(l.direccion||'').replace(/"/g,'&quot;')}" placeholder="—" title="${(l.direccion||'').replace(/"/g,'&quot;')}" onchange="updateLeadDB('${safeId}','direccion',this.value,'${key}')" style="font-size:11px;"></td>
-        <td class="clip" style="padding:4px 8px;"><input class="ecell" value="${(l.distrito||'').replace(/"/g,'&quot;')}" placeholder="—" onchange="updateLeadDB('${safeId}','distrito',this.value,'${key}')" style="font-size:11px;"></td>`:''}
         <td>${actionBtn}</td>
       </tr>
       <tr id="hist-${l.id}" style="display:none;">
