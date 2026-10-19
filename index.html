@@ -3657,7 +3657,7 @@ function filterBarHTML(leads, key, showNew=true){
 */
 /* ── FETCH LEADS HELPER ── */
 /* Columnas exactas que el CRM usa — evita traer datos de más (optimización de egress) */
-const LEAD_COLS = 'id,hunter_id,razon_social,nombre,ruc,giros,fuente,tipo_producto,tipo_sva,tipo_cuenta,banco,estado,valor,mes_cierre,comentario,probabilidad,conflicto,categoria,linea,telefono,correo,representante_legal,parlantes,arisale_valor,arisale_licencias,planillas_colaboradores,etapa_implementacion,created_at,fecha_ingreso,fecha_modif,fecha_cierre';
+const LEAD_COLS = 'id,hunter_id,razon_social,nombre,ruc,giros,fuente,tipo_producto,tipo_sva,tipo_cuenta,banco,estado,valor,mes_cierre,comentario,probabilidad,conflicto,categoria,linea,telefono,correo,representante_legal,parlantes,arisale_valor,arisale_licencias,planillas_colaboradores,etapa_implementacion,direccion,distrito,created_at,fecha_ingreso,fecha_modif,fecha_cierre';
 
 async function fetchLeads(){
   const rawLeads = await sbGet('leads',`select=${LEAD_COLS}&order=created_at.desc`);
@@ -3684,6 +3684,7 @@ async function fetchLeads(){
     arisale_valor:l.arisale_valor||0, arisale_licencias:l.arisale_licencias||0,
     planillas_colaboradores:l.planillas_colaboradores||0,
     etapa_implementacion:l.etapa_implementacion||'',
+    direccion:l.direccion||'', distrito:l.distrito||'',
     created:fmtDatePE(l.created_at),
     fecha_ingreso:fmtDatePE(l.fecha_ingreso),
     fecha_ingreso_raw:l.fecha_ingreso||'',
@@ -3806,6 +3807,7 @@ function getLead(id){ return LEADS.find(l=>l.id===id) || LEAD_REG[id]; }
 
 function leadsTableHTML(leads, canEdit, key){
   const isSVA = (key==='sva2'||key==='sva_cerrados'||key==='sva_caidos');
+  const isArisale = (key==='arisale');
   /* Separar estrictamente: Lead Central / Leads SVA / Lead Arisale cada uno su línea */
   const lineaFilter = key==='arisale' ? 'arisale' : (isSVA ? 'sva' : 'central');
   const byLinea = leads.filter(l=>(l.linea||'central')===lineaFilter);
@@ -3841,6 +3843,7 @@ function leadsTableHTML(leads, canEdit, key){
       <col style="width:70px"><col style="width:78px">
       <col style="width:100px"><col style="width:92px"><col style="width:150px">
       ${isSVA?'<col style="width:70px"><col style="width:120px"><col style="width:100px">':''}
+      ${isArisale?'<col style="width:180px"><col style="width:110px">':''}
       <col style="width:70px">
     </colgroup>
     <thead><tr>
@@ -3850,6 +3853,7 @@ function leadsTableHTML(leads, canEdit, key){
       <th>Giros</th><th>Origen</th><th>Tipo Producto</th><th>Tipo Cuenta</th>
       <th>Banco</th><th>Potencial</th><th>Etapa</th><th>Mes Cierre</th><th>Comentarios</th>
       ${isSVA?'<th>Tipo SVA</th><th>Cantidad/Valor</th><th>Etapa Implement.</th>':''}
+      ${isArisale?'<th>Dirección</th><th>Distrito</th>':''}
       <th></th>
     </tr></thead>
     <tbody>${_rows.map(l=>{
@@ -3979,10 +3983,13 @@ function leadsTableHTML(leads, canEdit, key){
             <td style="font-size:10px;color:#555;white-space:nowrap;">${cantVal}</td>
             <td><span class="sbadge" style="background:${implColor}22;color:${implColor};font-size:10px;">${l.etapa_implementacion||'—'}</span></td>`;
         })():''}
+        ${isArisale?`
+        <td class="clip" style="padding:4px 8px;"><input class="ecell" value="${(l.direccion||'').replace(/"/g,'&quot;')}" placeholder="—" title="${(l.direccion||'').replace(/"/g,'&quot;')}" onchange="updateLeadDB('${safeId}','direccion',this.value,'${key}')" style="font-size:11px;"></td>
+        <td class="clip" style="padding:4px 8px;"><input class="ecell" value="${(l.distrito||'').replace(/"/g,'&quot;')}" placeholder="—" onchange="updateLeadDB('${safeId}','distrito',this.value,'${key}')" style="font-size:11px;"></td>`:''}
         <td>${actionBtn}</td>
       </tr>
       <tr id="hist-${l.id}" style="display:none;">
-        <td colspan="${isSVA?22:19}" style="padding:0;">
+        <td colspan="${isSVA?22:(isArisale?21:19)}" style="padding:0;">
           <div id="hist-content-${l.id}" style="background:#f8f9fc;padding:10px 20px;border-top:1px solid #eee;font-size:11px;">
             <div style="color:#999;text-align:center;">Cargando historial...</div>
           </div>
