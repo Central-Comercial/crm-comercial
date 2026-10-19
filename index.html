@@ -34,6 +34,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;height:10
 .sb-icon{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#8892a4;font-size:18px;cursor:pointer;}
 .sb-icon:hover,.sb-icon.active{background:#2d3548;color:#fff;}
 #nav-hunters.active .sb-icon{background:#2d3548;color:#fff;}
+#nav-arisale.active .sb-icon{background:#2d3548;color:#fff;}
 .sb-spacer{flex:1;}
 .sb-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;cursor:pointer;margin-top:6px;}
 /* main */
@@ -184,6 +185,10 @@ tr:hover td{background:#fafbff;}
     <div id="nav-sva2" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goSVA2()">
       <div style="font-size:8px;color:#00C9FF;text-align:center;line-height:1.2;">Leads<br>SVA</div>
       <div class="sb-icon" style="pointer-events:none;background:rgba(0,201,255,.15);"><i class="ti ti-layers-difference" style="color:#00C9FF;"></i></div>
+    </div>
+    <div id="nav-arisale" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goArisale()" title="Lead Arisale">
+      <div style="font-size:8px;color:#F5A623;text-align:center;line-height:1.2;">Lead<br>Arisale</div>
+      <div class="sb-icon" style="pointer-events:none;background:rgba(245,166,35,.15);"><i class="ti ti-sparkles" style="color:#F5A623;"></i></div>
     </div>
     <div id="nav-estado-sva" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="window.goEstadoSVA()">
       <div style="font-size:8px;color:#B388FF;text-align:center;line-height:1.2;">Estado<br>SVA</div>
@@ -1275,6 +1280,10 @@ function initApp(){
   if(nc)    nc.style.display    = isDAH ? 'flex' : 'none';
   if(nca)   nca.style.display   = isDAH ? 'flex' : 'none';
   if(nsva2) nsva2.style.display = 'flex'; /* Todos los roles ven SVA */
+  /* Lead Arisale EN REVISIÓN: solo lo ve el analista Sebastian Cavalier (scavalier).
+     Para liberarlo a todos, cambiar por: nar.style.display = isDAH ? 'flex' : 'none'; */
+  const nar = el('nav-arisale');
+  if(nar) nar.style.display = (curUser.username==='scavalier') ? 'flex' : 'none';
   const nest = el('nav-estado-sva');
   /* Estado SVA: analista, director, head y hunter (los hunters ven versión recortada) */
   const puedeEstadoSVA = ['director','analista','head','hunter'].includes(curUser.role);
@@ -1508,6 +1517,7 @@ function switchTab(id){
 function renderTab(id){
   if(id==='general')         renderGeneral();
   else if(id==='allleads')   renderAllLeads();
+  else if(id==='arisale')    renderArisale();
   else if(id==='cerrados')   renderCerradosCaidos('cerrado');
   else if(id==='caidos')     renderCerradosCaidos('caido');
   else if(id==='sva2')       renderSVA2();
@@ -2797,6 +2807,79 @@ function renderAllLeads(){
   <div class="tbl-wrap">${leadsTableHTML(filteredMostrar, true, key)}</div>`;
 }
 
+/* ─── LEAD ARISALE: vista igual que Captura pero solo línea 'arisale' ─── */
+function renderArisale(){
+  const key = 'arisale';
+  let arLeads = applyOrigenFilter(LEADS || []).filter(l=>(l.linea||'central')==='arisale');
+  if(curUser.role==='head'){
+    arLeads = arLeads.filter(l=>{ const h=HUNTERS[l.hunter]; return h && h.team===curUser.equipo; });
+  } else if(curUser.role==='hunter'){
+    arLeads = arLeads.filter(l=>l.hunter===curUser.username);
+  }
+  const total = arLeads.length;
+  const fHunter = window['ar_hunter']||'';
+  const fEstado = window['ar_estado']||'all';
+  const fSearch = window['ar_search']||'';
+  const fMes    = window['ar_mes']||'';
+  let filtered = arLeads.filter(l=>{
+    if(fHunter && l.hunter !== fHunter) return false;
+    if(fEstado !== 'all' && l.status !== fEstado) return false;
+    if(fMes && (l.close||'').toUpperCase() !== fMes) return false;
+    if(fSearch && !l.name.toLowerCase().includes(fSearch.toLowerCase()) && !(l.ruc||'').includes(fSearch)) return false;
+    return true;
+  });
+  const hayFiltro = !!(fSearch || fHunter || (fEstado&&fEstado!=='all') || fMes);
+  const LIMITE=200, totalFiltrado=filtered.length;
+  const limitado = !hayFiltro && totalFiltrado>LIMITE;
+  const filteredMostrar = limitado ? filtered.slice(0,LIMITE) : filtered;
+  const hunterOpts=[...new Set(arLeads.map(l=>l.hunter))].filter(Boolean)
+    .map(u=>`<option value="${u}"${u===fHunter?' selected':''}>${HUNTERS[u]?.name||u}</option>`).join('');
+  const meses=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const mesOpts=meses.map(m=>`<option value="${m}"${m===fMes?' selected':''}>${m}</option>`).join('');
+  const conRuc=arLeads.filter(l=>l.ruc&&l.ruc.trim()!=='');
+  const activeAr=conRuc.filter(isActiveLead);
+  const capturaAr=activeAr.reduce((s,l)=>s+(l.value||0),0);
+  const cerradosAr=conRuc.filter(l=>l.categoria==='cerrado'||l.status==='cerrado');
+  const perdidosAr=conRuc.filter(l=>l.categoria==='caido');
+  const totalCapAr=activeAr.length+cerradosAr.length;
+  const convAr=totalCapAr>0?Math.round(cerradosAr.length/totalCapAr*100):0;
+  const convColAr=convAr>=30?'#1D9E75':convAr>=15?'#F5A623':'#E24B4A';
+  const MES=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const _h=new Date().toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'numeric',year:'numeric'}).split('/');
+  const mesAct=parseInt(_h[0])<=2?MES[(parseInt(_h[1])-2+12)%12]:MES[parseInt(_h[1])-1];
+  const cerradoValAr=cerradosAr.filter(l=>(l.close||'').toUpperCase()===mesAct).reduce((s,l)=>s+(l.value||0),0);
+  const perdidoValAr=perdidosAr.reduce((s,l)=>s+(l.value||0),0);
+  document.getElementById('content').innerHTML = `
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+    <div style="background:rgba(245,166,35,.15);border-radius:10px;padding:8px 12px;font-size:18px;">✨</div>
+    <div><div style="font-size:14px;font-weight:700;color:#333;">Lead Arisale</div>
+    <div style="font-size:11px;color:#999;">Base de leads Arisale — línea separada</div></div>
+    <span style="margin-left:auto;background:#F5A62322;color:#C77E12;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${total} leads</span>
+  </div>
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:8px;">
+    ${kpiCard('1. Captura Total','S/ '+capturaAr.toLocaleString(),'potencial pipeline','neutral')}
+    ${kpiFunnelCard('2. Leads Total', activeAr)}
+    ${kpiCard('3. Leads Cerrado','S/ '+cerradoValAr.toLocaleString(),'100% Cierre','up','#1D9E75')}
+    ${kpiCard('4. Leads Perdido','S/ '+perdidoValAr.toLocaleString(),'caídos','down','#E24B4A')}
+    ${kpiCard('5. % Conversión',convAr+'%','cerrados / captura',convAr>=30?'up':convAr>=15?'neutral':'down',convColAr)}
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 0;">
+    <input class="search-box" id="srch-arisale" data-key="ar_search" placeholder="Buscar empresa o RUC..." value="${fSearch}" autocomplete="off" style="width:200px;">
+    <select class="filter-sel" onchange="window['ar_hunter']=this.value;renderArisale()">
+      <option value="">Todos los hunters</option>${hunterOpts}
+    </select>
+    <select class="filter-sel" onchange="window['ar_estado']=this.value;renderArisale()">
+      <option value="all">Todas las etapas</option>
+      ${Object.keys(SC).map(s=>`<option value="${s}"${s===fEstado?' selected':''}>${SC[s].l}</option>`).join('')}
+    </select>
+    <select class="filter-sel" onchange="window['ar_mes']=this.value;renderArisale()">
+      <option value="">Todos los meses</option>${mesOpts}
+    </select>
+    <span style="margin-left:auto;font-size:11px;color:#999;">${limitado?`mostrando ${LIMITE} de ${totalFiltrado} · busca para ver más`:`${filtered.length} de ${total} leads`}</span>
+  </div>
+  <div class="tbl-wrap">${leadsTableHTML(filteredMostrar, true, key)}</div>`;
+}
+
 function exportAllLeads(){
   if(['hunter','viewer'].includes(curUser.role)){ alert('No tienes permisos para exportar.'); return; }
   if(typeof XLSX === 'undefined'){ alert('SheetJS no cargó'); return; }
@@ -3606,7 +3689,10 @@ async function fetchLeads(){
   mapped.forEach(l=>{l.status=mapEstado(l.status);});
   HUNTERS_DEF.forEach(h=>{h.real=0;});
   mapped.forEach(l=>{if(HUNTERS[l.hunter])HUNTERS[l.hunter].real+=(l.value||0);});
-  return mapped;
+  /* ── Lead Arisale EN REVISIÓN: solo scavalier ve los leads de línea 'arisale'.
+     Para liberarlo a todos, cambiar esta condición por: return mapped; ── */
+  const _verArisale = (curUser && curUser.username) === 'scavalier';
+  return _verArisale ? mapped : mapped.filter(l=>(l.linea||'central')!=='arisale');
 }
 
 /* ── TOAST NOTIFICATIONS ── */
@@ -3713,8 +3799,8 @@ function getLead(id){ return LEADS.find(l=>l.id===id) || LEAD_REG[id]; }
 
 function leadsTableHTML(leads, canEdit, key){
   const isSVA = (key==='sva2'||key==='sva_cerrados'||key==='sva_caidos');
-  /* Separar estrictamente: Lead Central no muestra SVA, Leads SVA no muestra Central */
-  const lineaFilter = isSVA ? 'sva' : 'central';
+  /* Separar estrictamente: Lead Central / Leads SVA / Lead Arisale cada uno su línea */
+  const lineaFilter = key==='arisale' ? 'arisale' : (isSVA ? 'sva' : 'central');
   const byLinea = leads.filter(l=>(l.linea||'central')===lineaFilter);
   /* Head only sees their team's leads */
   const visibleLeads = curUser.role==='head'
@@ -3926,6 +4012,15 @@ document.addEventListener('input', function(e){
       renderAllLeads();
       /* devolver el foco al input tras el re-render */
       const nuevo = document.getElementById('srch-allleads');
+      if(nuevo){ nuevo.focus(); nuevo.setSelectionRange(nuevo.value.length, nuevo.value.length); }
+    }, 300);
+    return;
+  }
+  if(key === 'ar_search'){
+    window['ar_search'] = v;
+    _searchTimer = setTimeout(()=>{
+      renderArisale();
+      const nuevo = document.getElementById('srch-arisale');
       if(nuevo){ nuevo.focus(); nuevo.setSelectionRange(nuevo.value.length, nuevo.value.length); }
     }, 300);
     return;
@@ -4252,6 +4347,21 @@ window.goAllLeads = function goAllLeads(){
   curTab='allleads';
   document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
   renderAllLeads();
+}
+window.goArisale = function goArisale(){
+  const kpiEl=document.getElementById('view-kpi');
+  const huntersEl=document.getElementById('view-hunters');
+  if(kpiEl) kpiEl.style.display='none';
+  if(huntersEl) huntersEl.style.display='none';
+  ['.topbar','.tab-nav','#content'].forEach(s=>{
+    const el=document.querySelector('.main '+s);
+    if(el) el.style.display='';
+  });
+  const navCrm=document.getElementById('nav-crm'); if(navCrm) navCrm.classList.remove('active');
+  const navAr=document.getElementById('nav-arisale'); if(navAr) navAr.classList.add('active');
+  curTab='arisale';
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  renderArisale();
 }
 /* Navigate to a specific hunter view even if no tab exists in DOM */
 window.gotoHunter = function gotoHunter(username){
