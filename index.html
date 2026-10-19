@@ -1257,7 +1257,7 @@ function initApp(){
   const isDAH = ['director','analista','head','viewer'].includes(curUser.role);
   const el = id => document.getElementById(id);
   const nalg = el('nav-allleads-group');
-  if(nalg) nalg.style.display = 'flex'; /* Todos los roles ven Lead Central */
+  if(nalg) nalg.style.display = 'none'; /* Movido a las pestañas de arriba */
   if(el('nav-delete-all')) el('nav-delete-all').style.display = isDA ? '' : 'none';
   if(el('nav-reimport'))   el('nav-reimport').style.display   = isDA ? '' : 'none';
   /* Show team groups - Head solo ve su propio equipo, Director/Analista ven ambos */
@@ -1279,11 +1279,11 @@ function initApp(){
   const nsva2= el('nav-sva2');
   if(nc)    nc.style.display    = isDAH ? 'flex' : 'none';
   if(nca)   nca.style.display   = isDAH ? 'flex' : 'none';
-  if(nsva2) nsva2.style.display = 'flex'; /* Todos los roles ven SVA */
+  if(nsva2) nsva2.style.display = 'none'; /* Movido a las pestañas de arriba */
   /* Lead Arisale liberado a todos: cada rol ve su alcance dentro de la vista
      (analista/director: todo · head: su equipo · hunter: solo los suyos) */
   const nar = el('nav-arisale');
-  if(nar) nar.style.display = 'flex';
+  if(nar) nar.style.display = 'none'; /* Movido a las pestañas de arriba */
   const nest = el('nav-estado-sva');
   /* Estado SVA: analista, director, head y hunter (los hunters ven versión recortada) */
   const puedeEstadoSVA = ['director','analista','head','hunter'].includes(curUser.role);
@@ -1327,7 +1327,7 @@ function startAutoSync(){
       LEADS = await fetchLeads();
       if(!isTyping) renderTab(curTab);
     } catch(e){ /* silencioso */ }
-  }, curUser?.role==='hunter' ? 60000 : 30000); /* hunters: 60s (realtime cubre cambios al instante), otros: 30s */
+  }, 120000); /* 120s — red de respaldo; la sincronización instantánea (websocket) cubre los cambios al momento */
 }
 
 /* Sincronización instantánea: escucha cambios en la tabla "leads" vía websocket.
@@ -1381,9 +1381,16 @@ function getTabs(){
     return {id: h.username, label, icon:'ti-user', dot: h.color};
   };
 
+  const leadTabs = [
+    {id:'allleads', label:'Lead Central',  icon:'ti-table',              dot:'#534AB7'},
+    {id:'sva2',     label:'Lead SVA',      icon:'ti-layers-difference',  dot:'#00C9FF'},
+    {id:'arisale',  label:'Lead Arisale',  icon:'ti-sparkles',           dot:'#F5A623'},
+  ];
+
   if(r==='director' || r==='analista' || r==='viewer') {
     const tabs = [
       {id:'general', label:'Vista general', icon:'ti-home', dot:'#534AB7'},
+      ...leadTabs,
     ];
     return tabs;
   }
@@ -1394,6 +1401,7 @@ function getTabs(){
     const headName = TEAM_HEAD[myTeam] || myTeam;
     const tabs = [
       {id:'general',     label:'Vista general',   icon:'ti-home',  dot:'#534AB7'},
+      ...leadTabs,
       {id:'team'+myTeam, label:'Equipo '+headName, icon:'ti-users', dot: myTeam==='A'?'#1D9E75':myTeam==='C'?'#00A77D':'#D85A30'}
     ];
     hunters.forEach(h => tabs.push(hunterTab(h)));
@@ -1402,8 +1410,8 @@ function getTabs(){
 
   /* hunter — solo ve sus propios leads */
   const h = HUNTERS[curUser.username];
-  if(!h) return [{id: curUser.username, label: curUser.name, icon:'ti-user', dot: curUser.color}];
-  return [hunterTab(h)];
+  if(!h) return [{id: curUser.username, label: curUser.name, icon:'ti-user', dot: curUser.color}, ...leadTabs];
+  return [hunterTab(h), ...leadTabs];
 }
 
 function getAccess(){
@@ -3657,13 +3665,13 @@ async function fetchLeads(){
   if(!SB_USUARIOS || SB_USUARIOS.length===0){
     SB_USUARIOS = await sbGet('usuarios','select=id,nombre,username,rol,equipo,head_id,color,activo&activo=eq.true');
   }
-  const hm={};
-  SB_USUARIOS.forEach(u=>{hm[u.id]=u.username;});
+  const hm={}, nm={};
+  SB_USUARIOS.forEach(u=>{hm[u.id]=u.username; nm[u.id]=u.nombre;});
   const mapped = rawLeads.map(l=>({
     id:l.id, hunter:hm[l.hunter_id]||'',
     name:l.razon_social||l.nombre||'(Sin nombre)',
     ruc:l.ruc||'',
-    owner:(SB_USUARIOS.find(u=>u.id===l.hunter_id)||{}).nombre||'',
+    owner:nm[l.hunter_id]||'',
     giros:l.giros||'', source:l.fuente||'',
     tipo_producto:l.tipo_producto||l.tipo_sva||'', tipo_cuenta:l.tipo_cuenta||'',
     banco:l.banco||'', status:mapEstado(l.estado||'prospecto'),
@@ -3820,6 +3828,10 @@ function leadsTableHTML(leads, canEdit, key){
     return true;
   });
   if(!filtered.length) return `<table><tbody><tr><td colspan="22" style="text-align:center;padding:24px;color:#aaa;font-size:13px;">Sin leads para mostrar</td></tr></tbody></table>`;
+  /* ── Tope de render para velocidad: dibuja máx. 300 filas; usa filtros/búsqueda para ver el resto ── */
+  const _RENDER_CAP = 300;
+  const _overCap = filtered.length > _RENDER_CAP;
+  const _rows = _overCap ? filtered.slice(0, _RENDER_CAP) : filtered;
   return `<table>
     <colgroup>
       <col style="width:16px"><col style="width:22px"><col style="width:240px"><col style="width:96px">
@@ -3840,7 +3852,7 @@ function leadsTableHTML(leads, canEdit, key){
       ${isSVA?'<th>Tipo SVA</th><th>Cantidad/Valor</th><th>Etapa Implement.</th>':''}
       <th></th>
     </tr></thead>
-    <tbody>${filtered.map(l=>{
+    <tbody>${_rows.map(l=>{
       const full = canFullEdit(l);
       const commentOnly = canEditComment(l);
       const ro = full ? '' : 'readonly';
@@ -3976,7 +3988,7 @@ function leadsTableHTML(leads, canEdit, key){
           </div>
         </td>
       </tr>`;
-    }).join('')}</tbody></table>`;
+    }).join('') + (_overCap ? `<tr><td colspan="22" style="text-align:center;padding:12px;color:#8a6d1f;font-size:12px;background:#fff8ec;">Mostrando las primeras ${_RENDER_CAP} de ${filtered.length.toLocaleString()} filas — usa los filtros o la búsqueda para ver el resto</td></tr>` : '')}</tbody></table>`;
 }
 
 /* ─── ACTIONS ─── */
@@ -4020,6 +4032,15 @@ document.addEventListener('input', function(e){
     _searchTimer = setTimeout(()=>{
       renderArisale();
       const nuevo = document.getElementById('srch-arisale');
+      if(nuevo){ nuevo.focus(); nuevo.setSelectionRange(nuevo.value.length, nuevo.value.length); }
+    }, 300);
+    return;
+  }
+  if(key === 'sva2'){
+    window['search_sva2'] = v;
+    _searchTimer = setTimeout(()=>{
+      renderSVA2();
+      const nuevo = document.getElementById('srch-sva2');
       if(nuevo){ nuevo.focus(); nuevo.setSelectionRange(nuevo.value.length, nuevo.value.length); }
     }, 300);
     return;
