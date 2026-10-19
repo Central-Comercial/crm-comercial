@@ -1280,10 +1280,10 @@ function initApp(){
   if(nc)    nc.style.display    = isDAH ? 'flex' : 'none';
   if(nca)   nca.style.display   = isDAH ? 'flex' : 'none';
   if(nsva2) nsva2.style.display = 'flex'; /* Todos los roles ven SVA */
-  /* Lead Arisale EN REVISIÓN: solo lo ve el analista Sebastian Cavalier (scavalier).
-     Para liberarlo a todos, cambiar por: nar.style.display = isDAH ? 'flex' : 'none'; */
+  /* Lead Arisale liberado a todos: cada rol ve su alcance dentro de la vista
+     (analista/director: todo · head: su equipo · hunter: solo los suyos) */
   const nar = el('nav-arisale');
-  if(nar) nar.style.display = (curUser.username==='scavalier') ? 'flex' : 'none';
+  if(nar) nar.style.display = 'flex';
   const nest = el('nav-estado-sva');
   /* Estado SVA: analista, director, head y hunter (los hunters ven versión recortada) */
   const puedeEstadoSVA = ['director','analista','head','hunter'].includes(curUser.role);
@@ -3689,10 +3689,9 @@ async function fetchLeads(){
   mapped.forEach(l=>{l.status=mapEstado(l.status);});
   HUNTERS_DEF.forEach(h=>{h.real=0;});
   mapped.forEach(l=>{if(HUNTERS[l.hunter])HUNTERS[l.hunter].real+=(l.value||0);});
-  /* ── Lead Arisale EN REVISIÓN: solo scavalier ve los leads de línea 'arisale'.
-     Para liberarlo a todos, cambiar esta condición por: return mapped; ── */
-  const _verArisale = (curUser && curUser.username) === 'scavalier';
-  return _verArisale ? mapped : mapped.filter(l=>(l.linea||'central')!=='arisale');
+  /* ── Lead Arisale liberado: cada rol ve lo suyo en renderArisale
+     (analista/director: todo · head: su equipo · hunter: solo los suyos) ── */
+  return mapped;
 }
 
 /* ── TOAST NOTIFICATIONS ── */
