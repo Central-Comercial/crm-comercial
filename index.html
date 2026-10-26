@@ -3657,7 +3657,7 @@ function filterBarHTML(leads, key, showNew=true){
 */
 /* ── FETCH LEADS HELPER ── */
 /* Columnas exactas que el CRM usa — evita traer datos de más (optimización de egress) */
-const LEAD_COLS = 'id,hunter_id,razon_social,nombre,ruc,giros,fuente,tipo_producto,tipo_sva,tipo_cuenta,banco,estado,valor,mes_cierre,comentario,probabilidad,conflicto,categoria,linea,telefono,correo,representante_legal,parlantes,arisale_valor,arisale_licencias,planillas_colaboradores,etapa_implementacion,direccion,distrito,created_at,fecha_ingreso,fecha_modif,fecha_cierre';
+const LEAD_COLS = 'id,hunter_id,razon_social,nombre,ruc,giros,fuente,tipo_producto,tipo_sva,tipo_cuenta,banco,estado,valor,mes_cierre,comentario,probabilidad,conflicto,categoria,linea,telefono,correo,representante_legal,parlantes,arisale_valor,arisale_licencias,planillas_colaboradores,etapa_implementacion,direccion,distrito,debito,credito,created_at,fecha_ingreso,fecha_modif,fecha_cierre';
 
 async function fetchLeads(){
   const rawLeads = await sbGet('leads',`select=${LEAD_COLS}&order=created_at.desc`);
@@ -3685,6 +3685,7 @@ async function fetchLeads(){
     planillas_colaboradores:l.planillas_colaboradores||0,
     etapa_implementacion:l.etapa_implementacion||'',
     direccion:l.direccion||'', distrito:l.distrito||'',
+    debito:(l.debito!=null?l.debito:null), credito:(l.credito!=null?l.credito:null),
     created:fmtDatePE(l.created_at),
     fecha_ingreso:fmtDatePE(l.fecha_ingreso),
     fecha_ingreso_raw:l.fecha_ingreso||'',
@@ -3844,6 +3845,7 @@ function leadsTableHTML(leads, canEdit, key){
       <col style="width:70px"><col style="width:78px">
       <col style="width:100px"><col style="width:92px"><col style="width:150px">
       ${isSVA?'<col style="width:70px"><col style="width:120px"><col style="width:100px">':''}
+      ${(!isArisale&&!isSVA)?'<col style="width:220px"><col style="width:72px"><col style="width:72px">':''}
       <col style="width:70px">
     </colgroup>
     <thead><tr>
@@ -3853,6 +3855,7 @@ function leadsTableHTML(leads, canEdit, key){
       <th>Giros</th><th>Origen</th><th>Tipo Producto</th><th>Tipo Cuenta</th>
       <th>Banco</th><th>Potencial</th><th>Etapa</th><th>Mes Cierre</th><th>Comentarios</th>
       ${isSVA?'<th>Tipo SVA</th><th>Cantidad/Valor</th><th>Etapa Implement.</th>':''}
+      ${(!isArisale&&!isSVA)?'<th>Dirección</th><th>Débito</th><th>Crédito</th>':''}
       <th></th>
     </tr></thead>
     <tbody>${_rows.map(l=>{
@@ -3985,10 +3988,20 @@ function leadsTableHTML(leads, canEdit, key){
             <td style="font-size:10px;color:#555;white-space:nowrap;">${cantVal}</td>
             <td><span class="sbadge" style="background:${implColor}22;color:${implColor};font-size:10px;">${l.etapa_implementacion||'—'}</span></td>`;
         })():''}
+        ${(!isArisale&&!isSVA)?`
+        <td class="clip" style="padding:4px 8px;">${(full||commentOnly)
+          ? `<input class="ecell" value="${(l.direccion||'').replace(/"/g,'&quot;')}" placeholder="—" title="${(l.direccion||'').replace(/"/g,'&quot;')}" onchange="updateLeadDB('${safeId}','direccion',this.value,'${key}')" style="font-size:11px;">`
+          : `<span style="font-size:11px;color:#666;" title="${(l.direccion||'').replace(/"/g,'&quot;')}">${l.direccion||'—'}</span>`}</td>
+        <td>${canPartial
+          ? `<input class="ecell" type="number" step="0.0001" value="${l.debito!=null?l.debito:''}" placeholder="—" style="font-size:11px;width:62px;" data-id="${l.id}" data-field="debito" data-key="${key}" onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)">`
+          : `<span style="font-size:11px;color:#666;">${l.debito!=null?l.debito:'—'}</span>`}</td>
+        <td>${canPartial
+          ? `<input class="ecell" type="number" step="0.0001" value="${l.credito!=null?l.credito:''}" placeholder="—" style="font-size:11px;width:62px;" data-id="${l.id}" data-field="credito" data-key="${key}" onchange="updateLeadDB(this.dataset.id,this.dataset.field,this.value,this.dataset.key)">`
+          : `<span style="font-size:11px;color:#666;">${l.credito!=null?l.credito:'—'}</span>`}</td>`:''}
         <td>${actionBtn}</td>
       </tr>
       <tr id="hist-${l.id}" style="display:none;">
-        <td colspan="${isSVA?22:(isArisale?21:19)}" style="padding:0;">
+        <td colspan="${isSVA?22:(isArisale?21:22)}" style="padding:0;">
           <div id="hist-content-${l.id}" style="background:#f8f9fc;padding:10px 20px;border-top:1px solid #eee;font-size:11px;">
             <div style="color:#999;text-align:center;">Cargando historial...</div>
           </div>
