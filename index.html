@@ -146,6 +146,82 @@ tr:hover td{background:#fafbff;}
 .close-modal{position:absolute;top:14px;right:14px;border:none;background:none;font-size:18px;cursor:pointer;color:#888;}
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-thumb{background:#ddd;border-radius:4px;}
+/* ─── SALA DEL DIRECTORIO ─── */
+#view-sala{display:none;flex:1;overflow-y:auto;background:#f5f6fa;}
+.sala-head{background:#1a1f2e;color:#F0F6FF;padding:14px 20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5;}
+.sala-head h2{font-size:16px;font-weight:700;}
+.sala-head .sala-sub{font-size:11px;color:#8892a4;margin-top:2px;}
+.sala-status{display:flex;align-items:center;gap:8px;font-size:12px;color:#AFA9EC;}
+.sala-status b{color:#fff;}
+.sala-dot{width:9px;height:9px;border-radius:50%;background:#1D9E75;flex:none;}
+.sala-dot.busy{background:#E24B4A;}
+.sala-body{max-width:1100px;margin:0 auto;padding:16px 20px 40px;}
+.sala-week{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sala-week h3{font-size:14px;font-weight:700;color:#1a1f2e;}
+.sala-nav{width:32px;height:32px;border:1px solid #dde1e7;background:#fff;border-radius:8px;cursor:pointer;font-size:16px;color:#333;}
+.sala-nav:hover{background:#f0f2f5;}
+.sala-days{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-top:10px;}
+.sala-day{border:1px solid #e8eaed;background:#fff;border-radius:10px;padding:7px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;font-family:inherit;}
+.sala-day:hover{background:#f7f8fa;}
+.sala-day .dn{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#888;}
+.sala-day .dd{font-size:18px;font-weight:700;color:#1a1f2e;line-height:1.1;}
+.sala-day .dc{font-size:10px;color:#888;}
+.sala-day.today .dd{color:#534AB7;}
+.sala-day.sel{background:#1a1f2e;border-color:#1a1f2e;}
+.sala-day.sel .dn,.sala-day.sel .dc{color:#AFA9EC;}
+.sala-day.sel .dd{color:#fff;}
+.sala-grid{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:16px;margin-top:14px;}
+@media (max-width:800px){.sala-grid{grid-template-columns:minmax(0,1fr);}}
+.sala-panel{background:#fff;border:1px solid #e8eaed;border-radius:10px;min-width:0;}
+.sala-ph{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid #e8eaed;}
+.sala-ph h4{font-size:13px;font-weight:700;color:#1a1f2e;}
+.sala-btn{border:0;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;background:#534AB7;color:#fff;font-family:inherit;}
+.sala-btn:hover{filter:brightness(1.1);}
+.sala-btn.ghost{background:#fff;color:#333;border:1px solid #dde1e7;}
+.sala-btn.danger{background:#E24B4A;}
+.sala-btn:disabled{opacity:.5;cursor:default;}
+.sala-tl{display:grid;grid-template-columns:48px minmax(0,1fr);grid-auto-rows:28px;padding:8px 10px 10px 0;position:relative;}
+.sala-tlabel{grid-column:1;font-size:10px;color:#888;text-align:right;padding-right:8px;transform:translateY(-6px);font-variant-numeric:tabular-nums;}
+.sala-slot{grid-column:2;border:0;border-top:1px solid #eef0f3;background:transparent;cursor:pointer;text-align:left;padding:0 10px;font-size:11px;color:transparent;font-family:inherit;}
+.sala-slot.half{border-top-style:dashed;}
+.sala-slot:hover{background:#f3f2fc;color:#534AB7;}
+.sala-slot.past{cursor:default;background:repeating-linear-gradient(135deg,transparent 0 6px,#f7f8fa 6px 8px);}
+.sala-slot.past:hover{color:transparent;}
+.sala-bk{grid-column:2;margin:2px 0 2px 4px;border-radius:7px;padding:4px 10px;cursor:pointer;border:0;text-align:left;overflow:hidden;z-index:1;display:flex;flex-direction:column;gap:1px;min-width:0;font-family:inherit;}
+.sala-bk .t{font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sala-bk .w{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85;}
+.sala-bk.mine{box-shadow:inset 0 0 0 2px currentColor;}
+.sala-r-director{background:#EDE9FE;color:#5B21B6;}
+.sala-r-analista{background:#FEF3C7;color:#92400E;}
+.sala-r-head{background:#D1FAE5;color:#065F46;}
+.sala-r-hunter{background:#DBEAFE;color:#1E40AF;}
+.sala-r-viewer{background:#F3F4F6;color:#6B7280;}
+.sala-chip{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border-radius:20px;padding:2px 8px;}
+.sala-now{grid-column:2;height:2px;background:#E24B4A;z-index:2;align-self:start;pointer-events:none;}
+.sala-list{list-style:none;}
+.sala-list li{padding:9px 14px;border-top:1px solid #eef0f3;cursor:pointer;display:flex;flex-direction:column;gap:2px;}
+.sala-list li:first-child{border-top:0;}
+.sala-list li:hover{background:#f7f8fa;}
+.sala-list .lt{font-size:12px;font-weight:600;color:#1a1f2e;}
+.sala-list .lm{font-size:11px;color:#888;font-variant-numeric:tabular-nums;}
+.sala-empty{padding:12px 14px;font-size:12px;color:#888;}
+.sala-legend{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px 4px;}
+.sala-note{font-size:11px;color:#888;padding:6px 14px 12px;}
+#sala-modal .modal{max-width:420px;width:calc(100% - 32px);}
+.sala-m{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow:auto;}
+.sala-m h3{font-size:17px;font-weight:700;color:#1a1f2e;}
+.sala-f{display:flex;flex-direction:column;gap:4px;}
+.sala-f label{font-size:11px;font-weight:600;color:#666;}
+.sala-f input,.sala-f select{width:100%;font-size:13px;padding:8px 10px;border:1px solid #dde1e7;border-radius:8px;font-family:inherit;outline:none;background:#fff;}
+.sala-f input:focus,.sala-f select:focus{border-color:#534AB7;}
+.sala-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sala-err{background:#FDECEC;color:#B42318;border-radius:8px;padding:9px 12px;font-size:12px;}
+.sala-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+.sala-meta{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px;}
+.sala-meta dt{color:#888;}
+.sala-meta dd{color:#1a1f2e;}
+.sala-confirm{background:#FDECEC;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px;color:#7A271A;}
+#sala-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1a1f2e;color:#fff;padding:9px 16px;border-radius:20px;font-size:13px;z-index:300;display:none;}
 </style>
 </head>
 <body>
@@ -177,6 +253,10 @@ tr:hover td{background:#fafbff;}
     <div id="nav-hunters" title="Dashboard Hunters" onclick="switchView('hunters')" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;gap:2px;">
       <div style="font-size:8px;color:#AFA9EC;text-align:center;line-height:1.2;">Dashboard</div>
       <div class="sb-icon" style="pointer-events:none;"><i class="ti ti-activity"></i></div>
+    </div>
+    <div id="nav-sala" title="Sala del Directorio" onclick="switchView('sala')" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;gap:2px;">
+      <div style="font-size:8px;color:#AFA9EC;text-align:center;line-height:1.2;">Sala<br>Directorio</div>
+      <div class="sb-icon" style="pointer-events:none;"><i class="ti ti-calendar-event"></i></div>
     </div>
     <div id="nav-allleads-group" style="display:none;flex-direction:column;align-items:center;cursor:pointer;gap:2px;" onclick="goAllLeads()">
       <div style="font-size:8px;color:#534AB7;text-align:center;line-height:1.2;">Lead<br>Central</div>
@@ -277,6 +357,52 @@ tr:hover td{background:#fafbff;}
       <iframe id="hunters-frame" style="flex:1;border:none;width:100%;height:100%;" title="Dashboard Hunters"></iframe>
     </div>
     <!-- / HUNTERS DASHBOARD VIEW -->
+    <!-- SALA DEL DIRECTORIO VIEW -->
+    <div id="view-sala">
+      <div class="sala-head">
+        <div>
+          <h2><i class="ti ti-calendar-event"></i> Sala del Directorio</h2>
+          <div class="sala-sub">Reservas de 8:00 a 20:00 · lunes a sábado</div>
+        </div>
+        <div class="sala-status" id="sala-status"></div>
+      </div>
+      <div class="sala-body">
+        <div class="sala-week">
+          <button class="sala-nav" onclick="salaWeek(-1)" title="Semana anterior">‹</button>
+          <h3 id="sala-week-title"></h3>
+          <button class="sala-nav" onclick="salaWeek(1)" title="Semana siguiente">›</button>
+        </div>
+        <div class="sala-days" id="sala-days"></div>
+        <div class="sala-grid">
+          <div class="sala-panel">
+            <div class="sala-ph">
+              <h4 id="sala-day-title"></h4>
+              <button class="sala-btn" id="sala-new-btn" onclick="salaOpenNew()"><i class="ti ti-plus"></i> Reservar</button>
+            </div>
+            <div class="sala-tl" id="sala-tl"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;min-width:0;">
+            <div class="sala-panel">
+              <div class="sala-ph"><h4>Mis próximas reservas</h4></div>
+              <ul class="sala-list" id="sala-mine"></ul>
+            </div>
+            <div class="sala-panel">
+              <div class="sala-ph"><h4>Colores por cargo</h4></div>
+              <div class="sala-legend">
+                <span class="sala-chip sala-r-director">Director</span>
+                <span class="sala-chip sala-r-analista">Analista</span>
+                <span class="sala-chip sala-r-head">Head</span>
+                <span class="sala-chip sala-r-hunter">Hunter</span>
+              </div>
+              <div class="sala-note">Toca un horario libre para reservar, o una reserva para ver quién la hizo.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-bg" id="sala-modal" onclick="if(event.target===this)salaClose()"><div class="sala-m" id="sala-m"></div></div>
+    <div id="sala-toast"></div>
+    <!-- / SALA DEL DIRECTORIO VIEW -->
     <div class="topbar">
       <div style="display:flex;align-items:center;gap:10px;">
         <span class="page-title" id="page-title-mes">Pipeline</span>
@@ -1187,14 +1313,23 @@ function switchView(v){
   /* Análisis solo para roles con permiso; un hunter no puede abrirlo ni por consola */
   if(v==='kpi' && curUser.role==='hunter'){ return; }
   if(v==='kpi') setTimeout(renderKPI, 100); /* auto-refresh analytics */
-  ['crm','kpi','hunters'].forEach(n=>{
+  ['crm','kpi','hunters','sala'].forEach(n=>{
     const el=document.getElementById('nav-'+n);
     if(el) el.classList.toggle('active',n===v);
   });
   const kpiEl=document.getElementById('view-kpi');
   const huntersEl=document.getElementById('view-hunters');
+  const salaEl=document.getElementById('view-sala');
   const crmEls=['.topbar','.tab-nav','#content'].map(s=>document.querySelector('.main '+s));
-  if(v==='kpi'){
+  const tabBar=document.querySelector('.main .tab-nav')?.parentElement;
+  if(tabBar) crmEls.push(tabBar);
+  if(salaEl) salaEl.style.display='none';
+  if(v==='sala'){
+    kpiEl.style.display='none'; huntersEl.style.display='none';
+    crmEls.forEach(el=>{if(el)el.style.display='none';});
+    salaEl.style.display='block';
+    openSala();
+  } else if(v==='kpi'){
     kpiEl.style.display='block'; huntersEl.style.display='none';
     crmEls.forEach(el=>{if(el)el.style.display='none';});
     if(!kpiChartsBuilt){renderKPI();kpiChartsBuilt=true;}else{renderKPI();}
@@ -1232,10 +1367,235 @@ function buildKpiCharts(){
       scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}}}}
   });
 }
+/* ════════════════════════════════════════════════════════════════
+   SALA DEL DIRECTORIO · reservas (tabla reservas_sala en Supabase)
+   - Todos ven quién reservó. Director/Analista/Head/Hunter reservan.
+   - Cada uno cancela lo suyo; Director y Analista cancelan cualquiera.
+   - La base de datos impide reservas cruzadas (constraint EXCLUDE).
+   ════════════════════════════════════════════════════════════════ */
+const SALA_OPEN=8*60, SALA_CLOSE=20*60, SALA_STEP=30;
+const SALA_ROLES={director:'Director',analista:'Analista',head:'Head',hunter:'Hunter',viewer:'Visualizador'};
+const SALA_DN=['Lun','Mar','Mié','Jue','Vie','Sáb'];
+const SALA_MES=['ene','feb','mar','abr','may','jun','jul','ago','set','oct','nov','dic'];
+const SALA_DLONG=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+let SALA_RES=[], salaWeekStart=null, salaSel=null, _salaChannel=null, _salaClock=null;
+
+const salaPad=n=>String(n).padStart(2,'0');
+const salaYmd=d=>`${d.getFullYear()}-${salaPad(d.getMonth()+1)}-${salaPad(d.getDate())}`;
+const salaParse=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);};
+const salaAdd=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+const salaHm=m=>`${Math.floor(m/60)}:${salaPad(m%60)}`;
+const salaEsc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const salaMonday=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;};
+/* Fecha y hora actuales en Perú, sin importar la zona horaria del equipo */
+function salaNowPeru(){
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());
+  const g=t=>p.find(x=>x.type===t).value;
+  return {ymd:`${g('year')}-${g('month')}-${g('day')}`, min:(parseInt(g('hour'))%24)*60+parseInt(g('minute'))};
+}
+const salaFmt=s=>{const d=salaParse(s);return `${SALA_DLONG[d.getDay()]} ${d.getDate()} ${SALA_MES[d.getMonth()]}`;};
+const salaOfDay=d=>SALA_RES.filter(b=>b.fecha===d).sort((a,b)=>a.inicio-b.inicio);
+const salaMine=b=>String(b.usuario_id)===String(curUser.id);
+const salaCanBook=()=>['director','analista','head','hunter'].includes(curUser.role);
+const salaCanCancel=b=>salaMine(b)||['director','analista'].includes(curUser.role);
+const salaIsPast=(fecha,min)=>{const n=salaNowPeru();return fecha<n.ymd||(fecha===n.ymd&&min<n.min);};
+
+async function salaLoad(){
+  /* Trae desde hace 7 días en adelante (suficiente para navegar semanas cercanas) */
+  const desde=salaYmd(salaAdd(salaParse(salaNowPeru().ymd),-7));
+  try{ SALA_RES=await sbGet('reservas_sala',`select=*&fecha=gte.${desde}&order=fecha,inicio`); }
+  catch(e){ SALA_RES=[]; salaToast('No se pudieron cargar las reservas. Revisa que la tabla reservas_sala exista en Supabase.'); }
+}
+async function salaLoadWeek(){
+  /* Si navegan a semanas pasadas, cargar esa semana puntual */
+  const desde=salaYmd(salaWeekStart), hasta=salaYmd(salaAdd(salaWeekStart,6));
+  try{
+    const rows=await sbGet('reservas_sala',`select=*&fecha=gte.${desde}&fecha=lte.${hasta}`);
+    const ids=new Set(rows.map(r=>r.id));
+    SALA_RES=SALA_RES.filter(r=>!ids.has(r.id)).concat(rows);
+  }catch(e){}
+}
+
+async function openSala(){
+  const n=salaNowPeru(), t=salaParse(n.ymd);
+  if(!salaWeekStart){
+    salaWeekStart=salaMonday(t);
+    if(t.getDay()===0) salaWeekStart=salaAdd(salaWeekStart,7);
+    salaSel=t.getDay()===0?salaYmd(salaWeekStart):n.ymd;
+  }
+  salaRender();
+  await salaLoad();
+  salaRender();
+  salaStartRealtime();
+  clearInterval(_salaClock);
+  _salaClock=setInterval(()=>{ if(document.getElementById('view-sala').style.display==='block') salaRender(); },60000);
+}
+
+function salaStartRealtime(){
+  if(!sbClient || _salaChannel) return;
+  _salaChannel=sbClient.channel('reservas-sala-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'reservas_sala'},async()=>{
+      if(!curUser) return;
+      await salaLoad(); await salaLoadWeek();
+      if(document.getElementById('view-sala').style.display==='block' && !document.getElementById('sala-modal').classList.contains('open')) salaRender();
+    }).subscribe();
+}
+function salaStopRealtime(){
+  if(_salaChannel && sbClient){ sbClient.removeChannel(_salaChannel); _salaChannel=null; }
+  clearInterval(_salaClock); _salaClock=null;
+  salaWeekStart=null; SALA_RES=[];
+}
+
+function salaRender(){
+  const n=salaNowPeru();
+  /* Estado actual */
+  const cur=salaOfDay(n.ymd).find(b=>b.inicio<=n.min&&b.fin>n.min);
+  const st=document.getElementById('sala-status');
+  if(cur){
+    st.innerHTML=`<span class="sala-dot busy"></span><span>Ahora: <b>ocupada</b> · ${salaEsc(cur.usuario_nombre)} hasta las ${salaHm(cur.fin)}</span>`;
+  }else{
+    const nx=salaOfDay(n.ymd).find(b=>b.inicio>n.min);
+    st.innerHTML=`<span class="sala-dot"></span><span>Ahora: <b>libre</b>${nx?` · siguiente a las ${salaHm(nx.inicio)}`:''}</span>`;
+  }
+  /* Semana */
+  const fin=salaAdd(salaWeekStart,5);
+  document.getElementById('sala-week-title').textContent=`${salaWeekStart.getDate()} ${SALA_MES[salaWeekStart.getMonth()]} – ${fin.getDate()} ${SALA_MES[fin.getMonth()]} ${fin.getFullYear()}`;
+  document.getElementById('sala-days').innerHTML=SALA_DN.map((dn,i)=>{
+    const d=salaAdd(salaWeekStart,i), k=salaYmd(d), c=salaOfDay(k).length;
+    return `<button class="sala-day${k===n.ymd?' today':''}${k===salaSel?' sel':''}" onclick="salaPick('${k}')">
+      <span class="dn">${dn}</span><span class="dd">${d.getDate()}</span><span class="dc">${c?c+(c===1?' reserva':' reservas'):'libre'}</span></button>`;
+  }).join('');
+  /* Día */
+  const t=salaFmt(salaSel);
+  document.getElementById('sala-day-title').textContent=t.charAt(0).toUpperCase()+t.slice(1);
+  document.getElementById('sala-new-btn').style.display=salaCanBook()?'':'none';
+  const row=m=>(m-SALA_OPEN)/SALA_STEP+1, rows=(SALA_CLOSE-SALA_OPEN)/SALA_STEP;
+  let h='';
+  for(let i=0;i<rows;i++){
+    const m=SALA_OPEN+i*SALA_STEP, past=salaIsPast(salaSel,m+SALA_STEP)||!salaCanBook();
+    if(m%60===0) h+=`<div class="sala-tlabel" style="grid-row:${i+1}">${salaHm(m)}</div>`;
+    h+=`<button class="sala-slot${m%60?' half':''}${past?' past':''}" style="grid-row:${i+1}" ${past?'tabindex="-1"':`onclick="salaOpenNew(${m})"`}>+ Reservar ${salaHm(m)}</button>`;
+  }
+  salaOfDay(salaSel).forEach(b=>{
+    const r=SALA_ROLES[b.usuario_rol]?b.usuario_rol:'viewer';
+    h+=`<button class="sala-bk sala-r-${r}${salaMine(b)?' mine':''}" style="grid-row:${row(b.inicio)}/${row(b.fin)}" onclick="salaDetail(${b.id})">
+      <span class="t">${salaEsc(b.motivo)}</span>
+      ${b.fin-b.inicio>SALA_STEP?`<span class="w">${salaHm(b.inicio)}–${salaHm(b.fin)} · ${salaEsc(b.usuario_nombre)} · ${SALA_ROLES[r]}</span>`:''}</button>`;
+  });
+  if(salaSel===n.ymd && n.min>=SALA_OPEN && n.min<SALA_CLOSE){
+    const r=Math.floor((n.min-SALA_OPEN)/SALA_STEP), off=((n.min-SALA_OPEN)%SALA_STEP)/SALA_STEP*28;
+    h+=`<div class="sala-now" style="grid-row:${r+1};margin-top:${off}px"></div>`;
+  }
+  document.getElementById('sala-tl').innerHTML=h;
+  /* Mis reservas */
+  const mine=SALA_RES.filter(b=>salaMine(b)&&(b.fecha>n.ymd||(b.fecha===n.ymd&&b.fin>n.min)))
+    .sort((a,b)=>a.fecha.localeCompare(b.fecha)||a.inicio-b.inicio);
+  document.getElementById('sala-mine').innerHTML=mine.length
+    ?mine.map(b=>`<li onclick="salaGo('${b.fecha}',${b.id})"><span class="lt">${salaEsc(b.motivo)}</span><span class="lm">${salaFmt(b.fecha)} · ${salaHm(b.inicio)}–${salaHm(b.fin)}</span></li>`).join('')
+    :`<li class="sala-empty" style="cursor:default">No tienes reservas próximas.</li>`;
+}
+
+function salaPick(k){ salaSel=k; salaRender(); }
+async function salaWeek(dir){
+  salaWeekStart=salaAdd(salaWeekStart,7*dir); salaSel=salaYmd(salaWeekStart);
+  salaRender(); await salaLoadWeek(); salaRender();
+}
+function salaGo(fecha,id){ salaWeekStart=salaMonday(salaParse(fecha)); salaSel=fecha; salaRender(); salaDetail(id); }
+
+function salaToast(msg){
+  const el=document.getElementById('sala-toast'); el.textContent=msg; el.style.display='block';
+  clearTimeout(salaToast._t); salaToast._t=setTimeout(()=>el.style.display='none',3000);
+}
+function salaOpenModal(html){ document.getElementById('sala-m').innerHTML=html; document.getElementById('sala-modal').classList.add('open'); }
+function salaClose(){ document.getElementById('sala-modal').classList.remove('open'); salaRender(); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('sala-modal')?.classList.contains('open')) salaClose(); });
+
+function salaTimeOpts(from,to,sel){ let o=''; for(let m=from;m<=to;m+=SALA_STEP) o+=`<option value="${m}"${m===sel?' selected':''}>${salaHm(m)}</option>`; return o; }
+
+function salaOpenNew(start){
+  if(!salaCanBook()) return;
+  const n=salaNowPeru();
+  if(start==null){ start=salaSel===n.ymd?Math.max(SALA_OPEN,Math.ceil(n.min/SALA_STEP)*SALA_STEP):9*60; }
+  start=Math.min(start,SALA_CLOSE-SALA_STEP);
+  salaOpenModal(`<h3>Reservar la sala</h3>
+    <div style="font-size:12px;color:#666;">A nombre de <b>${salaEsc(curUser.name)}</b> · ${SALA_ROLES[curUser.role]||curUser.role}</div>
+    <div class="sala-f"><label for="sala-motivo">Motivo de la reunión</label><input id="sala-motivo" maxlength="80" placeholder="Ej. Reunión con mi equipo"></div>
+    <div class="sala-f"><label for="sala-fecha">Fecha</label><input id="sala-fecha" type="date" min="${n.ymd}" value="${salaSel<n.ymd?n.ymd:salaSel}"></div>
+    <div class="sala-row2">
+      <div class="sala-f"><label for="sala-ini">Desde</label><select id="sala-ini">${salaTimeOpts(SALA_OPEN,SALA_CLOSE-SALA_STEP,start)}</select></div>
+      <div class="sala-f"><label for="sala-fin">Hasta</label><select id="sala-fin">${salaTimeOpts(SALA_OPEN+SALA_STEP,SALA_CLOSE,Math.min(start+60,SALA_CLOSE))}</select></div>
+    </div>
+    <div class="sala-f"><label for="sala-asis">Asistentes</label><input id="sala-asis" type="number" min="1" max="30" value="4"></div>
+    <div class="sala-err" id="sala-err" style="display:none;"></div>
+    <div class="sala-actions"><button class="sala-btn ghost" onclick="salaClose()">Cerrar</button><button class="sala-btn" id="sala-save" onclick="salaSave()">Confirmar reserva</button></div>`);
+  setTimeout(()=>document.getElementById('sala-motivo')?.focus(),50);
+}
+
+async function salaSave(){
+  const motivo=document.getElementById('sala-motivo').value.trim();
+  const fecha=document.getElementById('sala-fecha').value;
+  const ini=+document.getElementById('sala-ini').value, fin=+document.getElementById('sala-fin').value;
+  const asis=Math.min(30,Math.max(1,+document.getElementById('sala-asis').value||1));
+  const errEl=document.getElementById('sala-err');
+  const err=m=>{errEl.textContent=m;errEl.style.display='block';};
+  if(!motivo) return err('Escribe el motivo de la reunión para que el resto sepa para qué es.');
+  if(!fecha) return err('Elige una fecha.');
+  if(salaParse(fecha).getDay()===0) return err('La sala no se reserva los domingos.');
+  if(fin<=ini) return err('La hora de fin tiene que ser después de la hora de inicio.');
+  if(salaIsPast(fecha,ini)) return err('Ese horario ya pasó. Elige uno desde ahora en adelante.');
+  const clash=SALA_RES.find(b=>b.fecha===fecha&&b.inicio<fin&&b.fin>ini);
+  if(clash) return err(`Ese horario se cruza con "${clash.motivo}" de ${clash.usuario_nombre} (${salaHm(clash.inicio)}–${salaHm(clash.fin)}). Elige otro horario.`);
+  const btn=document.getElementById('sala-save'); btn.disabled=true; btn.textContent='Guardando...';
+  try{
+    const rows=await sbPost('reservas_sala',{fecha,inicio:ini,fin,motivo,asistentes:asis,
+      usuario_id:String(curUser.id),usuario_nombre:curUser.name,usuario_rol:curUser.role});
+    SALA_RES.push(rows[0]);
+    salaSel=fecha; salaWeekStart=salaMonday(salaParse(fecha));
+    salaClose(); salaToast('Sala reservada');
+  }catch(e){
+    btn.disabled=false; btn.textContent='Confirmar reserva';
+    if(String(e.message).includes('sin_cruce')){ await salaLoad(); return err('Alguien acaba de reservar ese horario. Elige otro.'); }
+    err('No se pudo guardar la reserva: '+e.message);
+  }
+}
+
+function salaDetail(id){
+  const b=SALA_RES.find(x=>x.id===id); if(!b) return;
+  const r=SALA_ROLES[b.usuario_rol]?b.usuario_rol:'viewer';
+  const creada=b.created_at?new Date(b.created_at).toLocaleString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+  salaOpenModal(`<span class="sala-chip sala-r-${r}" style="align-self:flex-start;">${SALA_ROLES[r]}</span>
+    <h3>${salaEsc(b.motivo)}</h3>
+    <dl class="sala-meta">
+      <dt>Reservó</dt><dd>${salaEsc(b.usuario_nombre)}</dd>
+      <dt>Fecha</dt><dd>${salaFmt(b.fecha)}</dd>
+      <dt>Horario</dt><dd>${salaHm(b.inicio)} – ${salaHm(b.fin)}</dd>
+      <dt>Asistentes</dt><dd>${b.asistentes}</dd>
+      <dt>Registrada</dt><dd>${creada}</dd>
+    </dl>
+    <div id="sala-darea">${salaCanCancel(b)
+      ?`<div class="sala-actions"><button class="sala-btn ghost" onclick="salaClose()">Cerrar</button><button class="sala-btn danger" onclick="salaAskCancel(${b.id})">Cancelar reserva</button></div>`
+      :`<div style="font-size:12px;color:#888;margin-bottom:10px;">Solo ${salaEsc(b.usuario_nombre)}, el Director o el Analista pueden cancelar esta reserva.</div><div class="sala-actions"><button class="sala-btn ghost" onclick="salaClose()">Cerrar</button></div>`}</div>`);
+}
+function salaAskCancel(id){
+  const b=SALA_RES.find(x=>x.id===id); if(!b) return;
+  document.getElementById('sala-darea').innerHTML=`<div class="sala-confirm">
+    <span>${salaMine(b)?'¿Cancelar tu reserva?':`Vas a cancelar la reserva de ${salaEsc(b.usuario_nombre)}.`} El horario queda libre para todos.</span>
+    <div class="sala-actions"><button class="sala-btn ghost" onclick="salaDetail(${id})">No, mantener</button><button class="sala-btn danger" onclick="salaCancel(${id})">Sí, cancelar</button></div></div>`;
+}
+async function salaCancel(id){
+  const b=SALA_RES.find(x=>x.id===id); if(!b||!salaCanCancel(b)) return;
+  const ok=await sbDelete('reservas_sala',id);
+  if(!ok){ salaToast('No se pudo cancelar. Intenta de nuevo.'); return; }
+  SALA_RES=SALA_RES.filter(x=>x.id!==id);
+  salaClose(); salaToast('Reserva cancelada');
+}
+
 function doLogout(){
   curUser=null;
   if(_autoSyncTimer){ clearInterval(_autoSyncTimer); _autoSyncTimer=null; }
   stopRealtimeSync();
+  salaStopRealtime();
+  if(typeof switchView==='function'){ try{ switchView('crm'); }catch(e){} }
   document.getElementById('lp').value='';
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
