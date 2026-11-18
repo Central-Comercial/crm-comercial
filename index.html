@@ -3329,11 +3329,11 @@ function kpiCard(label, val, sub, trend, color){
 
 /* ── KPI FUNNEL MINI CARD (50% / 75%) ── */
 function kpiFunnelCard(label, leads){
-  const total   = leads.reduce((s,l)=>s+(l.value||0),0);
   const pro10V  = leads.filter(l=>l.status==='prospecto').reduce((s,l)=>s+(l.value||0),0);
   const opo25V  = leads.filter(l=>l.status==='oportunidad').reduce((s,l)=>s+(l.value||0),0);
   const neg50V  = leads.filter(l=>l.status==='negociacion').reduce((s,l)=>s+(l.value||0),0);
   const pre75V  = leads.filter(l=>l.status==='precierre').reduce((s,l)=>s+(l.value||0),0);
+  const total   = pro10V+opo25V+neg50V+pre75V;
   return `<div class="kpi">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
       <div class="kpi-label">${label}</div>
@@ -3406,11 +3406,11 @@ function kpiRucRow(leads){
 /* ── KPI ROW FLAT (inline 5 cards) ── */
 /* Mini-funnel en CANTIDAD (no S/) - usado para QR y Planillas */
 function kpiFunnelCardCount(label, leads){
-  const total = leads.length;
   const pro10 = leads.filter(l=>l.status==='prospecto').length;
   const opo25 = leads.filter(l=>l.status==='oportunidad').length;
   const neg50 = leads.filter(l=>l.status==='negociacion').length;
   const pre75 = leads.filter(l=>l.status==='precierre').length;
+  const total = pro10+opo25+neg50+pre75;
   return `<div class="kpi">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
       <div class="kpi-label">${label}</div>
