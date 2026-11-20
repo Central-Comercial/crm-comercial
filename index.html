@@ -3123,12 +3123,16 @@ function renderAllLeads(){
   const fEstado = window['al_estado']||'all';
   const fSearch = window['al_search']||'';
   const fMes    = window['al_mes']||'';
+  const fHead   = window['al_head']||'';
+  const fPotMin = Number(window['al_potmin'])||0;
 
   /* Filtered leads */
   let filtered = allLeads.filter(l=>{
     if(fHunter && l.hunter !== fHunter) return false;
     if(fEstado !== 'all' && l.status !== fEstado) return false;
     if(fMes && l.close !== fMes) return false;
+    if(fHead && (HUNTERS[l.hunter]?.team||'') !== fHead) return false;
+    if(fPotMin>0 && (l.value||0) < fPotMin) return false;
     if(fSearch && !l.name.toLowerCase().includes(fSearch.toLowerCase()) && !l.ruc.includes(fSearch)) return false;
     return true;
   });
@@ -3136,7 +3140,7 @@ function renderAllLeads(){
   /* OPTIMIZACIÓN: si NO hay búsqueda ni filtros activos, mostrar solo los 200 más recientes
      (evita dibujar 3000+ filas de golpe = mucho más rápido). Al buscar o filtrar, se muestran
      TODOS los resultados de esa búsqueda (que consulta toda la base en memoria). */
-  const hayFiltro = !!(fSearch || fHunter || (fEstado && fEstado!=='all') || fMes);
+  const hayFiltro = !!(fSearch || fHunter || (fEstado && fEstado!=='all') || fMes || fHead || fPotMin>0);
   const LIMITE_TABLA = 200;
   const totalFiltrado = filtered.length;
   const limitado = !hayFiltro && totalFiltrado > LIMITE_TABLA;
@@ -3189,6 +3193,13 @@ function renderAllLeads(){
     <select class="filter-sel" onchange="window['al_mes']=this.value;renderAllLeads()">
       <option value="">Todos los meses</option>${mesOpts}
     </select>
+    <select class="filter-sel" onchange="window['al_head']=this.value;renderAllLeads()" title="Filtrar por Head">
+      <option value="">Todos los Heads</option>
+      <option value="A"${fHead==='A'?' selected':''}>Equipo Carlos (A)</option>
+      <option value="B"${fHead==='B'?' selected':''}>Equipo Ana (B)</option>
+      <option value="C"${fHead==='C'?' selected':''}>Equipo Rosa (C)</option>
+    </select>
+    <input type="number" class="filter-sel" min="0" step="1000" placeholder="Potencial mín. S/" value="${fPotMin||''}" onchange="window['al_potmin']=this.value;renderAllLeads()" title="Mostrar solo leads con valor mayor o igual" style="width:150px;">
     <span style="margin-left:auto;font-size:11px;color:#999;">${limitado ? `mostrando ${LIMITE_TABLA} de ${totalFiltrado} · busca para ver más` : `${filtered.length} de ${total} leads`}</span>
     ${!['viewer','hunter'].includes(curUser.role)?`<button onclick="exportAllLeads()" style="padding:5px 12px;border-radius:7px;border:1px solid #1D9E75;background:#e8f5e9;color:#1D9E75;font-size:11px;cursor:pointer;font-weight:600;">
       ⬇ Exportar Excel
